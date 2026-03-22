@@ -3,9 +3,11 @@ import "../styles/global.css";
 import Nav from "../components/nav.astro";
 import ClassC from "../components/class.astro";
 import type {Class} from "../../cms/src/payload-types.ts"
-import {collect, query, sortWeekdays} from "../utils.ts"
+import {collect, payload, sortWeekdays} from '../utils'
 
-const classes = await query<Class>('classes')
+const {docs: classes} = await payload.find({
+  collection: 'classes',
+})
 
 const groupedClasses = classes
   .sort(sortWeekdays)

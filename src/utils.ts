@@ -1,4 +1,10 @@
-import type {Class} from '../cms/src/payload-types'
+import { PayloadSDK } from '@payloadcms/sdk';
+import type { Config, Class } from '../cms/src/payload-types'; 
+
+export const payload = new PayloadSDK<Config>({
+  baseURL: process.env.PAYLOAD_URL || 'http://localhost:3000/api',
+});
+
 
 const weekdays: Record<string,number> = {
   "monday": 0,
@@ -16,13 +22,6 @@ interface Doc<T> {
 
 export const sortWeekdays = (a:Class, b:Class ) => weekdays[a.weekday.toLowerCase()] - weekdays[b.weekday.toLowerCase()]
 
-export async function query<T>(collection: string): Promise<Array<T>> {
-    const url = "http://localhost:3000/api/" + collection
-    console.log(url)
-    const res = await fetch(url) 
-    const docs = await res.json() as Doc<T>
-    return docs.docs
-}
 
 export function collect<T>(keyer: (arg: T)=>string) {
     return function(acc: Record<string,T[]>, curr: T) :Record<string,T[]> {
