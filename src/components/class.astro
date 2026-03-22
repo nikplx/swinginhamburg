@@ -1,0 +1,16 @@
+---
+import type {School,Class} from "../../cms/src/payload-types.ts"
+
+const { cls } = Astro.props;
+const clsi = cls as Class
+
+---
+
+<div class="listing-item">
+  {initials && <span class="postcode">{initials}</span>}
+  <div class="listing-details">
+    <span class="listing-title">{clsi.title}</span>
+    <span class="listing-meta">{clsi.description}</span>
+    {clsi.cancelled && <span class="cancelled-text">{clsi.cancelled}</span>}
+  </div>
+</div>
