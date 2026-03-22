@@ -1,16 +1,19 @@
 ---
 import type {School,Class} from "../../cms/src/payload-types.ts"
 
-const { cls } = Astro.props;
-const clsi = cls as Class
+interface Props { classs: Class }
+const { classs } = Astro.props as Props;
 
+console.log(classs)
+const school = classs.school as School || {name: ""}
+const initials = school.name.split(" ").map((str) => str[0]).join("")
 ---
 
 <div class="listing-item">
   {initials && <span class="postcode">{initials}</span>}
   <div class="listing-details">
-    <span class="listing-title">{clsi.title}</span>
-    <span class="listing-meta">{clsi.description}</span>
-    {clsi.cancelled && <span class="cancelled-text">{clsi.cancelled}</span>}
+    <span class="listing-title">{classs.title}</span>
+    <span class="listing-meta">{classs.description}</span>
+    {classs.cancelled && <span class="cancelled-text">{classs.cancelled}</span>}
   </div>
 </div>
