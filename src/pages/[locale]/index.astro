@@ -30,6 +30,7 @@ const cnt = await payload.findGlobal({
   locale: locale,
 });
 
+console.log(classes)
 const groupedClasses = classes.sort(sortWeekdays).reduce(
   collect((c) => c.weekday.toLowerCase()),
   {},
@@ -81,7 +82,7 @@ const groupedClasses = classes.sort(sortWeekdays).reduce(
               Object.entries(groupedClasses).map(([weekday, dayClasses]) => (
                 <div class="divider-light"></div>
                 <div class="day-group">
-                  <div class="day-label">{translateWeekday(weekday).toUpperCase()}:</div>
+                  <div class="day-label">{translateWeekday(weekday, locale).toUpperCase()}:</div>
                   <div class="listing-items">
                     {dayClasses.map((data) => (
                       <ClassC classs={data} />

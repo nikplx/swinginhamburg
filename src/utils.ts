@@ -17,7 +17,7 @@ const weekdays: Record<string,number> = {
   "sunday": 6,
 }
 
-export const translateWeekday = (d:string) => {
+export const translateWeekday = (d:string, locale: string) => {
     const t: Record<string, string> = {
         "monday": "Montag",
         "tuesday": "Dienstag",
@@ -28,7 +28,12 @@ export const translateWeekday = (d:string) => {
         "sunday": "Sonntag",
     }
 
-    return t[d]
+    if (locale == 'de') {
+        return t[d]
+    } else {
+        return d
+    }
+
 }
 
 
