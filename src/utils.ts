@@ -1,6 +1,7 @@
 import { PayloadSDK } from '@payloadcms/sdk';
 import type { Config, Class } from '../cms/src/payload-types'; 
 
+
 export const payload = new PayloadSDK<Config>({
   baseURL: process.env.PAYLOAD_URL || 'http://localhost:3000/api',
 });
@@ -15,6 +16,21 @@ const weekdays: Record<string,number> = {
   "saturday": 5,
   "sunday": 6,
 }
+
+export const translateWeekday = (d:string) => {
+    const t: Record<string, string> = {
+        "monday": "Montag",
+        "tuesday": "Dienstag",
+        "wednesday": "Mittwoch",
+        "thursday": "Donnerstag",
+        "friday": "Freitag",
+        "saturday": "Samstag",
+        "sunday": "Sonntag",
+    }
+
+    return t[d]
+}
+
 
 interface Doc<T> {
     docs: Array<T>

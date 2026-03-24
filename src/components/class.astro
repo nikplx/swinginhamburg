@@ -4,16 +4,15 @@ import type {School,Class} from "../../cms/src/payload-types.ts"
 interface Props { classs: Class }
 const { classs } = Astro.props as Props;
 
-console.log(classs)
 const school = classs.school as School || {name: ""}
 const initials = school.name.split(" ").map((str) => str[0]).join("")
 ---
-
 <div class="listing-item">
-  {initials && <span class="postcode">{initials}</span>}
+  {initials && <span class="listing-school">{school.name}</span>}
   <div class="listing-details">
     <span class="listing-title">{classs.title}</span>
     <span class="listing-meta">{classs.description}</span>
+    <span class="listing-teachers">{classs.teachers!.map((t)=>t.name).join(", ")}</span>
     {classs.cancelled && <span class="cancelled-text">{classs.cancelled}</span>}
   </div>
 </div>

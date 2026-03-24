@@ -1,0 +1,20 @@
+---
+import type { SerializedEditorState, SerializedLexicalNode } from 'lexical';
+import { convertLexicalToHTML } from '@payloadcms/richtext-lexical/html'
+import { Fragment } from 'astro/jsx-runtime';
+
+export const renderRichText = (
+  content?: SerializedEditorState<SerializedLexicalNode> | null | any
+): string => {
+  // Catch the empty state at runtime and return an empty string
+  if (!content) return ''; 
+
+  // TypeScript now knows 'content' is safely defined here
+  return convertLexicalToHTML({ data: content });
+};
+
+const {content} = Astro.props;
+---
+
+<Fragment set:html={renderRichText(content)} />
+

@@ -85,8 +85,8 @@ a {
 .donate-box p {
     margin: 0;
     font-style: italic;
-    font-size: 0.77rem;
-    max-width: 65%;
+    font-size: 0.66rem;
+    max-width: 75%;
 }
 
 .donate-btn {
@@ -123,6 +123,11 @@ nav {
 .divider {
     border: none;
     border-top: 3px solid var(--border-dark);
+    margin: 0 0 15px 0;
+}
+.divider-light {
+    border: none;
+    border-top: 1px solid var(--border-dark);
     margin: 0 0 15px 0;
 }
 
@@ -171,9 +176,14 @@ nav {
 }
 
 /* --- Listings Formatting --- */
+.day-list {
+    margin-left: 10%;
+}
+
 .day-group {
     display: flex;
     margin-bottom: 25px;
+    gap: 40px;
 }
 
 .day-label {
@@ -190,10 +200,10 @@ nav {
     display: flex;
     align-items: flex-start;
     margin-bottom: 15px;
-    gap: 10px;
+    gap: 20px;
 }
 
-.postcode {
+.listing-school {
     border: 1px solid var(--border-dark);
     padding: 2px 4px;
     font-size: 0.75rem;
@@ -202,7 +212,7 @@ nav {
 }
 
 .listing-details {
-    line-height: 1.4;
+    line-height: 2;
 }
 
 .listing-title {
@@ -213,6 +223,14 @@ nav {
     font-size: 0.9rem;
     font-style: italic;
     color: #444;
+}
+
+.listing-teachers {
+    font-size: 0.8rem;
+    font-style: italic;
+    display: block;
+    margin-top: 2px;
+
 }
 
 .cancelled-text {

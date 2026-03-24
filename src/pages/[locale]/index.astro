@@ -1,0 +1,98 @@
+---
+export async function getStaticPaths() {
+  const locales = ["en", "de"];
+
+  return locales.map((locale) => ({
+    params: { locale },
+  }));
+}
+
+import "../../styles/global.css";
+import Nav from "../../components/nav.astro";
+import ClassC from "../../components/class.astro";
+import type { Class } from "../../../cms/src/payload-types.ts";
+import { collect, payload, sortWeekdays, translateWeekday } from "../../utils";
+import RichText from "../../components/richtText.astro";
+
+interface Params {
+  locale: "en" | "de";
+}
+const { locale } = Astro.params as Params;
+
+const { docs: classes } = await payload.find({
+  collection: "classes",
+  locale: locale,
+});
+
+
+const cnt = await payload.findGlobal({
+  slug: "index",
+  locale: locale,
+});
+
+const groupedClasses = classes.sort(sortWeekdays).reduce(
+  collect((c) => c.weekday.toLowerCase()),
+  {},
+);
+---
+
+<html lang={locale}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Swing in Hamburg</title>
+  </head>
+  <body>
+    <div class="page-container">
+      <header>
+        <h1>SWING IN HAMBURG</h1>
+        <p class="subtitle">
+          {cnt.subtitle?.toUpperCase()}
+        </p>
+      </header>
+
+      <section class="intro-grid">
+        <div class="intro-left">
+          <RichText content={cnt.intro} />
+        </div>
+        <div class="intro-right">
+          <RichText content={cnt.donation} />
+          <div class="donate-box">
+            <RichText content={cnt.donationBox} />
+            <button class="donate-btn">Donate</button>
+          </div>
+        </div>
+      </section>
+      <Nav />
+
+      <hr class="divider" />
+      <div class="warning-text">
+        <RichText content={cnt.disclaimer} />
+      </div>
+
+      <section>
+        <div>
+          <div class="column-header">
+            <h2>{cnt.learnHeader?.toUpperCase()}</h2>
+            <h3>{cnt.learnDescription}</h3>
+          </div>
+          <div class="day-list">
+            {
+              Object.entries(groupedClasses).map(([weekday, dayClasses]) => (
+                <div class="divider-light"></div>
+                <div class="day-group">
+                  <div class="day-label">{translateWeekday(weekday).toUpperCase()}:</div>
+                  <div class="listing-items">
+                    {dayClasses.map((data) => (
+                      <ClassC classs={data} />
+                    ))}
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>
