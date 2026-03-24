@@ -1,270 +1,326 @@
-@import url('https://fonts.googleapis.com/css2?family=Jost:ital,wght@0,400;0,500;0,600;1,400&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Jost:ital,wght@0,400;0,500;0,600;1,400&display=swap");
 
 :root {
-    --bg-cream: #ede1c9;
-    --text-dark: #1a1a1a;
-    --link-blue: #3b6b88;
-    --accent-red: #cc0000;
-    --border-dark: #222;
-    --bg-dark: #7a87c0;
+  --bg-cream: #ede1c9;
+  --text-dark: #1a1a1a;
+  --link-blue: #3b6b88;
+  --accent-red: #cc0000;
+  --border-dark: #222;
+  --bg-dark: #7a87c0;
 }
 
 body {
-    /* Replace the url below with your actual damask background image */
-    background-color: #0b1021;
-    background-image: radial-gradient(var(--bg-dark), 1px, transparent 2px);
-    background-size: 20px 20px;
-    font-family: 'Jost', sans-serif;
-    color: var(--text-dark);
-    margin: 0;
-    padding: 0;
-    display: flex;
-    justify-content: center;
+  /* Replace the url below with your actual damask background image */
+  background-color: #0b1021;
+  background-image: radial-gradient(var(--bg-dark), 1px, transparent 2px);
+  background-size: 20px 20px;
+  font-family: "Jost", sans-serif;
+  color: var(--text-dark);
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
 }
 
 .page-container {
-    background-color: var(--bg-cream);
-    width: 100%;
-    max-width: 800px;
-    min-height: 100vh;
-    padding: 40px 60px;
-    box-sizing: border-box;
-    box-shadow: 0 0 30px rgba(0,0,0,0.8);
+  background-color: var(--bg-cream);
+  width: 100%;
+  max-width: 800px;
+  min-height: 100vh;
+  padding: 40px 60px;
+  box-sizing: border-box;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
 }
 
 /* --- Header Section --- */
 header {
-    text-align: center;
-    margin-bottom: 30px;
+  text-align: center;
+  margin-bottom: 30px;
 }
 
 h1 {
-    font-size: 3.5rem;
-    font-weight: 500;
-    letter-spacing: 0.1em;
-    margin: 0 0 10px 0;
+  font-size: 3.5rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  margin: 0 0 10px 0;
 }
 
 .subtitle {
-    font-size: 1.1rem;
-    letter-spacing: 0.05em;
-    margin: 0 0 20px 0;
+  font-size: 1.1rem;
+  letter-spacing: 0.05em;
+  margin: 0 0 20px 0;
 }
 
 .last-updated {
-    font-size: 0.9rem;
-    font-style: italic;
-    margin-bottom: 30px;
+  font-size: 0.9rem;
+  font-style: italic;
+  margin-bottom: 30px;
 }
 
 /* --- Intro & Donate Section --- */
 .intro-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 40px;
-    margin-bottom: 30px;
-    line-height: 1.6;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  margin-bottom: 30px;
+  line-height: 1.6;
 }
 
 a {
-    color: var(--link-blue);
-    text-decoration: none;
-    font-weight: 500;
+  color: var(--link-blue);
+  text-decoration: none;
+  font-weight: 500;
 }
 
 .donate-box {
-    border: 4px double var(--border-dark);
-    padding: 15px 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background-color: transparent;
-    margin-top: 15px;
+  border: 4px double var(--border-dark);
+  padding: 15px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: transparent;
+  margin-top: 15px;
 }
 
 .donate-box p {
-    margin: 0;
-    font-style: italic;
-    font-size: 0.66rem;
-    max-width: 75%;
+  margin: 0;
+  font-style: italic;
+  font-size: 0.66rem;
+  max-width: 75%;
 }
 
 .donate-btn {
-    background-color: var(--accent-red);
-    color: white;
-    border: none;
-    padding: 8px 15px;
-    font-family: inherit;
-    font-size: 0.9rem;
-    cursor: pointer;
+  background-color: var(--accent-red);
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
 }
 
 /* --- Navigation --- */
 nav {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 15px;
-    font-weight: 500;
-    letter-spacing: 0.05em;
-    margin-bottom: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  margin-bottom: 30px;
 }
 
 .nav-item {
-    color: var(--text-dark);
-    text-decoration: none;
+  color: var(--text-dark);
+  text-decoration: none;
 }
 
 .nav-item.active {
-    border: 2px solid var(--border-dark);
-    padding: 5px 10px;
+  border: 2px solid var(--border-dark);
+  padding: 5px 10px;
 }
 
 .divider {
-    border: none;
-    border-top: 3px solid var(--border-dark);
-    margin: 0 0 15px 0;
+  border: none;
+  border-top: 3px solid var(--border-dark);
+  margin: 0 0 15px 0;
 }
 .divider-light {
-    border: none;
-    border-top: 1px solid var(--border-dark);
-    margin: 0 0 15px 0;
+  border: none;
+  border-top: 1px solid var(--border-dark);
+  margin: 0 0 15px 0;
 }
 
 .warning-text {
-    text-align: center;
-    color: var(--accent-red);
-    font-style: italic;
-    font-size: 0.9rem;
-    margin-bottom: 40px;
+  text-align: center;
+  color: var(--accent-red);
+  font-style: italic;
+  font-size: 0.9rem;
+  margin-bottom: 40px;
 }
 
 /* --- Main Content Split --- */
 .content-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 50px;
-    position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 50px;
+  position: relative;
 }
 
 .content-grid::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    bottom: 0; /* Stretches the line from top to bottom */
-    left: calc(50% - 1px); /* Centers the 2px line exactly in the middle */
-    width: 2px;
-    background-color: var(--border-dark);
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0; /* Stretches the line from top to bottom */
+  left: calc(50% - 1px); /* Centers the 2px line exactly in the middle */
+  width: 2px;
+  background-color: var(--border-dark);
 }
 
 .column-header {
-    text-align: center;
-    margin-bottom: 30px;
+  text-align: center;
+  margin-bottom: 30px;
 }
 
 .column-header h2 {
-    font-size: 2.5rem;
-    font-weight: 500;
-    letter-spacing: 0.1em;
-    margin: 0 0 5px 0;
+  font-size: 2.5rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  margin: 0 0 5px 0;
 }
 
 .column-header h3 {
-    font-size: 1.2rem;
-    font-weight: 400;
-    margin: 0;
+  font-size: 1.2rem;
+  font-weight: 400;
+  margin: 0;
 }
 
 /* --- Listings Formatting --- */
 .day-list {
-    margin-left: 10%;
+  margin-left: 10%;
 }
 
 .day-group {
-    display: flex;
-    margin-bottom: 25px;
-    gap: 40px;
+  display: flex;
+  margin-bottom: 25px;
+  gap: 40px;
 }
 
 .day-label {
-    width: 80px;
-    font-weight: 600;
-    flex-shrink: 0;
+  width: 80px;
+  font-weight: 600;
+  flex-shrink: 0;
 }
 
 .listing-items {
-    flex-grow: 1;
+  flex-grow: 1;
 }
 
 .listing-item {
-    display: flex;
-    align-items: flex-start;
-    margin-bottom: 15px;
-    gap: 20px;
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 15px;
+  gap: 20px;
 }
 
 .listing-school {
-    border: 1px solid var(--border-dark);
-    padding: 2px 4px;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    margin-top: 3px;
+  border: 1px solid var(--border-dark);
+  padding: 2px 4px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  margin-top: 3px;
 }
 
 .listing-details {
-    line-height: 2;
+  line-height: 2;
 }
 
 .listing-title {
-    font-weight: 600;
+  font-weight: 600;
 }
 
 .listing-meta {
-    font-size: 0.9rem;
-    font-style: italic;
-    color: #444;
+  font-size: 0.9rem;
+  font-style: italic;
+  color: #444;
 }
 
 .listing-teachers {
-    font-size: 0.8rem;
-    font-style: italic;
-    display: block;
-    margin-top: 2px;
-
+  font-size: 0.8rem;
+  font-style: italic;
+  display: block;
+  margin-top: 2px;
 }
 
 .cancelled-text {
-    color: var(--accent-red);
-    font-size: 0.8rem;
-    font-style: italic;
-    display: block;
-    margin-top: 2px;
+  color: var(--accent-red);
+  font-size: 0.8rem;
+  font-style: italic;
+  display: block;
+  margin-top: 2px;
 }
 
 /* --- Dashed Box (Today Section) --- */
 .dashed-box {
-    border: 2px dashed var(--border-dark);
-    padding: 20px;
-    margin-bottom: 30px;
-    position: relative;
+  border: 2px dashed var(--border-dark);
+  padding: 20px;
+  margin-bottom: 30px;
+  position: relative;
 }
 
 .dashed-box-title {
-    text-align: center;
-    font-weight: 600;
-    font-size: 1.1rem;
-    margin: 0 0 20px 0;
+  text-align: center;
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin: 0 0 20px 0;
 }
 
 .infrequent-note {
-    text-align: center;
-    font-style: italic;
-    font-size: 0.95rem;
-    margin-bottom: 15px;
+  text-align: center;
+  font-style: italic;
+  font-size: 0.95rem;
+  margin-bottom: 15px;
 }
 
 .asterisk {
-    font-size: 1.2rem;
-    font-weight: bold;
-    margin-right: 5px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-right: 5px;
+}
+
+/* --- Map Specific Styles --- */
+.map-wrapper {
+  position: relative;
+  width: 100%;
+  height: 600px; /* Fixed height inside your container */
+  border: 2px solid var(--border-dark);
+  margin-top: 20px;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+  background-color: #e5e3df; /* Matches typical Leaflet loading color to blend with cream */
+}
+
+/* Styled to match your theme */
+.filter-panel {
+  position: absolute;
+  top: 15px;
+  right: 15px; /* Moved to right so it doesn't block Leaflet's zoom controls on the left */
+  z-index: 1000;
+  background: var(--bg-cream);
+  padding: 15px;
+  border: 2px solid var(--border-dark);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-panel h3 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.filter-btn {
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid var(--border-dark);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.filter-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.filter-btn.active {
+  background: var(--accent-red);
+  color: white;
+  border-color: var(--accent-red);
 }

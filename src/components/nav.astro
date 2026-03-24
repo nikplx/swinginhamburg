@@ -1,9 +1,23 @@
+---
+interface Params {
+    locale: "de" | "en",
+    active: "root" | "map" | "about" | "listings"
+}
+const {locale, active} = Astro.params
+const c = (comp:string) => {
+    if (comp == active) {
+        return "nav-item active"
+    } else {
+        return "nav-item"
+    }
+}
+---
 <nav>
-    <a href="#" class="nav-item active">LISTINGS</a>
+    <a href={"/" + locale} class={c("root")}>LISTINGS</a>
     <span>|</span>
-    <a href="#" class="nav-item">MAP</a>
+    <a href={"/" + locale + "/map"} class={c("map")}>MAP</a>
     <span>|</span>
-    <a href="#" class="nav-item">ABOUT</a>
+    <a href={"/" + locale + "/about"} class={c("about")}>ABOUT</a>
     <span>|</span>
-    <a href="#" class="nav-item">LISTINGS POLICY</a>
+    <a href={"/" + locale + "/listings"} class={c("listings")}>LISTINGS POLICY</a>
 </nav>
