@@ -1,0 +1,57 @@
+---
+export async function getStaticPaths() {
+  const locales = ["en", "de"];
+
+  return locales.map((locale) => ({
+    params: { locale },
+  }));
+}
+
+import "../../styles/global.css";
+import Nav from "../../components/nav.astro";
+import MapC from "../../components/map.astro";
+import ClassC from "../../components/class.astro";
+import type { Class } from "../../../cms/src/payload-types.ts";
+import { collect, payload, sortWeekdays, translateWeekday } from "../../utils";
+import RichText from "../../components/richtText.astro";
+
+interface Params {
+  locale: "en" | "de";
+}
+const { locale } = Astro.params as Params;
+
+const { docs: classes } = await payload.find({
+  collection: "classes",
+  locale: locale,
+});
+
+
+const cnt = await payload.findGlobal({
+  slug: "index",
+  locale: locale,
+});
+
+const groupedClasses = classes.sort(sortWeekdays).reduce(
+  collect((c) => c.weekday.toLowerCase()),
+  {},
+);
+---
+
+<html lang={locale}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Swing in Hamburg</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  </head>
+  <body>
+    <div class="page-container">
+      <header>
+        <Nav locale={locale} active="about" />
+        <div class="divider-light"></div>
+      </header>
+
+  </body>
+</html>
+
+

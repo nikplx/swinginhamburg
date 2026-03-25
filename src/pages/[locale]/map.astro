@@ -1,7 +1,9 @@
 ---
 import '../../styles/global.css'
-import { collect, payload, sortWeekdays, translateWeekday } from "../../utils";
+import { payload } from "../../utils";
 import Nav from '../../components/nav.astro'
+import MapC from '../../components/map.astro'
+import type { School } from '../../../cms/payload-types';
 
 export async function getStaticPaths() {
   const locales = ["en", "de"];
@@ -19,9 +21,17 @@ const { docs: classes } = await payload.find({
 });
 
 const events = classes.map(clazz => {
+  const school = clazz.school as School
+  const [loc, num, adr, quart] = clazz.address.split(",")
+  const address = [loc,adr,num,quart].join(",")
+
+
   return {
     title: clazz.title,
     weekday: clazz.weekday, 
+    address: address,
+    fullAddress: clazz.address,
+    school: school.name,
     coordinates: [clazz.location[1], clazz.location[0]] 
   };
 });
@@ -33,85 +43,14 @@ const events = classes.map(clazz => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Map | Swing in Hamburg</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
-    
   </head>
   <body>
 
     <div class="page-container">
       <Nav locale={locale} active="map"></Nav>
-
-      <hr class="divider" />
-      
-      <div class="warning-text">
-        {locale === 'de' 
-          ? 'Bitte beachten: Die Karte dient nur zur Orientierung. Prüfen Sie immer die Website des Anbieters.' 
-          : 'Please note: The map below is only a guide. Always check the source website before making any plans.'}
-      </div>
-
-      <div class="map-wrapper">
-        <div class="filter-panel">
-          <h3>{locale === 'de' ? 'Nach Tag filtern' : 'Filter by Day'}</h3>
-          <button class="filter-btn active" data-day="all">{locale === 'de' ? 'Alle' : 'All Events'}</button>
-          <button class="filter-btn" data-day="Monday">{translateWeekday('Monday', locale)}</button>
-          <button class="filter-btn" data-day="Tuesday">{translateWeekday('Tuesday', locale)}</button>
-          <button class="filter-btn" data-day="Wednesday">{translateWeekday('Wednesday', locale)}</button>
-          <button class="filter-btn" data-day="Thursday">{translateWeekday('Thursday', locale)}</button>
-          <button class="filter-btn" data-day="Friday">{translateWeekday('Friday', locale)}</button>
-          <button class="filter-btn" data-day="Saturday">{translateWeekday('Saturday', locale)}</button>
-          <button class="filter-btn" data-day="Sunday">{translateWeekday('Sunday', locale)}</button>
-        </div>
-
-        <div id="map"></div>
-      </div>
+      <div class="divider-light"></div>
+      <MapC locale={locale}></Map>
 
     </div>
-
-    <script set:html={JSON.stringify(events)} is:inline id="event-data" type="application/json" />
-      
-
-    <script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
-    <script is:inline>
-      document.addEventListener('DOMContentLoaded', () => {
-        const map = L.map('map').setView([53.5511, 9.9937], 12); 
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          attribution: '© OpenStreetMap'
-        }).addTo(map);
-
-        const eventDataElement = document.getElementById('event-data');
-        const events = JSON.parse(eventDataElement.textContent);
-
-        const markerLayer = L.layerGroup().addTo(map);
-
-        function renderMarkers(dayFilter) {
-          markerLayer.clearLayers();
-
-          events.forEach(event => {
-            if (dayFilter === 'all' || event.weekday === dayFilter) {
-              const marker = L.marker(event.coordinates)
-                .bindPopup(`<b>${event.title}</b>`);
-              markerLayer.addLayer(marker);
-            }
-          });
-        }
-
-        renderMarkers('all');
-
-        const buttons = document.querySelectorAll('.filter-btn');
-        
-        buttons.forEach(button => {
-          button.addEventListener('click', (e) => {
-            buttons.forEach(btn => btn.classList.remove('active'));
-            e.target.classList.add('active');
-
-            const selectedDay = e.target.dataset.day;
-            renderMarkers(selectedDay);
-          });
-        });
-      });
-    </script>
   </body>
 </html>

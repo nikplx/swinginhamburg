@@ -1,0 +1,119 @@
+---
+import "../styles/global.css";
+import { payload, translateWeekday } from "../utils";
+import type { School } from "../../cms/payload-types";
+
+interface Params {
+    locale: "en" | "de";
+}
+const { locale } = Astro.props as Params;
+
+const { docs: classes } = await payload.find({
+    collection: "classes",
+    locale: locale,
+});
+
+const events = classes.map((clazz) => {
+    const school = clazz.school as School;
+    const [loc, num, adr, quart] = clazz.address.split(",");
+    const address = [loc, adr, num, quart].join(",");
+
+    return {
+        title: clazz.title,
+        weekday: clazz.weekday,
+        address: address,
+        fullAddress: clazz.address,
+        school: school.name,
+        coordinates: [clazz.location[1], clazz.location[0]],
+    };
+});
+---
+
+<div class="map-wrapper">
+    <div class="filter-panel">
+        <h3>{locale === "de" ? "Nach Tag filtern" : "Filter by Day"}</h3>
+        <button class="filter-btn active" data-day="all"
+            >{locale === "de" ? "Alle Kurse" : "All Classes"}</button
+        >
+        <button class="filter-btn" data-day="Monday"
+            >{translateWeekday("Monday", locale)}</button
+        >
+        <button class="filter-btn" data-day="Tuesday"
+            >{translateWeekday("Tuesday", locale)}</button
+        >
+        <button class="filter-btn" data-day="Wednesday"
+            >{translateWeekday("Wednesday", locale)}</button
+        >
+        <button class="filter-btn" data-day="Thursday"
+            >{translateWeekday("Thursday", locale)}</button
+        >
+        <button class="filter-btn" data-day="Friday"
+            >{translateWeekday("Friday", locale)}</button
+        >
+        <button class="filter-btn" data-day="Saturday"
+            >{translateWeekday("Saturday", locale)}</button
+        >
+        <button class="filter-btn" data-day="Sunday"
+            >{translateWeekday("Sunday", locale)}</button
+        >
+    </div>
+
+    <div id="map"></div>
+</div>
+
+<script
+    set:html={JSON.stringify(events)}
+    is:inline
+    id="event-data"
+    type="application/json"
+/>
+
+<script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+></script>
+
+<script is:inline lang="ts">
+    document.addEventListener("DOMContentLoaded", () => {
+        const map = L.map("map").setView([53.5511, 9.9937], 12);
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution: "© OpenStreetMap",
+        }).addTo(map);
+
+        const eventDataElement = document.getElementById("event-data");
+        const events = JSON.parse(eventDataElement.textContent);
+
+        const markerLayer = L.layerGroup().addTo(map);
+
+        function renderMarkers(dayFilter) {
+            markerLayer.clearLayers();
+
+            events.forEach((event) => {
+                if (dayFilter === "all" || event.weekday === dayFilter) {
+                    const marker = L.marker(event.coordinates).bindPopup(`
+            <b>${event.title}</b> by
+            ${event.school}<br>
+            <a href="http://maps.google.com/?q=${event.fullAddress}"> 
+            ${event.address}</a><br>
+
+            `);
+                    markerLayer.addLayer(marker);
+                }
+            });
+        }
+
+        renderMarkers("all");
+
+        const buttons = document.querySelectorAll(".filter-btn");
+
+        buttons.forEach((button) => {
+            button.addEventListener("click", (e) => {
+                buttons.forEach((btn) => btn.classList.remove("active"));
+                e.target.classList.add("active");
+
+                const selectedDay = e.target.dataset.day;
+                renderMarkers(selectedDay);
+            });
+        });
+    });
+</script>

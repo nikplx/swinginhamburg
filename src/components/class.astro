@@ -13,7 +13,11 @@ const [location, num, street, ...rest] = clazz.address.split(",")
   <div class="listing-details">
     <span class="listing-title">{clazz.title}</span>
     <span class="listing-meta">{clazz.description} ({clazz.teachers!.map((t)=>t.name).join(", ")})</span>
-    <span class="listing-teachers">{location},{street},{num}</span>
+    <span class="listing-teachers">
+      <a href={"http://maps.google.com/?q="+clazz.address}>
+      {location},{street},{num}
+      </a>
+    </span>
     {clazz.cancelled && <span class="cancelled-text">{clazz.cancelled}</span>}
   </div>
 </div>

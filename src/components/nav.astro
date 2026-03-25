@@ -3,7 +3,8 @@ interface Params {
     locale: "de" | "en",
     active: "root" | "map" | "about" | "listings"
 }
-const {locale, active} = Astro.params
+
+const {locale, active} = Astro.props as Params;
 const c = (comp:string) => {
     if (comp == active) {
         return "nav-item active"
@@ -11,6 +12,8 @@ const c = (comp:string) => {
         return "nav-item"
     }
 }
+
+const otherLocale = locale == "en"? "de" : "en"
 ---
 <nav>
     <a href={"/" + locale} class={c("root")}>LISTINGS</a>
@@ -19,5 +22,5 @@ const c = (comp:string) => {
     <span>|</span>
     <a href={"/" + locale + "/about"} class={c("about")}>ABOUT</a>
     <span>|</span>
-    <a href={"/" + locale + "/listings"} class={c("listings")}>LISTINGS POLICY</a>
+    <a class="" href={"/" + otherLocale + "/" + (active||"")}>{otherLocale.toUpperCase()}</a>
 </nav>
