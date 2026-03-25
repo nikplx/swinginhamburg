@@ -14,6 +14,7 @@ const c = (comp:string) => {
 }
 
 const otherLocale = locale == "en"? "de" : "en"
+const otherLocaleLink = Astro.url.pathname.replace(locale, otherLocale)
 ---
 <nav>
     <a href={"/" + locale} class={c("root")}>LISTINGS</a>
@@ -22,5 +23,5 @@ const otherLocale = locale == "en"? "de" : "en"
     <span>|</span>
     <a href={"/" + locale + "/about"} class={c("about")}>ABOUT</a>
     <span>|</span>
-    <a class="" href={"/" + otherLocale + "/" + (active||"")}>{otherLocale.toUpperCase()}</a>
+    <a class="" href={otherLocaleLink}>{otherLocale.toUpperCase()}</a>
 </nav>
