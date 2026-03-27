@@ -1,0 +1,383 @@
+---
+import TextRing from "../../components/TextRing.astro";
+import { collect, payload, sortWeekdays, translateWeekday } from "../../utils";
+
+export async function getStaticPaths() {
+  const locales = ["en", "de"];
+
+  return locales.map((locale) => ({
+    params: { locale },
+  }));
+}
+
+interface Params {
+  locale: "en" | "de";
+}
+const { locale } = Astro.params as Params;
+
+const { docs: classes } = await payload.find({
+  collection: "classes",
+  locale: locale,
+});
+
+const cnt = await payload.findGlobal({
+  slug: "index",
+  locale: locale,
+});
+
+const groupedClasses = classes.sort(sortWeekdays).reduce(
+  collect((c) => c.weekday.toLowerCase()),
+  {},
+);
+---
+
+<style>
+  :root {
+    font-family: "Urbanist", sans-serif;
+
+    --main-color-light: #f3f1d3;
+    --accent-color-light: #58a6a0;
+    --warn-color: #e45845;
+    --warn-color-lighten10: #e6988d;
+    --warn-color-darken: #762c22;
+
+    --size-1x: 4px;
+    --size-2x: 8px;
+    --size-3x: 16px;
+    --size-4x: 32px;
+    --size-5x: 64px;
+    --size-6x: 128px;
+    --size-7x: 256px;
+    --size-8x: 512;
+    --size-9x: 1024;
+    --size-10x: 2048;
+
+    --texture-accent:
+      linear-gradient(
+        45deg,
+        var(--accent-color-light) 0%,
+        var(--accent-color-light) 5%,
+        transparent 5%,
+        transparent 10%,
+        var(--accent-color-light) 10%,
+        var(--accent-color-light) 15%,
+        transparent 15%,
+        transparent 20%,
+        var(--accent-color-light) 20%,
+        var(--accent-color-light) 25%,
+        transparent 25%,
+        transparent 30%,
+        var(--accent-color-light) 30%,
+        var(--accent-color-light) 35%,
+        transparent 35%,
+        transparent 40%,
+        var(--accent-color-light) 40%,
+        var(--accent-color-light) 45%,
+        transparent 45%,
+        transparent 50%,
+        var(--accent-color-light) 50%,
+        var(--accent-color-light) 55%,
+        transparent 55%,
+        transparent 60%,
+        var(--accent-color-light) 60%,
+        var(--accent-color-light) 65%,
+        transparent 65%,
+        transparent 70%,
+        var(--accent-color-light) 70%,
+        var(--accent-color-light) 75%,
+        transparent 70%,
+        transparent 80%,
+        var(--accent-color-light) 80%,
+        var(--accent-color-light) 85%,
+        transparent 85%,
+        transparent 90%,
+        var(--accent-color-light) 90%,
+        var(--accent-color-light) 95%,
+        transparent 95%
+      ),
+      linear-gradient(
+        135deg,
+        var(--accent-color-light) 0%,
+        var(--accent-color-light) 5%,
+        transparent 5%,
+        transparent 10%,
+        var(--accent-color-light) 10%,
+        var(--accent-color-light) 15%,
+        transparent 15%,
+        transparent 20%,
+        var(--accent-color-light) 20%,
+        var(--accent-color-light) 25%,
+        transparent 25%,
+        transparent 30%,
+        var(--accent-color-light) 30%,
+        var(--accent-color-light) 35%,
+        transparent 35%,
+        transparent 40%,
+        var(--accent-color-light) 40%,
+        var(--accent-color-light) 45%,
+        transparent 45%,
+        transparent 50%,
+        var(--accent-color-light) 50%,
+        var(--accent-color-light) 55%,
+        transparent 55%,
+        transparent 60%,
+        var(--accent-color-light) 60%,
+        var(--accent-color-light) 65%,
+        transparent 65%,
+        transparent 70%,
+        var(--accent-color-light) 70%,
+        var(--accent-color-light) 75%,
+        transparent 70%,
+        transparent 80%,
+        var(--accent-color-light) 80%,
+        var(--accent-color-light) 85%,
+        transparent 85%,
+        transparent 90%,
+        var(--accent-color-light) 90%,
+        var(--accent-color-light) 95%,
+        transparent 95%
+      );
+
+    background: var(--main-color-light);
+  }
+
+  .bg-texture-accent {
+    background: var(--texture-accent);
+    background-size: 32px 32px;
+    background-color: #6dcdc5;
+  }
+
+  body {
+    margin: 0px 0px 0px 0px;
+  }
+
+  header {
+    background: var(--accent-color-light);
+    margin: 0px 0px 0px 0px;
+    padding: var(--size-2x);
+    box-sizing: border-box;
+    font-weight: 700;
+    color: black;
+
+    height: var(--size-8x);
+
+    display: flex;
+
+    .container {
+      width: var(--size-7x);
+      height: var(--size-7x);
+      flex-shrink: 0;
+
+      align-items: center;
+      justify-content: center;
+      display: flex;
+      position: relative;
+
+      .circle {
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+            var(--warn-color),
+            var(--warn-color-lighten10)
+          )
+          var(--warn-color);
+        border-radius: 100%;
+        position: absolute;
+      }
+
+      .circle-inner {
+        width: 15%;
+        height: 15%;
+        border-radius: 100%;
+        position: absolute;
+        border: var(--size-4x) solid var(--warn-color);
+      }
+      .text-ring {
+        font-family: cursive;
+        font-weight: 900;
+        color: var(--warn-color-darken);
+      }
+
+      .circle,
+      .text-ring {
+        animation: spin linear 10s infinite;
+      }
+    }
+
+    nav {
+      font-size: var(--size-4x);
+      margin-left: auto;
+
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+
+      ul li {
+        display: inline;
+        margin: var(--size-4x);
+      }
+
+      .lang-nav {
+        margin-left: auto;
+        font-size: var(--size-3x);
+        color: var(--warn-color-darken);
+
+        a:link {
+          text-decoration: none;
+          font-weight: 900;
+          color: var(--warn-color-darken);
+        }
+
+        a:visited {
+          color: var(--warn-color-darken);
+        }
+
+        a:hover {
+          text-decoration: underline;
+        }
+      }
+
+      .page-nav {
+        align-self: flex-end;
+
+        a:link {
+          text-decoration: none;
+          font-weight: 900;
+          color: black;
+        }
+
+        a:visited {
+          color: black;
+        }
+
+        a:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+
+  section#greeter {
+    padding: var(--size-3x);
+    width: 100%;
+    height: auto;
+
+    display: flex;
+    flex-direction: column;
+    align-items: space-between;
+    justify-content: space-between;
+    margin-top: var(--size-6x);
+
+    img.title {
+      align-self: center;
+      margin: var(--size-4x);
+      padding: var(--size-2x);
+      width: var(--size-7x);
+      background-color: white;
+      margin-bottom: var(--size-6x);
+    }
+
+    h1.staggered {
+      font-family: "Squada One";
+      white-space: pre;
+      font-size: var(--size-5x);
+      font-weight: 900;
+      position: relative;
+      align-self: center;
+
+      span:nth-child(even) {
+        display: inline-block;
+        transform: translateY(var(--size-2x));
+      }
+    }
+  }
+
+  section#description {
+    padding: var(--size-4x);
+    padding-left: var(--size-7x);
+    padding-right: var(--size-7x);
+    color: var(--main-color-light);
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+</style>
+
+<html>
+  <header class="bg-texture-accent">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Squada One"
+      rel="stylesheet"
+    />
+    <div class="container">
+      <div class="circle"></div>
+      <div class="circle-inner bg-texture-accent"></div>
+      <!-- <TextRing text='SWING IN HAMBURG! ' size="1.5em"></TextRing> -->
+    </div>
+    <nav>
+      <ul class="lang-nav">
+        <li><a href="#">DE</a></li>
+        <span>|</span>
+        <li><a href="#">EN</a></li>
+      </ul>
+      <ul class="page-nav">
+        <li><a href="#">Home</a></li>
+        <li><a href="#">About</a></li>
+        <li><a href="#">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <body>
+    <section id="greeter">
+      <h1 class="staggered">
+        <span>S</span>
+        <span>W</span>
+        <span>I</span>
+        <span>N</span>
+        <span>G</span>
+        <span>&nbsp;</span>
+        <span>I</span>
+        <span>N</span>
+        <span>&nbsp;</span>
+        <span>H</span>
+        <span>A</span>
+        <span>M</span>
+        <span>B</span>
+        <span>U</span>
+        <span>R</span>
+        <span>G</span>
+      </h1>
+      <img class="title" src="/lindy_hop.png" alt="" />
+    </section>
+    <section id="description" class="bg-texture-accent">
+      <h1>What is Lindy Hop?</h1>
+      <p>
+        Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy
+        eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam
+        voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet
+        clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit
+        amet.
+      </p>
+      <p>
+        Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy
+        eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam
+        voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet
+        clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit
+        amet.
+      </p>
+    </section>
+  </body>
+</html>

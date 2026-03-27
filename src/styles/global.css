@@ -115,11 +115,6 @@ nav {
   text-decoration: none;
 }
 
-.nav-item.lang {
-
-
-}
-
 .nav-item.active {
   border: 2px solid var(--border-dark);
   padding: 5px 10px;

@@ -1,0 +1,43 @@
+---
+// Destructure 'size' from props, defaulting to '1rem'
+const { text = "", size = "1rem" } = Astro.props;
+
+const CHARS = text.split('');
+const count = CHARS.length;
+const INNER_ANGLE = 360 / count;
+const radius = 1 / Math.sin(INNER_ANGLE / (180 / Math.PI));
+---
+
+<span
+  class="text-ring"
+  style={{
+    '--total': count,
+    '--radius': radius,
+    '--size': size, // Pass the size to CSS
+  }}
+>
+  {CHARS.map((char, index) => (
+    <span style={{ '--index': index }}>
+      {char}
+    </span>
+  ))}
+</span>
+
+<style>
+  .text-ring {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    /* Ensure the container doesn't collapse */
+    min-height: calc(var(--radius) * var(--size) * 2);
+    min-width: calc(var(--radius) * var(--size) * 2);
+  }
+
+  .text-ring span {
+    position: absolute;
+    font-size: var(--size);
+    transform: 
+      rotate(calc(360deg / var(--total) * var(--index))) 
+      translateY(calc(var(--radius) * -1 * var(--size)));
+  }
+</style>
