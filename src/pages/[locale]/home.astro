@@ -1,4 +1,5 @@
 ---
+import StaggeredTitle from "../../components/StaggeredTitle.astro";
 import TextRing from "../../components/TextRing.astro";
 import { collect, payload, sortWeekdays, translateWeekday } from "../../utils";
 
@@ -31,6 +32,76 @@ const groupedClasses = classes.sort(sortWeekdays).reduce(
 );
 ---
 
+<!doctype html>
+<html lang={locale}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Swing in Hamburg</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Squada+One"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body>
+    <header class="site-header bg-texture-accent">
+      <div class="logo-container">
+        <div class="logo-circle"></div>
+        <div class="logo-circle-inner bg-texture-accent"></div>
+      </div>
+
+      <nav class="site-nav">
+        <ul class="nav-list lang-nav">
+          <li><a href="#" class="nav-link">DE</a></li>
+          <span>|</span>
+          <li><a href="#" class="nav-link">EN</a></li>
+        </ul>
+        <ul class="nav-list page-nav">
+          <li><a href="#" class="nav-link">Home</a></li>
+          <li><a href="#" class="nav-link">About</a></li>
+          <li><a href="#" class="nav-link">Contact</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main>
+      <section id="greeter" class="greeter-section">
+        <StaggeredTitle class="page-title-body" />
+        <img
+          class="greeter-image"
+          src="/lindy_hop.png"
+          alt="Lindy Hop Dancers"
+        />
+      </section>
+
+      <section id="description" class="description-section bg-texture-accent">
+        <h2 class="description-title">What is Lindy Hop?</h2>
+        <p>
+          Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam
+          nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat,
+          sed diam voluptua. At vero eos et accusam et justo duo dolores et ea
+          rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem
+          ipsum dolor sit amet.
+        </p>
+        <p>
+          Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam
+          nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat,
+          sed diam voluptua. At vero eos et accusam et justo duo dolores et ea
+          rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem
+          ipsum dolor sit amet.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>
+
 <style>
   :root {
     font-family: "Urbanist", sans-serif;
@@ -48,96 +119,36 @@ const groupedClasses = classes.sort(sortWeekdays).reduce(
     --size-5x: 64px;
     --size-6x: 128px;
     --size-7x: 256px;
-    --size-8x: 512;
-    --size-9x: 1024;
-    --size-10x: 2048;
+    --size-8x: 512px;
+    --size-9x: 1024px;
+    --size-10x: 2048px;
 
     --texture-accent:
-      linear-gradient(
+      repeating-linear-gradient(
         45deg,
         var(--accent-color-light) 0%,
         var(--accent-color-light) 5%,
         transparent 5%,
-        transparent 10%,
-        var(--accent-color-light) 10%,
-        var(--accent-color-light) 15%,
-        transparent 15%,
-        transparent 20%,
-        var(--accent-color-light) 20%,
-        var(--accent-color-light) 25%,
-        transparent 25%,
-        transparent 30%,
-        var(--accent-color-light) 30%,
-        var(--accent-color-light) 35%,
-        transparent 35%,
-        transparent 40%,
-        var(--accent-color-light) 40%,
-        var(--accent-color-light) 45%,
-        transparent 45%,
-        transparent 50%,
-        var(--accent-color-light) 50%,
-        var(--accent-color-light) 55%,
-        transparent 55%,
-        transparent 60%,
-        var(--accent-color-light) 60%,
-        var(--accent-color-light) 65%,
-        transparent 65%,
-        transparent 70%,
-        var(--accent-color-light) 70%,
-        var(--accent-color-light) 75%,
-        transparent 70%,
-        transparent 80%,
-        var(--accent-color-light) 80%,
-        var(--accent-color-light) 85%,
-        transparent 85%,
-        transparent 90%,
-        var(--accent-color-light) 90%,
-        var(--accent-color-light) 95%,
-        transparent 95%
+        transparent 10%
       ),
-      linear-gradient(
+      repeating-linear-gradient(
         135deg,
         var(--accent-color-light) 0%,
         var(--accent-color-light) 5%,
         transparent 5%,
-        transparent 10%,
-        var(--accent-color-light) 10%,
-        var(--accent-color-light) 15%,
-        transparent 15%,
-        transparent 20%,
-        var(--accent-color-light) 20%,
-        var(--accent-color-light) 25%,
-        transparent 25%,
-        transparent 30%,
-        var(--accent-color-light) 30%,
-        var(--accent-color-light) 35%,
-        transparent 35%,
-        transparent 40%,
-        var(--accent-color-light) 40%,
-        var(--accent-color-light) 45%,
-        transparent 45%,
-        transparent 50%,
-        var(--accent-color-light) 50%,
-        var(--accent-color-light) 55%,
-        transparent 55%,
-        transparent 60%,
-        var(--accent-color-light) 60%,
-        var(--accent-color-light) 65%,
-        transparent 65%,
-        transparent 70%,
-        var(--accent-color-light) 70%,
-        var(--accent-color-light) 75%,
-        transparent 70%,
-        transparent 80%,
-        var(--accent-color-light) 80%,
-        var(--accent-color-light) 85%,
-        transparent 85%,
-        transparent 90%,
-        var(--accent-color-light) 90%,
-        var(--accent-color-light) 95%,
-        transparent 95%
+        transparent 10%
       );
+  }
 
+  /* Global Box-Sizing Reset */
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
     background: var(--main-color-light);
   }
 
@@ -147,156 +158,139 @@ const groupedClasses = classes.sort(sortWeekdays).reduce(
     background-color: #6dcdc5;
   }
 
-  body {
-    margin: 0px 0px 0px 0px;
+  /* --- Header & Navigation --- */
+  .site-header {
+    color: black;
+    font-weight: 700;
+    padding: var(--size-3x);
+    display: flex;
+    flex-direction: column; /* Mobile first: stacked */
+    align-items: center;
+    /* Desktop override */
+    @media (min-width: 768px) {
+      flex-direction: row;
+      justify-content: space-between;
+      height: var(--size-7x);
+      padding: var(--size-2x);
+    }
   }
 
-  header {
-    background: var(--accent-color-light);
-    margin: 0px 0px 0px 0px;
-    padding: var(--size-2x);
-    box-sizing: border-box;
-    font-weight: 700;
-    color: black;
-
-    height: var(--size-8x);
-
-    display: flex;
-
-    .container {
-      width: var(--size-7x);
-      height: var(--size-7x);
+  .logo-container {
+    /* Fluid sizing: shrinks on small screens, maxes out at size-7x */
+    display: none;
+    @media (min-width: 768px) {
+      width: clamp(150px, 40vw, var(--size-7x));
+      aspect-ratio: 1; /* Keeps it perfectly square */
       flex-shrink: 0;
-
+      display: flex;
       align-items: center;
       justify-content: center;
-      display: flex;
       position: relative;
-
-      .circle {
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(
-            var(--warn-color),
-            var(--warn-color-lighten10)
-          )
-          var(--warn-color);
-        border-radius: 100%;
-        position: absolute;
-      }
-
-      .circle-inner {
-        width: 15%;
-        height: 15%;
-        border-radius: 100%;
-        position: absolute;
-        border: var(--size-4x) solid var(--warn-color);
-      }
-      .text-ring {
-        font-family: cursive;
-        font-weight: 900;
-        color: var(--warn-color-darken);
-      }
-
-      .circle,
-      .text-ring {
-        animation: spin linear 10s infinite;
-      }
-    }
-
-    nav {
-      font-size: var(--size-4x);
-      margin-left: auto;
-
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-
-      ul li {
-        display: inline;
-        margin: var(--size-4x);
-      }
-
-      .lang-nav {
-        margin-left: auto;
-        font-size: var(--size-3x);
-        color: var(--warn-color-darken);
-
-        a:link {
-          text-decoration: none;
-          font-weight: 900;
-          color: var(--warn-color-darken);
-        }
-
-        a:visited {
-          color: var(--warn-color-darken);
-        }
-
-        a:hover {
-          text-decoration: underline;
-        }
-      }
-
-      .page-nav {
-        align-self: flex-end;
-
-        a:link {
-          text-decoration: none;
-          font-weight: 900;
-          color: black;
-        }
-
-        a:visited {
-          color: black;
-        }
-
-        a:hover {
-          text-decoration: underline;
-        }
-      }
     }
   }
 
-  section#greeter {
-    padding: var(--size-3x);
-    width: 100%;
-    height: auto;
+  .logo-circle {
+    width: 95%;
+    height: 95%;
+    background: linear-gradient(var(--warn-color), var(--warn-color-lighten10))
+      var(--warn-color);
+    border-radius: 50%;
+    position: absolute;
+    animation: spin linear 10s infinite;
+  }
 
+  .logo-circle-inner {
+    width: 15%;
+    border-radius: 50%;
+    position: absolute;
+    border: var(--size-4x) solid var(--warn-color);
+  }
+
+  .site-nav {
+    display: flex;
+    flex-direction: row;
+    align-items: center; /* Center on mobile */
+    justify-content: space-between;
+    gap: var(--size-3x);
+    width: 100%;
+    height: 100%;
+
+    @media (min-width: 768px) {
+      align-items: flex-end; /* Right-align on desktop */
+      padding: var(--size-4x);
+      width: auto;
+    }
+  }
+
+  .nav-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap; /* Allows wrapping if screen is too narrow */
+    gap: var(--size-3x);
+    align-items: center;
+    font-size: var(--size-3x);
+  }
+
+  .lang-nav {
+    display: none;
+    font-size: var(--size-3x);
+
+    @media (min-width: 768px) {
+      display: contents;
+      align-items: flex-end; /* Right-align on desktop */
+      padding: var(--size-4x);
+      width: auto;
+    }
+  }
+
+  .nav-link {
+    text-decoration: none;
+    font-weight: 900;
+    color: black;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .warn-link {
+    color: var(--warn-color-darken);
+  }
+
+  .nav-separator {
+    color: var(--warn-color-darken);
+  }
+
+  /* --- Main Content Sections --- */
+  .greeter-section {
     display: flex;
     flex-direction: column;
-    align-items: space-between;
-    justify-content: space-between;
-    margin-top: var(--size-6x);
-
-    img.title {
-      align-self: center;
-      margin: var(--size-4x);
-      padding: var(--size-2x);
-      width: var(--size-7x);
-      background-color: white;
-      margin-bottom: var(--size-6x);
-    }
-
-    h1.staggered {
-      font-family: "Squada One";
-      white-space: pre;
-      font-size: var(--size-5x);
-      font-weight: 900;
-      position: relative;
-      align-self: center;
-
-      span:nth-child(even) {
-        display: inline-block;
-        transform: translateY(var(--size-2x));
-      }
-    }
+    align-items: center;
+    padding: clamp(var(--size-2x), 5vw, var(--size-4x));
+    width: 100%;
   }
 
-  section#description {
-    padding: var(--size-4x);
-    padding-left: var(--size-7x);
-    padding-right: var(--size-7x);
+  .greeter-image {
+    margin-bottom: var(--size-3x);
+    padding: var(--size-2x);
+    background-color: white;
+    /* Fluid image scaling */
+    width: 100%;
+    max-width: var(--size-7x);
+    height: auto;
+  }
+
+  .description-section {
+    /* Fluid padding to prevent horizontal scroll on mobile */
+    padding: var(--size-4x) clamp(var(--size-3x), 10vw, var(--size-7x));
     color: var(--main-color-light);
+  }
+
+  .description-title {
+    font-size: clamp(1.5rem, 5vw, 2.5rem);
+    margin-top: 0;
   }
 
   @keyframes spin {
@@ -308,76 +302,3 @@ const groupedClasses = classes.sort(sortWeekdays).reduce(
     }
   }
 </style>
-
-<html>
-  <header class="bg-texture-accent">
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://fonts.googleapis.com/css?family=Squada One"
-      rel="stylesheet"
-    />
-    <div class="container">
-      <div class="circle"></div>
-      <div class="circle-inner bg-texture-accent"></div>
-      <!-- <TextRing text='SWING IN HAMBURG! ' size="1.5em"></TextRing> -->
-    </div>
-    <nav>
-      <ul class="lang-nav">
-        <li><a href="#">DE</a></li>
-        <span>|</span>
-        <li><a href="#">EN</a></li>
-      </ul>
-      <ul class="page-nav">
-        <li><a href="#">Home</a></li>
-        <li><a href="#">About</a></li>
-        <li><a href="#">Contact</a></li>
-      </ul>
-    </nav>
-  </header>
-
-  <body>
-    <section id="greeter">
-      <h1 class="staggered">
-        <span>S</span>
-        <span>W</span>
-        <span>I</span>
-        <span>N</span>
-        <span>G</span>
-        <span>&nbsp;</span>
-        <span>I</span>
-        <span>N</span>
-        <span>&nbsp;</span>
-        <span>H</span>
-        <span>A</span>
-        <span>M</span>
-        <span>B</span>
-        <span>U</span>
-        <span>R</span>
-        <span>G</span>
-      </h1>
-      <img class="title" src="/lindy_hop.png" alt="" />
-    </section>
-    <section id="description" class="bg-texture-accent">
-      <h1>What is Lindy Hop?</h1>
-      <p>
-        Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy
-        eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam
-        voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet
-        clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit
-        amet.
-      </p>
-      <p>
-        Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy
-        eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam
-        voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet
-        clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit
-        amet.
-      </p>
-    </section>
-  </body>
-</html>

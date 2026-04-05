@@ -1,0 +1,36 @@
+<style>
+  .staggered-title {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    font-family: "Squada One", sans-serif;
+    /* Fluid typography: scales cleanly between mobile and desktop */
+    font-size: clamp(2rem, 8vw, var(--size-5x));
+    font-weight: 900;
+    text-align: center;
+    white-space: normal; /* Allow wrapping on small screens */
+    word-break: keep-all;
+
+    span:nth-child(even) {
+      display: inline-block;
+      transform: translateY(.2rem);
+    }
+  }
+</style>
+<h1 class="staggered-title">
+  <div>
+    <span>S</span><span>W</span><span>I</span><span>N</span><span>G</span>
+    <span>&nbsp;</span>
+  </div>
+  <div>
+    <span>I</span><span>N</span>
+    <span>&nbsp;</span>
+  </div>
+  <div>
+    <span>H</span><span>A</span><span>M</span><span>B</span><span>U</span><span
+      >R</span
+    ><span>G</span>
+  </div>
+</h1>
