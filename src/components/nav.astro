@@ -1,7 +1,7 @@
 ---
 interface Params {
     locale: "de" | "en",
-    active: "root" | "map" | "about" | "listings"
+    active: "root" | "swing" | "about" 
 }
 
 const {locale, active} = Astro.props as Params;
@@ -15,13 +15,18 @@ const c = (comp:string) => {
 
 const otherLocale = locale == "en"? "de" : "en"
 const otherLocaleLink = Astro.url.pathname.replace(locale, otherLocale)
+const links = {
+    "listings": { "de": "TANZEN", "en": "LISTINGS" },
+    "swing": { "de": "SWING", "en": "SWING" },
+    "about": { "de": "ÜBER UNS", "en": "ABOUT" }
+}
 ---
 <nav>
-    <a href={"/" + locale} class={c("root")}>LISTINGS</a>
+    <a href={"/" + locale} class={c("root")}>{links["listings"][locale]}</a>
     <span>|</span>
-    <a href={"/" + locale + "/map"} class={c("map")}>MAP</a>
+    <a href={"/" + locale + "/swing"} class={c("swing")}>{links["swing"][locale]}</a>
     <span>|</span>
-    <a href={"/" + locale + "/about"} class={c("about")}>ABOUT</a>
+    <a href={"/" + locale + "/about"} class={c("about")}>{links["about"][locale]}</a>
     <span>|</span>
     <a class="" href={otherLocaleLink}>{otherLocale.toUpperCase()}</a>
 </nav>

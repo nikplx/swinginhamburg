@@ -11,27 +11,21 @@ import "../../styles/global.css";
 import Nav from "../../components/nav.astro";
 import MapC from "../../components/map.astro";
 import ClassC from "../../components/class.astro";
-import type { Class } from "../../../cms/src/payload-types.ts";
-import { collect, payload, sortWeekdays, translateWeekday } from "../../utils";
 import RichText from "../../components/richtText.astro";
+import { payload, translateWeekday } from "../../utils";
 
 interface Params {
   locale: "en" | "de";
 }
 const { locale } = Astro.params as Params;
 
-const { docs: classes } = await payload.find({
-  collection: "classes",
-  locale: locale,
-});
-
-
 const cnt = await payload.findGlobal({
-  slug: "about",
+  slug: "swing",
   locale: locale,
 });
----
 
+
+---
 <html lang={locale}>
   <head>
     <meta charset="utf-8" />
@@ -42,14 +36,13 @@ const cnt = await payload.findGlobal({
   <body>
     <div class="page-container">
       <header>
-        <Nav locale={locale} active="about" />
+        <Nav locale={locale} active="swing" />
         <div class="divider-light"></div>
         <h1>{cnt.title}</h1>
       </header>
       <div class="page-content">
         <RichText content={cnt.content} />
       </div>
+    </div>
   </body>
 </html>
-
-

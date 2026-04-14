@@ -31,7 +31,6 @@ const cnt = await payload.findGlobal({
   locale: locale,
 });
 
-console.log(classes)
 const groupedClasses = classes.sort(sortWeekdays).reduce(
   collect((c) => c.weekday.toLowerCase()),
   {},
@@ -67,7 +66,9 @@ const groupedClasses = classes.sort(sortWeekdays).reduce(
             <button class="donate-btn">Donate</button>
           </div>
         </div>
+
       </section>
+
 
       <div class="divider" />
       <div class="warning-text">
@@ -99,6 +100,8 @@ const groupedClasses = classes.sort(sortWeekdays).reduce(
           </div>
         </div>
       </section>
+
+      <MapC locale={locale}></Map>
     </div>
   </body>
 </html>
