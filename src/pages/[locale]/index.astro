@@ -80,9 +80,10 @@ const groupedClasses = classes.sort(sortWeekdays).reduce(
         <div>
           <div class="column-header">
             <h2>{cnt.learnHeader?.toUpperCase()}</h2>
-            <h3>{cnt.learnDescription}</h3>
           </div>
-
+          <MapC locale={locale}></Map>
+          <div class="divider-light"></div>
+          <h3>{cnt.learnDescription}:</h3>
           <div class="day-list">
             {
               Object.entries(groupedClasses).map(([weekday, dayClasses]) => (
@@ -101,7 +102,6 @@ const groupedClasses = classes.sort(sortWeekdays).reduce(
         </div>
       </section>
 
-      <MapC locale={locale}></Map>
     </div>
   </body>
 </html>
