@@ -1,0 +1,29 @@
+---
+// src/components/Grid.astro
+---
+
+<div class="content-reusable-grid">
+  <slot />
+</div>
+
+<style>
+  .content-reusable-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 40px 30px;
+    margin-top: 20px;
+    margin-bottom: 40px;
+  }
+
+  @media (max-width: 768px) {
+    .content-reusable-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 480px) {
+    .content-reusable-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

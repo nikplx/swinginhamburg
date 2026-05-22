@@ -1,7 +1,7 @@
 ---
 interface Params {
     locale: "de" | "en",
-    active: "root" | "swing" | "about" 
+    active: "root" | "swing" | "about" | "map"
 }
 
 const {locale, active} = Astro.props as Params;
@@ -18,13 +18,16 @@ const otherLocaleLink = Astro.url.pathname.replace(locale, otherLocale)
 const links = {
     "listings": { "de": "TANZEN", "en": "LISTINGS" },
     "swing": { "de": "SWING", "en": "SWING" },
-    "about": { "de": "ÜBER UNS", "en": "ABOUT" }
+    "about": { "de": "ÜBER UNS", "en": "ABOUT" },
+    "map": { "de": "KARTE", "en": "MAP" }
 }
 ---
 <nav>
     <a href={"/" + locale} class={c("root")}>{links["listings"][locale]}</a>
     <span>|</span>
     <a href={"/" + locale + "/swing"} class={c("swing")}>{links["swing"][locale]}</a>
+    <span>|</span>
+    <a href={"/" + locale + "/map"} class={c("map")}>{links["map"][locale]}</a>
     <span>|</span>
     <a href={"/" + locale + "/about"} class={c("about")}>{links["about"][locale]}</a>
     <span>|</span>

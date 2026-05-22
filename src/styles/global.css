@@ -324,3 +324,30 @@ nav {
   color: white;
   border-color: var(--accent-red);
 }
+
+/* --- Dances Grid Section --- */
+.grid-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.grid-card h3 {
+  font-size: 1.6rem;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  letter-spacing: 0.05em;
+}
+
+.grid-card-body {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.section-title {
+  font-size: 2rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  margin: 0 0 20px 0;
+  text-transform: uppercase;
+}

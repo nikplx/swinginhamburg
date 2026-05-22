@@ -1,7 +1,6 @@
 ---
 export async function getStaticPaths() {
   const locales = ["en", "de"];
-
   return locales.map((locale) => ({
     params: { locale },
   }));
@@ -9,22 +8,31 @@ export async function getStaticPaths() {
 
 import "../../styles/global.css";
 import Nav from "../../components/nav.astro";
-import MapC from "../../components/map.astro";
-import ClassC from "../../components/class.astro";
 import RichText from "../../components/richtText.astro";
-import { payload, translateWeekday } from "../../utils";
+import Grid from "../../components/grid.astro";
+import GridCard from "../../components/gridCard.astro"; // Import the card
+import { payload } from "../../utils";
 
 interface Params {
   locale: "en" | "de";
 }
 const { locale } = Astro.params as Params;
 
+// Fetch Global Swing Data
 const cnt = await payload.findGlobal({
   slug: "swing",
   locale: locale,
 });
+const dances = cnt.dances || [];
 
-
+// Fetch Schools Collection Data
+const schoolsResponse = await payload.find({
+  collection: "schools",
+  locale: locale,
+  limit: 100, 
+});
+const schools = schoolsResponse.docs || [];
+console.log(schools)
 ---
 <html lang={locale}>
   <head>
@@ -38,11 +46,54 @@ const cnt = await payload.findGlobal({
       <header>
         <Nav locale={locale} active="swing" />
         <div class="divider-light"></div>
-        <h1>{cnt.title}</h1>
+        <h2>{cnt.title}</h2>
       </header>
+      
       <div class="page-content">
-        <RichText content={cnt.content} />
+        <RichText content={cnt.whatIsSwing} />
       </div>
+
+      {/* --- GRID 1: DANCES --- */}
+      {dances.length > 0 && (
+        <>
+          <Grid>
+            {dances.map((dance) => (
+              <GridCard title={dance.name}>
+                <p style="white-space: pre-line; text-align: justify; margin: 0;">
+                  {dance.description}
+                </p>
+              </GridCard>
+            ))}
+          </Grid>
+        </>
+      )}
+      <div class="divider-light"></div>
+
+      <div class="page-content">
+        <RichText content={cnt.howToLearn} />
+      </div>
+
+      {/* --- GRID 2: SCHOOLS --- */}
+      {schools.length > 0 && (
+        <>
+          <Grid>
+            {schools.map((school) => (
+              <GridCard title={school.name}>
+                <div style="text-align: justify;">
+                  <RichText content={school.description} />
+                  {school.website && (
+                    <p style="margin-top: 10px; margin-bottom: 0;">
+                      <a href={school.website} target="_blank" rel="noopener noreferrer">
+                        Visit Website →
+                      </a>
+                    </p>
+                  )}
+                </div>
+              </GridCard>
+            ))}
+          </Grid>
+        </>
+      )}
     </div>
   </body>
 </html>

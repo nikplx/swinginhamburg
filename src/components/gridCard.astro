@@ -1,0 +1,15 @@
+---
+// src/components/GridCard.astro
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<div class="grid-card">
+  <h3>{title}</h3>
+  <div class="grid-card-body">
+    <slot />
+  </div>
+</div>

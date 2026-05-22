@@ -10,28 +10,11 @@ export async function getStaticPaths() {
 import "../../styles/global.css";
 import Nav from "../../components/nav.astro";
 import MapC from "../../components/map.astro";
-import ClassC from "../../components/class.astro";
-import type { Class } from "../../../cms/src/payload-types.ts";
-import { collect, payload, sortWeekdays, translateWeekday } from "../../utils";
-import RichText from "../../components/richtText.astro";
-
 interface Params {
   locale: "en" | "de";
 }
 const { locale } = Astro.params as Params;
-
-const { docs: classes } = await payload.find({
-  collection: "classes",
-  locale: locale,
-});
-
-
-const cnt = await payload.findGlobal({
-  slug: "about",
-  locale: locale,
-});
 ---
-
 <html lang={locale}>
   <head>
     <meta charset="utf-8" />
@@ -42,14 +25,9 @@ const cnt = await payload.findGlobal({
   <body>
     <div class="page-container">
       <header>
-        <Nav locale={locale} active="about" />
+        <Nav locale={locale} active="map" />
         <div class="divider-light"></div>
-        <h2>{cnt.title}</h2>
       </header>
-      <div class="page-content">
-        <RichText content={cnt.content} />
-      </div>
+      <MapC locale={locale}></Map>
   </body>
 </html>
-
-
