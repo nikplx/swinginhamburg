@@ -22,14 +22,122 @@ const links = {
     "map": { "de": "KARTE", "en": "MAP" }
 }
 ---
-<nav>
-    <a href={"/" + locale} class={c("root")}>{links["listings"][locale]}</a>
-    <span>|</span>
-    <a href={"/" + locale + "/swing"} class={c("swing")}>{links["swing"][locale]}</a>
-    <span>|</span>
-    <a href={"/" + locale + "/map"} class={c("map")}>{links["map"][locale]}</a>
-    <span>|</span>
-    <a href={"/" + locale + "/about"} class={c("about")}>{links["about"][locale]}</a>
-    <span>|</span>
-    <a class="" href={otherLocaleLink}>{otherLocale.toUpperCase()}</a>
+<nav class="site-nav">
+    <button class="menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
+        <span class="hamburger-bar"></span>
+        <span class="hamburger-bar"></span>
+        <span class="hamburger-bar"></span>
+    </button>
+
+    <div class="nav-links">
+        <a href={"/" + locale} class={c("root")}>{links["listings"][locale]}</a>
+        <span class="nav-separator">|</span>
+        <a href={"/" + locale + "/swing"} class={c("swing")}>{links["swing"][locale]}</a>
+        <span class="nav-separator">|</span>
+        <a href={"/" + locale + "/map"} class={c("map")}>{links["map"][locale]}</a>
+        <span class="nav-separator">|</span>
+        <a href={"/" + locale + "/about"} class={c("about")}>{links["about"][locale]}</a>
+        <span class="nav-separator">|</span>
+        <a class="lang-switch" href={otherLocaleLink}>{otherLocale.toUpperCase()}</a>
+    </div>
 </nav>
+
+<script>
+    // Handles client-side drawer toggling safely in Astro
+    const menuToggle = document.querySelector('.menu-toggle');
+    const navLinks = document.querySelector('.nav-links');
+
+    if (menuToggle && navLinks) {
+        menuToggle.addEventListener('click', () => {
+            const isExpanded = menuToggle.getAttribute('aria-expanded') === 'true';
+            menuToggle.setAttribute('aria-expanded', !isExpanded ? 'true' : 'false');
+            navLinks.classList.toggle('open');
+            menuToggle.classList.toggle('active');
+        });
+    }
+</script>
+
+<style>
+    /* --- Base Layout --- */
+    .site-nav {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        width: 100%;
+    }
+
+    .nav-links {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 15px;
+    }
+
+    /* Hide the button on desktop viewports */
+    .menu-toggle {
+        display: none;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 10px;
+        flex-direction: column;
+        gap: 5px;
+        z-index: 1001;
+    }
+
+    .hamburger-bar {
+        display: block;
+        width: 25px;
+        height: 3px;
+        background-color: var(--text-dark, #1a1a1a);
+        transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+
+    /* --- Responsive Mobile Blueprint (< 768px) --- */
+    @media (max-width: 768px) {
+        .site-nav {
+            justify-content: flex-end; /* Places hamburger to the right edge */
+            padding: 10px 0;
+        }
+
+        .menu-toggle {
+            display: flex; /* Reveal hamburger icon */
+        }
+
+        .nav-separator {
+            display: none; /* Hide standard pipe characters on mobile stacked layouts */
+        }
+
+        .nav-links {
+            display: none; /* Collapsed by default */
+            flex-direction: column;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background-color: var(--bg-cream, #ede1c9);
+            padding: 20px 0;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            gap: 20px;
+            border-bottom: 2px solid var(--border-dark, #222);
+        }
+
+        /* Revealed when class modifier is pushed via script block */
+        .nav-links.open {
+            display: flex;
+        }
+
+        /* Optional Animation transformations turning hamburger into an 'X' */
+        .menu-toggle.active .hamburger-bar:nth-child(1) {
+            transform: translateY(8px) rotate(45deg);
+        }
+        .menu-toggle.active .hamburger-bar:nth-child(2) {
+            opacity: 0;
+        }
+        .menu-toggle.active .hamburger-bar:nth-child(3) {
+            transform: translateY(-8px) rotate(-45deg);
+        }
+    }
+</style>

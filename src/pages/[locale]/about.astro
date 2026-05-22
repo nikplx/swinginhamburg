@@ -42,9 +42,13 @@ const cnt = await payload.findGlobal({
   <body>
     <div class="page-container">
       <header>
-        <Nav locale={locale} active="about" />
-        <div class="divider-light"></div>
-        <h2>{cnt.title}</h2>
+        <div class="header-top">
+          <div class="title-wrap">
+            <h1>SWING IN HAMBURG</h1>
+          </div>
+          <Nav locale={locale} active="about" />
+        </div>
+        <div class="divider-light" style="margin-top: 15px; margin-bottom: 0;"></div>
       </header>
       <div class="page-content">
         <RichText content={cnt.content} />

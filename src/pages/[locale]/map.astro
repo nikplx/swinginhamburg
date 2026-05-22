@@ -25,8 +25,12 @@ const { locale } = Astro.params as Params;
   <body>
     <div class="page-container">
       <header>
-        <Nav locale={locale} active="map" />
-        <div class="divider-light"></div>
+        <div class="header-top">
+          <div class="title-wrap">
+            <h1>SWING IN HAMBURG</h1>
+          </div>
+          <Nav locale={locale} active="map" />
+        </div>
       </header>
       <MapC locale={locale}></Map>
   </body>

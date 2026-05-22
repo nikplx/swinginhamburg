@@ -39,7 +39,7 @@ header {
 }
 
 h1 {
-  font-size: 3.5rem;
+  font-size: 3.0rem;
   font-weight: 500;
   letter-spacing: 0.1em;
   margin: 0 0 10px 0;
@@ -55,6 +55,71 @@ h1 {
   font-size: 0.9rem;
   font-style: italic;
   margin-bottom: 30px;
+}
+
+/* --- Sticky Header Layout --- */
+header {
+  position: sticky;
+  top: 0;
+  background-color: var(--bg-cream); /* Prevents text from showing through when scrolling */
+  z-index: 1000;
+  
+  /* These negative margins pull the header flush with the edges of .page-container */
+  margin: -40px -60px 30px -60px;
+  padding: 40px 60px 10px 60px;
+}
+
+.header-top {
+  display: flex;
+  flex-direction: column; /* Stacked vertically on desktop */
+  align-items: center;
+  gap: 20px;
+}
+
+.title-wrap {
+  text-align: center;
+}
+
+/* --- Responsive Adjustments for Mobile (< 768px) --- */
+@media (max-width: 768px) {
+  header {
+    /* Match the mobile .page-container paddings from your previous media query */
+    margin: -25px -20px 20px -20px;
+    padding: 15px 20px 10px 20px; /* Reduced top padding for less overall height */
+  }
+
+  .header-top {
+    flex-direction: row; /* Put title and hamburger on the same line */
+    justify-content: space-between; /* Pushes title to left, menu to right */
+    align-items: center;
+    gap: 15px;
+  }
+
+  .title-wrap {
+    text-align: left;
+    max-width: 75%; /* Gives title room while leaving space for nav */
+  }
+
+  h1 {
+    font-size: 1.5rem; /* Significantly smaller height */
+    margin: 0;
+    line-height: 1.1;
+  }
+
+  .subtitle {
+    font-size: 0.7rem;
+    margin: 5px 0 0 0;
+  }
+
+  /* Prevent the nav component from forcing 100% width on mobile */
+  .site-nav {
+    width: auto; 
+  }
+
+  /* Push the mobile dropdown menu slightly lower so it clears the sticky header's bottom border */
+  .nav-links {
+    top: calc(100% + 10px); 
+  }
 }
 
 /* --- Intro & Donate Section --- */
@@ -113,13 +178,14 @@ nav {
 .nav-item {
   color: var(--text-dark);
   text-decoration: none;
+  font-weight: 500;
+  letter-spacing: 0.05em;
 }
 
 .nav-item.active {
   border: 2px solid var(--border-dark);
   padding: 5px 10px;
 }
-
 .divider {
   border: none;
   border-top: 2px solid var(--border-dark);
@@ -350,4 +416,69 @@ nav {
   letter-spacing: 0.05em;
   margin: 0 0 20px 0;
   text-transform: uppercase;
+}
+
+@media (max-width: 768px) {
+  /* Reclaim screen real estate by reducing the massive desktop padding */
+  .page-container {
+    padding: 25px 20px; 
+  }
+
+  /* Scale down the massive headers to prevent word breaks */
+  h1 {
+    font-size: 2.2rem;
+  }
+  
+  .column-header h2 {
+    font-size: 1.8rem;
+  }
+
+  /* Stack the intro text and the donation box vertically */
+  .intro-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  /* Center the donation box items since they have more width now */
+  .donate-box {
+    flex-direction: column;
+    text-align: center;
+    gap: 15px;
+  }
+
+  .donate-box p {
+    max-width: 100%;
+  }
+
+  /* Fix the listings list on the bottom */
+  .day-list {
+    margin-left: 0; /* Remove the 10% desktop offset */
+  }
+
+  /* Stack the Weekday label above the actual classes */
+  .day-group {
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 35px;
+  }
+
+  .day-label {
+    width: 100%;
+    border-bottom: 1px solid var(--border-dark);
+    padding-bottom: 5px;
+  }
+
+  /* Bring the school badge and the class details closer together */
+  .listing-item {
+    gap: 12px; 
+  }
+}
+
+/* Extra breakpoint for very small phones */
+@media (max-width: 480px) {
+  .listing-item {
+    flex-direction: column; /* Stacks the school tag above the class text */
+    gap: 5px;
+    margin-bottom: 25px;
+  }
 }
