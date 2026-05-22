@@ -30,35 +30,46 @@ const events = classes.map((clazz) => {
 ---
 
 <div class="map-wrapper">
-    <div class="filter-panel">
-        <h3>{locale === "de" ? "Nach Tag filtern" : "Filter by Day"}</h3>
-        <button class="filter-btn active" data-day="all"
-            >{locale === "de" ? "Alle Kurse" : "All Classes"}</button
-        >
-        <button class="filter-btn" data-day="Monday"
-            >{translateWeekday("Monday", locale)}</button
-        >
-        <button class="filter-btn" data-day="Tuesday"
-            >{translateWeekday("Tuesday", locale)}</button
-        >
-        <button class="filter-btn" data-day="Wednesday"
-            >{translateWeekday("Wednesday", locale)}</button
-        >
-        <button class="filter-btn" data-day="Thursday"
-            >{translateWeekday("Thursday", locale)}</button
-        >
-        <button class="filter-btn" data-day="Friday"
-            >{translateWeekday("Friday", locale)}</button
-        >
-        <button class="filter-btn" data-day="Saturday"
-            >{translateWeekday("Saturday", locale)}</button
-        >
-        <button class="filter-btn" data-day="Sunday"
-            >{translateWeekday("Sunday", locale)}</button
-        >
-    </div>
-
     <div id="map"></div>
+
+    <button class="mobile-filter-toggle" aria-expanded="false">
+        <span class="icon">📅</span> {locale === "de" ? "Filter" : "Filters"}
+    </button>
+
+    <div class="filter-panel" id="filter-panel">
+        <div class="filter-header-mobile">
+            <h3>{locale === "de" ? "Nach Tag filtern" : "Filter by Day"}</h3>
+            <button class="close-filter-btn" aria-label="Close filters">✕</button>
+        </div>
+        <h3 class="filter-header-desktop">{locale === "de" ? "Nach Tag filtern" : "Filter by Day"}</h3>
+        
+        <div class="filter-options">
+            <button class="filter-btn active" data-day="all"
+                >{locale === "de" ? "Alle Kurse" : "All Classes"}</button
+            >
+            <button class="filter-btn" data-day="Monday"
+                >{translateWeekday("Monday", locale)}</button
+            >
+            <button class="filter-btn" data-day="Tuesday"
+                >{translateWeekday("Tuesday", locale)}</button
+            >
+            <button class="filter-btn" data-day="Wednesday"
+                >{translateWeekday("Wednesday", locale)}</button
+            >
+            <button class="filter-btn" data-day="Thursday"
+                >{translateWeekday("Thursday", locale)}</button
+            >
+            <button class="filter-btn" data-day="Friday"
+                >{translateWeekday("Friday", locale)}</button
+            >
+            <button class="filter-btn" data-day="Saturday"
+                >{translateWeekday("Saturday", locale)}</button
+            >
+            <button class="filter-btn" data-day="Sunday"
+                >{translateWeekday("Sunday", locale)}</button
+            >
+        </div>
+    </div>
 </div>
 
 <script
@@ -73,6 +84,7 @@ const events = classes.map((clazz) => {
 
 <script is:inline lang="ts">
     document.addEventListener("DOMContentLoaded", () => {
+        // --- Map Initialization ---
         const map = L.map("map").setView([53.5511, 9.9937], 12);
 
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -95,7 +107,6 @@ const events = classes.map((clazz) => {
             ${event.school}<br>
             <a href="http://maps.google.com/?q=${event.fullAddress}"> 
             ${event.address}</a><br>
-
             `);
                     markerLayer.addLayer(marker);
                 }
@@ -104,15 +115,35 @@ const events = classes.map((clazz) => {
 
         renderMarkers("all");
 
-        const buttons = document.querySelectorAll(".filter-btn");
+        // --- Filter UI Logic ---
+        const filterPanel = document.getElementById('filter-panel');
+        const mobileToggleBtn = document.querySelector('.mobile-filter-toggle');
+        const closeBtn = document.querySelector('.close-filter-btn');
+        const filterButtons = document.querySelectorAll(".filter-btn");
 
-        buttons.forEach((button) => {
+        // Toggle Drawer on Mobile
+        function toggleMobileDrawer() {
+            if (window.innerWidth <= 768) {
+                filterPanel.classList.toggle('open');
+            }
+        }
+
+        if (mobileToggleBtn) mobileToggleBtn.addEventListener('click', toggleMobileDrawer);
+        if (closeBtn) closeBtn.addEventListener('click', toggleMobileDrawer);
+
+        // Filter selection
+        filterButtons.forEach((button) => {
             button.addEventListener("click", (e) => {
-                buttons.forEach((btn) => btn.classList.remove("active"));
+                filterButtons.forEach((btn) => btn.classList.remove("active"));
                 e.target.classList.add("active");
 
                 const selectedDay = e.target.dataset.day;
                 renderMarkers(selectedDay);
+
+                // Auto-close the overlay on mobile so the user can see the map instantly
+                if (window.innerWidth <= 768) {
+                    filterPanel.classList.remove('open');
+                }
             });
         });
     });
