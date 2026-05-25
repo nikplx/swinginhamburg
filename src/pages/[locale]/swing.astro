@@ -23,7 +23,13 @@ const cnt = await payload.findGlobal({
   slug: "swing",
   locale: locale,
 });
-const dances = cnt.dances || [];
+
+const dancesResponse = await payload.find({
+  collection: "dances",
+  locale: locale,
+  limit: 100, 
+});
+const dances = dancesResponse.docs || [];
 
 // Fetch Schools Collection Data
 const schoolsResponse = await payload.find({
@@ -32,7 +38,6 @@ const schoolsResponse = await payload.find({
   limit: 100, 
 });
 const schools = schoolsResponse.docs || [];
-console.log(schools)
 ---
 <html lang={locale}>
   <head>
@@ -62,9 +67,7 @@ console.log(schools)
           <Grid>
             {dances.map((dance) => (
               <GridCard title={dance.name}>
-                <p style="white-space: pre-line; text-align: justify; margin: 0;">
-                  {dance.description}
-                </p>
+                <RichText style="white-space: pre-line; text-align: justify; margin: 0;" content={dance.description} />
               </GridCard>
             ))}
           </Grid>
