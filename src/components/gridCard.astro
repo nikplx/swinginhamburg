@@ -1,15 +1,43 @@
 ---
-// src/components/GridCard.astro
 interface Props {
   title: string;
+  id: string
 }
 
-const { title } = Astro.props;
+const { title, id } = Astro.props;
 ---
 
-<div class="grid-card">
+<div class="grid-card", id={id}>
   <h3>{title}</h3>
   <div class="grid-card-body">
     <slot />
   </div>
 </div>
+
+<style>
+  .grid-card {
+    /* Existing layout */
+    display: flex;
+    flex-direction: column;
+    
+    /* ADD THIS: Matches your listing-item style */
+    padding-bottom: 20px; /* Space between content and the line */
+  }
+
+
+  @media (max-width: 768px) {
+    .grid-card {
+      border-bottom: 2px dotted var(--text-main);
+    }
+
+    .grid-card:last-child {
+      border-bottom: none;
+    }
+  }
+
+  .grid-card h3 {
+    margin: 0 0 10px 0;
+    font-size: var(--font-emph);
+    text-transform: uppercase;
+  }
+</style>

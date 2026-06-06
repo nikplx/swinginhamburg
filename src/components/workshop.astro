@@ -33,7 +33,7 @@ const getFormattedDateTime = () => {
   }
 
   const timePart = [startT, endT].filter(Boolean).join(" - ");
-  return `${datePart}${timePart ? `, ${timePart}` : ""}`;
+  return `${datePart}${timePart ? `   ${timePart}` : ""}`;
 };
 ---
 
@@ -49,11 +49,6 @@ const getFormattedDateTime = () => {
     {event.address}
   </div>
 
-  {event.price && (
-    <div class="workshop-price">
-      {event.price.toFixed(2)} €
-    </div>
-  )}
 
   <div class="workshop-desc">
     {typeof event.description === "string" ? (
@@ -62,4 +57,10 @@ const getFormattedDateTime = () => {
       <RichText content={event.description} />
     )}
   </div>
+
+  {event.price && (
+    <div class="workshop-price">
+      {event.price.toFixed(2)} €
+    </div>
+  )}
 </div>

@@ -33,6 +33,9 @@ const cnt = await payload.findGlobal({
 ---
 
 <Layout locale={locale}>
+  <h2>
+    {cnt.title}
+  </h2>
   <div class="page-content">
     <RichText content={cnt.content} />
   </div>

@@ -31,6 +31,12 @@ const dancesResponse = await payload.find({
   limit: 100,
 });
 const dances = dancesResponse.docs || [];
+const order = ["Lindy", "Balboa", "Charleston", "Blues", "Shag", "Solo", "Tap"];
+
+// Sort the dances array based on the index of the shortName in the order array
+const sortedDances = dances.sort((a, b) => {
+  return order.indexOf(a.shortName) - order.indexOf(b.shortName);
+});
 
 // Fetch Schools Collection Data
 const schoolsResponse = await payload.find({
@@ -51,19 +57,18 @@ const schools = schoolsResponse.docs || [];
 
   {/* --- GRID 1: DANCES --- */}
   {
-    dances.length > 0 && (
-      <>
-        <Grid>
-          {dances.map((dance) => (
-            <GridCard title={dance.name}>
-              <RichText
-                style="white-space: pre-line; text-align: justify; margin: 0;"
-                content={dance.description}
-              />
-            </GridCard>
-          ))}
-        </Grid>
-      </>
+    sortedDances.length > 0 && (
+      <Grid>
+        {dances.map((dance) => (
+          // Add the id attribute here
+          <GridCard title={dance.name} id={dance.shortName?.toLowerCase()}>
+            <RichText
+              style="white-space: pre-line; text-align: justify; margin: 0;"
+              content={dance.description}
+            />
+          </GridCard>
+        ))}
+      </Grid>
     )
   }
   <div class="page-content">
@@ -76,7 +81,7 @@ const schools = schoolsResponse.docs || [];
       <>
         <Grid>
           {schools.map((school) => (
-            <GridCard title={school.name}>
+            <GridCard title={school.name} id={school.name.replaceAll(' ').toLocaleLowerCase()}>
               <div style="text-align: justify;">
                 <RichText content={school.description} />
                 {school.website && (

@@ -1,32 +1,47 @@
 ---
-import type { School, Class } from "../../cms/src/payload-types.ts"
+import type { School, Class } from "../../cms/src/payload-types.ts";
 
-interface Props { classs: Class }
+interface Props {
+  classs: Class;
+}
 const { classs: clazz } = Astro.props as Props;
 
-const school = clazz.school as School || { name: "" }
-const [location, num, street, ...rest] = clazz.address.split(",")
+const school = (clazz.school as School) || { name: "" };
+const [location, num, street, ...rest] = clazz.address.split(",");
 
 // Map all dances into an array of strings, falling back to the title
-const danceTags = clazz.dances && clazz.dances.length > 0 
-  ? clazz.dances.map(dance => typeof dance === 'string' ? dance : dance.shortName) 
-  : [clazz.title];
+const danceTags =
+  clazz.dances && clazz.dances.length > 0
+    ? clazz.dances.map((dance) =>
+        typeof dance === "string" ? dance : dance.shortName,
+      )
+    : [clazz.title];
 ---
+
 <div class="listing-item">
   {/* The new wrapper keeps all tags in the first CSS grid column */}
   <div class="listing-tags-wrapper">
-    {danceTags.map((tag) => (
-      <div class="listing-tag">
-        {tag}
-      </div>
-    ))}
+    {
+      danceTags.map((tag) => {
+        // Standardize the slug for the link
+        const slug = typeof tag === "string" ? tag : tag.shortName;
+        const href = `/${Astro.currentLocale}/swing#${slug.replace(/\s+/g, "-").toLowerCase()}`;
+
+        return (
+          <a href={href} class="listing-tag">
+            {tag}
+          </a>
+        );
+      })
+    }
   </div>
-  
+
   <div class="listing-details">
     <span class="listing-school">{school.name}</span>
     <span class="listing-address">
-      <a href={"http://maps.google.com/?q="+clazz.address}>
-        {street} {num} | {location}
+      <a href={"http://maps.google.com/?q=" + clazz.address}>
+        {street}
+        {num} | {location}
       </a>
     </span>
     {clazz.cancelled && <span class="cancelled-text">{clazz.cancelled}</span>}

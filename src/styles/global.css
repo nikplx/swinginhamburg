@@ -5,10 +5,14 @@
   --text-main: #000000;
   --text-muted: #888888;
   --accent: #000000;
-  --font-title: 12pt;
-  --font-emph: 10pt;
-  --font-desc: 9pt;
-  --font-tag: 8pt;
+  --font-title: 16pt;
+  --font-emph: 14pt;
+  --font-desc: 12pt;
+  --font-tag: 10pt;
+}
+
+html {
+  scroll-padding-top: 100px; /* Adjust this value to match your header's height */
 }
 
 body {
@@ -66,7 +70,7 @@ header {
 .title-wrap h1 {
   font-family: "Inter", sans-serif;
   font-weight: 900;
-  font-size: 16px;
+  font-size: var(--font-title);
   line-height: 19px;
   letter-spacing: 0.04em;
   color: var(--bg-main);
@@ -150,13 +154,13 @@ header {
   cursor: pointer;
   display: none;
   flex-direction: column;
-  gap: 6px;
-  padding: 4px;
+  gap: 5px;
+  padding: 16px;
 }
 
 .hamburger-bar {
   width: 20px;
-  height: 2px;
+  height: 3px;
   background-color: var(--bg-main);
   transition: all 0.3s ease;
 }
@@ -230,6 +234,7 @@ header {
 }
 
 .listing-tag {
+  /* Existing styles */
   border: 1px solid var(--accent);
   border-radius: 8px;
   padding: 3px 8px;
@@ -237,11 +242,23 @@ header {
   font-size: var(--font-tag);
   white-space: nowrap;
   background-color: var(--bg-main);
-  /* Force the line-height to match the tag font */
-  line-height: 1; 
-  /* Shift the tag up by a fraction if it's still slightly off */
-  transform: translateY(-2px); 
+  line-height: 1;
+  transform: translateY(-2px);
+
+  /* NEW: Reset link styles to maintain exact appearance */
+  text-decoration: none;
+  color: var(--text-main);
+  cursor: pointer;
+  display: inline-block; /* Helps with layout consistency when using <a> */
 }
+
+/* Optional: Add a subtle hover effect so users know it's clickable */
+.listing-tag:hover {
+  background-color: var(--accent);
+  color: var(--bg-main);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
 .listing-details {
   display: flex;
   flex-direction: column;
@@ -416,6 +433,13 @@ button.tab:hover.inactive {
   margin-bottom: 20px;
 }
 
+.workshop-price {
+    font-size: var(--font-desc);
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: var(--text-main);
+  }
+
 .workshop-title {
   font-size: 1.4rem;
   font-weight: 700;
@@ -434,6 +458,54 @@ button.tab:hover.inactive {
 }
 
 .workshop-desc {
-  font-size: var(--font-desc);
+  font-size: var(--font-tag);
+  opacity: 0.7;
   line-height: 1.5;
+}
+
+
+/* Container override */
+.custom-popup .leaflet-popup-content-wrapper {
+  background: #ffffff;
+  border-radius: 4px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  padding: 2px;
+  width: 147px; /* From your mockup specs */
+}
+
+/* Remove default pointer/tip */
+.custom-popup .leaflet-popup-tip {
+  display: none;
+}
+
+.custom-popup .leaflet-popup-content {
+  margin: 12px;
+  width: auto !important; /* Ensure it respects the wrapper width */
+  font-family: 'Inter', sans-serif;
+  color: var(--text-main);
+  line-height: 1.2;
+}
+
+/* Custom internal styling */
+.custom-popup-content strong {
+  font-size: 11pt;
+  font-weight: 700;
+  display: block;
+}
+
+.custom-popup-content span {
+  font-size: 9pt;
+  color: #333;
+}
+
+.popup-date-time {
+  font-size: 9pt;
+  font-style: italic;
+  margin-top: 6px;
+}
+
+.popup-title {
+  font-size: 9pt;
+  font-weight: 500;
+  margin-top: 2px;
 }
