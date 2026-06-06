@@ -12,6 +12,7 @@ import RichText from "../../components/richtText.astro";
 import Grid from "../../components/grid.astro";
 import GridCard from "../../components/gridCard.astro"; // Import the card
 import { payload } from "../../utils";
+import Layout from "../../components/layout.astro";
 
 interface Params {
   locale: "en" | "de";
@@ -27,7 +28,7 @@ const cnt = await payload.findGlobal({
 const dancesResponse = await payload.find({
   collection: "dances",
   locale: locale,
-  limit: 100, 
+  limit: 100,
 });
 const dances = dancesResponse.docs || [];
 
@@ -35,71 +36,64 @@ const dances = dancesResponse.docs || [];
 const schoolsResponse = await payload.find({
   collection: "schools",
   locale: locale,
-  limit: 100, 
+  limit: 100,
 });
 const schools = schoolsResponse.docs || [];
 ---
-<html lang={locale}>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Swing in Hamburg</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  </head>
-  <body>
-    <div class="page-container">
-      <header>
-        <div class="header-top">
-          <div class="title-wrap">
-            <h1>SWING IN HAMBURG</h1>
-          </div>
-          <Nav locale={locale} active="swing" />
-        </div>
-        <div class="divider-light" style="margin-top: 15px; margin-bottom: 0;"></div>
-      </header>
-      <div class="page-content">
-        <RichText content={cnt.whatIsSwing} />
-      </div>
 
-      {/* --- GRID 1: DANCES --- */}
-      {dances.length > 0 && (
-        <>
-          <Grid>
-            {dances.map((dance) => (
-              <GridCard title={dance.name}>
-                <RichText style="white-space: pre-line; text-align: justify; margin: 0;" content={dance.description} />
-              </GridCard>
-            ))}
-          </Grid>
-        </>
-      )}
-      <div class="divider-light"></div>
+<Layout locale={locale}>
+  <h2>
+    {cnt.title}
+  </h2>
+  <div class="page-content">
+    <RichText content={cnt.whatIsSwing} />
+  </div>
 
-      <div class="page-content">
-        <RichText content={cnt.howToLearn} />
-      </div>
+  {/* --- GRID 1: DANCES --- */}
+  {
+    dances.length > 0 && (
+      <>
+        <Grid>
+          {dances.map((dance) => (
+            <GridCard title={dance.name}>
+              <RichText
+                style="white-space: pre-line; text-align: justify; margin: 0;"
+                content={dance.description}
+              />
+            </GridCard>
+          ))}
+        </Grid>
+      </>
+    )
+  }
+  <div class="page-content">
+    <RichText content={cnt.howToLearn} />
+  </div>
 
-      {/* --- GRID 2: SCHOOLS --- */}
-      {schools.length > 0 && (
-        <>
-          <Grid>
-            {schools.map((school) => (
-              <GridCard title={school.name}>
-                <div style="text-align: justify;">
-                  <RichText content={school.description} />
-                  {school.website && (
-                    <p style="margin-top: 10px; margin-bottom: 0;">
-                      <a href={school.website} target="_blank" rel="noopener noreferrer">
-                        Visit Website →
-                      </a>
-                    </p>
-                  )}
-                </div>
-              </GridCard>
-            ))}
-          </Grid>
-        </>
-      )}
-    </div>
-  </body>
-</html>
+  {/* --- GRID 2: SCHOOLS --- */}
+  {
+    schools.length > 0 && (
+      <>
+        <Grid>
+          {schools.map((school) => (
+            <GridCard title={school.name}>
+              <div style="text-align: justify;">
+                <RichText content={school.description} />
+                {school.website && (
+                  <p style="margin-top: 10px; margin-bottom: 0;">
+                    <a
+                      href={school.website}
+                      target="_blank"
+                      rel="noopener noreferrer">
+                      Visit Website →
+                    </a>
+                  </p>
+                )}
+              </div>
+            </GridCard>
+          ))}
+        </Grid>
+      </>
+    )
+  }
+</Layout>

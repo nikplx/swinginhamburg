@@ -1,12 +1,14 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap");
 
 :root {
   --bg-main: #ffffff;
   --text-main: #000000;
   --text-muted: #888888;
   --accent: #000000;
-  --font-title: 10pt;
+  --font-title: 12pt;
+  --font-emph: 10pt;
   --font-desc: 9pt;
+  --font-tag: 8pt;
 }
 
 body {
@@ -19,10 +21,10 @@ body {
   justify-content: center;
   font-size: var(--font-desc);
   -webkit-font-smoothing: antialiased;
-  
+
   /* Add these two lines to prevent horizontal scrolling */
   width: 100%;
-  overflow-x: hidden; 
+  overflow-x: clip;
 }
 
 .page-container {
@@ -32,16 +34,17 @@ body {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  
+
   /* Add this line */
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* --- Header & Layout --- */
 header {
-  background-color: var(--accent);
-  color: var(--bg-main);
-  width: 100%;
+  position: sticky;
+  top: 0;
+  z-index: 2000; /* Must be > 1000 to sit above the map and filters */
+  background-color: #000000; /* Crucial so the map doesn't show through it */
 }
 
 .header-top {
@@ -57,23 +60,62 @@ header {
 }
 
 .title-wrap {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  text-align: center;
-  width: max-content; /* Prevents title from squishing */
-  pointer-events: none; /* Allows clicking through if it overlaps anything */
+  text-align: left;
 }
 
 .title-wrap h1 {
-  font-size: var(--font-title);
-  font-weight: 700;
-  margin: 0;
+  font-family: "Inter", sans-serif;
+  font-weight: 900;
+  font-size: 16px;
+  line-height: 19px;
+  letter-spacing: 0.04em;
   color: var(--bg-main);
+  margin: 0;
   text-transform: uppercase;
 }
 .main-content {
   padding: 0 20px 40px 20px;
+}
+
+.main-content p {
+  font-family: "Inter", sans-serif;
+  font-size: var(--font-desc); /* Pulls the 12pt you specified earlier */
+  font-weight: 400; /* Regular weight for standard body text */
+  line-height: 1.5; /* Gives the text room to breathe, matching the mockup */
+  color: var(--text-main); /* Black text */
+  margin-top: 0;
+  margin-bottom: 20px; /* Adds space between multiple paragraphs */
+
+  /* Added for block style justification */
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto; /* For Safari support */
+}
+
+/* --- Typography for Lists (Rich Text) --- */
+.main-content ul,
+.main-content ol {
+  padding-left: 20px; /* Brings the bullets further to the left (browser default is ~40px) */
+  margin-top: 0;
+  margin-bottom: 20px; /* Matches the spacing below paragraphs */
+}
+
+.main-content li {
+  font-family: "Inter", sans-serif;
+  font-size: var(--font-desc);
+  font-weight: 400;
+  line-height: 1.5; /* Matches the paragraph line spacing */
+  color: var(--text-main);
+  margin-bottom: 3px; /* Adds vertical spacing between each list item */
+
+  /* Keeps the justified block style from your paragraphs */
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
+
+.main-content li:last-child {
+  margin-bottom: 0; /* Prevents double-spacing at the end of a list */
 }
 
 /* --- Navigation --- */
@@ -86,20 +128,20 @@ header {
 
 .nav-links {
   display: flex;
-  gap: 20px;
+  gap: 5px;
   align-items: center;
+  color: var(--text-muted); /* #FFFFFF */
 }
 
 .nav-links a {
-  color: var(--text-main);
   text-decoration: none;
-  font-size: var(--font-desc);
+  font-size: 7pt;
   font-weight: 600;
   text-transform: uppercase;
 }
 
 .nav-separator {
-  color: var(--text-main);
+  color: var(--text-muted);
 }
 
 .menu-toggle {
@@ -113,7 +155,7 @@ header {
 }
 
 .hamburger-bar {
-  width: 25px;
+  width: 20px;
   height: 2px;
   background-color: var(--bg-main);
   transition: all 0.3s ease;
@@ -123,7 +165,7 @@ header {
 .page-tabs {
   text-align: center;
   margin: 30px 0;
-  font-size: var(--font-title);
+  font-size: var(--font-emph);
   font-weight: 700;
   letter-spacing: 0.02em;
 }
@@ -161,7 +203,7 @@ header {
   padding: 6px 16px;
   border-radius: 8px;
   font-weight: 700;
-  font-size: var(--font-title);
+  font-size: var(--font-emph);
 }
 
 .listing-items {
@@ -172,23 +214,34 @@ header {
 
 .listing-item {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: 80px 1fr;
   gap: 15px;
   padding: 20px 0;
-  border-bottom: 1px dotted var(--text-main);
-  align-items: start;
+  border-bottom: 2px dotted var(--text-main);
+  /* Use 'baseline' instead of 'start' */
+  align-items: baseline; 
+}
+
+.listing-tags-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
 }
 
 .listing-tag {
   border: 1px solid var(--accent);
   border-radius: 8px;
-  padding: 4px 12px;
-  font-weight: 600;
-  font-size: var(--font-desc);
-  text-align: center;
+  padding: 3px 8px;
+  font-weight: 700;
+  font-size: var(--font-tag);
+  white-space: nowrap;
   background-color: var(--bg-main);
+  /* Force the line-height to match the tag font */
+  line-height: 1; 
+  /* Shift the tag up by a fraction if it's still slightly off */
+  transform: translateY(-2px); 
 }
-
 .listing-details {
   display: flex;
   flex-direction: column;
@@ -197,7 +250,7 @@ header {
 
 .listing-school {
   font-weight: 700;
-  font-size: var(--font-title);
+  font-size: var(--font-emph);
   color: var(--text-main);
 }
 
@@ -212,7 +265,8 @@ header {
 /* --- Mobile Nav Override (< 768px) --- */
 @media (max-width: 768px) {
   header {
-    position: relative; /* Allows absolute nav-links to anchor directly below it */
+    position: sticky; /* Keep it sticky! It still anchors absolute children. */
+    top: 0;
   }
 
   .menu-toggle {
@@ -224,7 +278,7 @@ header {
   .menu-toggle .hamburger-bar {
     transform-origin: center;
   }
-  
+
   .menu-toggle.active .hamburger-bar:nth-child(1) {
     transform: translateY(8px) rotate(45deg);
   }
@@ -245,14 +299,17 @@ header {
     justify-content: flex-start;
     align-items: center;
     gap: 20px; /* Spacing derived from your Figma coordinates */
-    
+
     /* Transition setup for sliding dropdown */
     max-height: 0;
     padding: 0;
     opacity: 0;
     overflow: hidden;
     pointer-events: none;
-    transition: max-height 0.4s ease, opacity 0.3s ease, padding 0.4s ease;
+    transition:
+      max-height 0.4s ease,
+      opacity 0.3s ease,
+      padding 0.4s ease;
     z-index: 1500;
   }
 
@@ -265,7 +322,7 @@ header {
 
   .nav-links a {
     color: var(--bg-main); /* #FFFFFF */
-    font-size: var(--font-title); /* 16px/16pt */
+    font-size: var(--font-emph); /* 16px/16pt */
     font-weight: 700;
     letter-spacing: 0.05em;
     text-align: center;
@@ -274,7 +331,7 @@ header {
   /* Implements Figma 'Rectangle 28' */
   .nav-links a.border-btn {
     border: 1px solid var(--bg-main);
-    padding: 4px 16px; 
+    padding: 4px 16px;
     border-radius: 2px; /* Optional: adjust if you need sharper/softer edges */
   }
 
@@ -288,7 +345,7 @@ header {
 .page-tabs {
   text-align: center;
   margin: 30px 0;
-  font-size: var(--font-title);
+  font-size: var(--font-emph);
   font-weight: 700;
   letter-spacing: 0.02em;
 }

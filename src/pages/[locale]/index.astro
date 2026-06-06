@@ -10,9 +10,11 @@ import "../../styles/global.css";
 import Nav from "../../components/nav.astro";
 import MapC from "../../components/map.astro";
 import ClassC from "../../components/class.astro";
+import WorkshopC from "../../components/workshop.astro";
 import type { Class } from "../../../cms/src/payload-types.ts";
 import { collect, payload, sortWeekdays, translateWeekday } from "../../utils";
 import RichText from "../../components/richtText.astro";
+import Layout from "../../components/layout.astro";
 
 interface Params {
   locale: "en" | "de";
@@ -30,7 +32,10 @@ const startOfToday = new Date(
     today.getUTCFullYear(),
     today.getUTCMonth(),
     today.getUTCDate(),
-    0, 0, 0, 0,
+    0,
+    0,
+    0,
+    0,
   ),
 );
 const endOf14Days = new Date(
@@ -38,14 +43,17 @@ const endOf14Days = new Date(
     today.getUTCFullYear(),
     today.getUTCMonth(),
     today.getUTCDate() + 14,
-    23, 59, 59, 999,
+    23,
+    59,
+    59,
+    999,
   ),
 );
 
 // Fetches the data for the workshops tab
 const { docs: upcomingEvents } = await payload.find({
   collection: "events",
-  sort: "startDate", 
+  sort: "startDate",
   where: {
     and: [
       { startDate: { greater_than_equal: startOfToday.toISOString() } },
@@ -62,15 +70,15 @@ const groupedClasses = classes.sort(sortWeekdays).reduce(
 // Date formatter for the Workshop badge (e.g., "17.-19.06.")
 const formatEventDate = (start: string, end?: string) => {
   const d1 = new Date(start);
-  const day1 = d1.getUTCDate().toString().padStart(2, '0');
-  const month1 = (d1.getUTCMonth() + 1).toString().padStart(2, '0');
-  
+  const day1 = d1.getUTCDate().toString().padStart(2, "0");
+  const month1 = (d1.getUTCMonth() + 1).toString().padStart(2, "0");
+
   if (!end) return `${day1}.${month1}.`;
-  
+
   const d2 = new Date(end);
-  const day2 = d2.getUTCDate().toString().padStart(2, '0');
-  const month2 = (d2.getUTCMonth() + 1).toString().padStart(2, '0');
-  
+  const day2 = d2.getUTCDate().toString().padStart(2, "0");
+  const month2 = (d2.getUTCMonth() + 1).toString().padStart(2, "0");
+
   if (month1 === month2) {
     return `${day1}.-${day2}.${month1}.`;
   }
@@ -78,128 +86,89 @@ const formatEventDate = (start: string, end?: string) => {
 };
 ---
 
-<html lang={locale}>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Swing in Hamburg</title>
-  </head>
-  <body>
-    <div class="page-container">
-      <header>
-        <div class="header-top">
-          <div></div> 
-          <div class="title-wrap">
-            <h1>SWING IN HAMBURG</h1>
-          </div>
-          <Nav locale={locale} active="root" />
-        </div>
-      </header>
+<Layout locale={locale}>
+  <div class="page-tabs">
+    <button id="tab-kurse" class="tab active">KURSE</button>
+    <span class="tab-separator">|</span>
+    <button id="tab-workshops" class="tab inactive">WORKSHOPS</button>
+  </div>
 
-      <main class="main-content">
-        <div class="page-tabs">
-          <button id="tab-kurse" class="tab active">KURSE</button> 
-          <span class="tab-separator">|</span> 
-          <button id="tab-workshops" class="tab inactive">WORKSHOPS</button>
-        </div>
-
-        <section>
-          <div id="content-kurse" class="tab-content active-content">
-            <div class="day-list">
-              {
-                Object.entries(groupedClasses).map(([weekday, dayClasses]) => (
-                  <div class="day-group">
-                    <div class="day-label-wrapper">
-                      <span class="day-label">
-                        {translateWeekday(weekday, locale)}
-                      </span>
-                    </div>
-                    <div class="listing-items">
-                      {dayClasses.map((data) => (
-                        <ClassC classs={data} />
-                      ))}
-                    </div>
-                  </div>
-                ))
-              }
+  <section>
+    <div id="content-kurse" class="tab-content active-content">
+      <div class="day-list">
+        {
+          Object.entries(groupedClasses).map(([weekday, dayClasses]) => (
+            <div class="day-group">
+              <div class="day-label-wrapper">
+                <span class="day-label">
+                  {translateWeekday(weekday, locale)}
+                </span>
+              </div>
+              <div class="listing-items">
+                {dayClasses.map((data) => (
+                  <ClassC classs={data} />
+                ))}
+              </div>
             </div>
-          </div>
-
-          <div id="content-workshops" class="tab-content">
-            <div class="workshops-list">
-              {upcomingEvents.length > 0 ? (
-                upcomingEvents.map((event) => (
-                  <div class="workshop-item">
-                    <div class="workshop-date">
-                      {formatEventDate(event.startDate, event.endDate)}
-                    </div>
-                    <h3 class="workshop-title">{event.title}</h3>
-                    <div class="workshop-location">
-                      <strong>{event.location?.name || 'TBA'}</strong> {event.address || ''}
-                    </div>
-                    <div class="workshop-desc">
-                      {/* Assuming description is RichText. Fallback to raw text if it's a string */}
-                      {typeof event.description === 'string' ? (
-                        <p>{event.description}</p>
-                      ) : (
-                        <RichText content={event.description} />
-                      )}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p>No upcoming events in the next 14 days.</p>
-              )}
-            </div>
-          </div>
-        </section>
-      </main>
+          ))
+        }
+      </div>
     </div>
 
-    <script>
-      document.addEventListener('DOMContentLoaded', () => {
-        const tabKurse = document.getElementById('tab-kurse');
-        const tabWorkshops = document.getElementById('tab-workshops');
-        const contentKurse = document.getElementById('content-kurse');
-        const contentWorkshops = document.getElementById('content-workshops');
+    <div id="content-workshops" class="tab-content">
+      <div class="workshops-list">
+        {upcomingEvents.length > 0 ? (
+          upcomingEvents.map((event) => <WorkshopC event={event} />)
+        ) : (
+          <p>No upcoming events in the next 14 days.</p>
+        )}
+      </div>
+    </div>
+  </section>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const tabKurse = document.getElementById("tab-kurse");
+      const tabWorkshops = document.getElementById("tab-workshops");
+      const contentKurse = document.getElementById("content-kurse");
+      const contentWorkshops = document.getElementById("content-workshops");
 
-        function switchTab(activeBtn, inactiveBtn, activeView, inactiveView) {
-          if (activeBtn.classList.contains('active')) return; // Prevent re-triggering
+      function switchTab(activeBtn, inactiveBtn, activeView, inactiveView) {
+        if (activeBtn.classList.contains("active")) return; // Prevent re-triggering
 
-          // 1. Toggle button styles immediately
-          activeBtn.classList.remove('inactive');
-          activeBtn.classList.add('active');
-          inactiveBtn.classList.remove('active');
-          inactiveBtn.classList.add('inactive');
+        // 1. Toggle button styles immediately
+        activeBtn.classList.remove("inactive");
+        activeBtn.classList.add("active");
+        inactiveBtn.classList.remove("active");
+        inactiveBtn.classList.add("inactive");
 
-          // 2. Fade out current content
-          inactiveView.style.opacity = '0';
+        // 2. Fade out current content
+        inactiveView.style.opacity = "0";
 
-          // 3. Wait for fade out to complete, then swap display and fade in
-          setTimeout(() => {
-            inactiveView.classList.remove('active-content');
-            inactiveView.style.display = 'none';
+        // 3. Wait for fade out to complete, then swap display and fade in
+        setTimeout(() => {
+          inactiveView.classList.remove("active-content");
+          inactiveView.style.display = "none";
 
-            activeView.style.display = 'block';
-            
-            // Force browser reflow to ensure display: block is processed before changing opacity
-            void activeView.offsetWidth; 
+          activeView.style.display = "block";
 
-            activeView.classList.add('active-content');
-            activeView.style.opacity = '1';
-          }, 300); // Matches the 0.3s CSS transition duration
-        }
+          // Force browser reflow to ensure display: block is processed before changing opacity
+          void activeView.offsetWidth;
 
-        if (tabKurse && tabWorkshops) {
-          tabKurse.addEventListener('click', () => {
-            switchTab(tabKurse, tabWorkshops, contentKurse, contentWorkshops);
-          });
+          activeView.classList.add("active-content");
+          activeView.style.opacity = "1";
+        }, 300); // Matches the 0.3s CSS transition duration
+      }
 
-          tabWorkshops.addEventListener('click', () => {
-            switchTab(tabWorkshops, tabKurse, contentWorkshops, contentKurse);
-          });
-        }
-      });
-    </script>
-  </body>
-</html>
+      if (tabKurse && tabWorkshops) {
+        tabKurse.addEventListener("click", () => {
+          switchTab(tabKurse, tabWorkshops, contentKurse, contentWorkshops);
+        });
+
+        tabWorkshops.addEventListener("click", () => {
+          switchTab(tabWorkshops, tabKurse, contentWorkshops, contentKurse);
+        });
+      }
+    });
+  </script>
+</Layout>
+

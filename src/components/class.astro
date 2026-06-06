@@ -7,14 +7,21 @@ const { classs: clazz } = Astro.props as Props;
 const school = clazz.school as School || { name: "" }
 const [location, num, street, ...rest] = clazz.address.split(",")
 
-const danceTag = clazz.dances && clazz.dances.length > 0 
-  ? (typeof clazz.dances[0] === 'string' ? clazz.dances[0] : clazz.dances[0].shortName) 
-  : clazz.title;
+// Map all dances into an array of strings, falling back to the title
+const danceTags = clazz.dances && clazz.dances.length > 0 
+  ? clazz.dances.map(dance => typeof dance === 'string' ? dance : dance.shortName) 
+  : [clazz.title];
 ---
 <div class="listing-item">
-  <div class="listing-tag">
-    {danceTag}
+  {/* The new wrapper keeps all tags in the first CSS grid column */}
+  <div class="listing-tags-wrapper">
+    {danceTags.map((tag) => (
+      <div class="listing-tag">
+        {tag}
+      </div>
+    ))}
   </div>
+  
   <div class="listing-details">
     <span class="listing-school">{school.name}</span>
     <span class="listing-address">
@@ -25,3 +32,12 @@ const danceTag = clazz.dances && clazz.dances.length > 0
     {clazz.cancelled && <span class="cancelled-text">{clazz.cancelled}</span>}
   </div>
 </div>
+
+<style>
+  /* Add this to stack the tags neatly */
+  .listing-tags-wrapper {
+    display: flex;
+    flex-direction: column; /* Stacks tags vertically. Use 'row' with 'flex-wrap: wrap' for horizontal */
+    gap: 8px;
+  }
+</style>

@@ -29,6 +29,8 @@ const events = classes.map((clazz) => {
 });
 ---
 
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
 <div class="map-wrapper">
     <div id="map"></div>
 
@@ -79,8 +81,7 @@ const events = classes.map((clazz) => {
     type="application/json"
 />
 
-<script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-></script>
+<script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script is:inline lang="ts">
     document.addEventListener("DOMContentLoaded", () => {
@@ -121,7 +122,6 @@ const events = classes.map((clazz) => {
         const closeBtn = document.querySelector('.close-filter-btn');
         const filterButtons = document.querySelectorAll(".filter-btn");
 
-        // Toggle Drawer on Mobile
         function toggleMobileDrawer() {
             if (window.innerWidth <= 768) {
                 filterPanel.classList.toggle('open');
@@ -131,7 +131,6 @@ const events = classes.map((clazz) => {
         if (mobileToggleBtn) mobileToggleBtn.addEventListener('click', toggleMobileDrawer);
         if (closeBtn) closeBtn.addEventListener('click', toggleMobileDrawer);
 
-        // Filter selection
         filterButtons.forEach((button) => {
             button.addEventListener("click", (e) => {
                 filterButtons.forEach((btn) => btn.classList.remove("active"));
@@ -140,7 +139,6 @@ const events = classes.map((clazz) => {
                 const selectedDay = e.target.dataset.day;
                 renderMarkers(selectedDay);
 
-                // Auto-close the overlay on mobile so the user can see the map instantly
                 if (window.innerWidth <= 768) {
                     filterPanel.classList.remove('open');
                 }
@@ -148,3 +146,137 @@ const events = classes.map((clazz) => {
         });
     });
 </script>
+
+<style>
+    .map-wrapper {
+        position: relative;
+        
+        /* Forces the container to be exactly the width of the screen */
+        width: 100vw;
+        left: 50%;
+        transform: translateX(-50%);
+        
+        height: 600px;
+        display: flex;
+        overflow: hidden;
+    }
+
+    #map {
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+    }
+
+    /* Filter Panel Base */
+    .filter-panel {
+        position: absolute;
+        top: 20px;
+        /* Aligns 20px from the right edge of the screen now */
+        right: 20px; 
+        z-index: 1000;
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        max-width: 300px;
+    }
+
+    .filter-options {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    /* Black and White Button Design */
+    .filter-btn {
+        background-color: #ffffff;
+        color: #000000;
+        border: 2px solid #000000;
+        padding: 0.4rem .05rem;
+        font-size: .8rem;
+        font-weight: bold;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.2s ease, color 0.2s ease;
+        width: 100%;
+    }
+
+
+    .filter-btn:hover,
+    .filter-btn.active {
+        background-color: #000000;
+        color: #ffffff;
+    }
+
+    .mobile-filter-toggle,
+    .filter-header-mobile {
+        display: none;
+    }
+
+    .close-filter-btn {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #000;
+    }
+
+    /* Mobile adjustments */
+    @media (max-width: 768px) {
+        .mobile-filter-toggle {
+            display: block;
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background-color: #000000;
+            color: #ffffff;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 30px;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .filter-header-mobile {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .filter-header-desktop {
+            display: none;
+        }
+
+        .filter-panel {
+            position: fixed;
+            top: auto;
+            bottom: 0;
+            right: 0;
+            left: 0;
+            max-width: 100%;
+            border-radius: 16px 16px 0 0;
+            transform: translateY(100%);
+            transition: transform 0.3s ease-in-out;
+            
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 1.5rem 1.5rem 3rem 1.5rem;
+        }
+
+        .filter-panel.open {
+            transform: translateY(0);
+        }
+
+        #map :global(.leaflet-tile-pane) {
+            filter: grayscale(100%) contrast(120%);
+        }
+
+        #map :global(.leaflet-marker-icon) {
+            filter: grayscale(100%)
+        }
+
+    }
+</style>

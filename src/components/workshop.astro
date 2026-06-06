@@ -1,0 +1,65 @@
+---
+import RichText from "./richtText.astro";
+import type { Event } from "../../../cms/src/payload-types.ts";
+
+interface Props { event: Event }
+const { event } = Astro.props;
+
+// Helper formats date as DD.MM (No trailing dot)
+const formatDate = (dateStr: string) => {
+  const d = new Date(dateStr);
+  return `${d.getUTCDate().toString().padStart(2, "0")}.${(d.getUTCMonth() + 1).toString().padStart(2, "0")}`;
+};
+
+const getFormattedDateTime = () => {
+  const startD = formatDate(event.startDate);
+  const endD = event.endDate ? formatDate(event.endDate) : null;
+  const startT = event.startTime || "";
+  const endT = event.endTime || "";
+
+  let datePart = startD;
+  
+  if (endD && startD !== endD) {
+    const startParts = startD.split("."); // [DD, MM]
+    const endParts = endD.split(".");     // [DD, MM]
+    
+    // If months match: "17.-19.06"
+    if (startParts[1] === endParts[1]) {
+      datePart = `${startParts[0]}.-${endParts[0]}.${startParts[1]}`;
+    } else {
+      // If months differ: "17.06 - 19.07"
+      datePart = `${startD} - ${endD}`;
+    }
+  }
+
+  const timePart = [startT, endT].filter(Boolean).join(" - ");
+  return `${datePart}${timePart ? `, ${timePart}` : ""}`;
+};
+---
+
+<div class="workshop-item">
+  <div class="workshop-date">
+    {getFormattedDateTime()}
+  </div>
+  
+  <h3 class="workshop-title">{event.title}</h3>
+  
+  <div class="workshop-location">
+    {event.locationName && (<strong>{event.locationName} | </strong>)}
+    {event.address}
+  </div>
+
+  {event.price && (
+    <div class="workshop-price">
+      {event.price.toFixed(2)} €
+    </div>
+  )}
+
+  <div class="workshop-desc">
+    {typeof event.description === "string" ? (
+      <p>{event.description}</p>
+    ) : (
+      <RichText content={event.description} />
+    )}
+  </div>
+</div>

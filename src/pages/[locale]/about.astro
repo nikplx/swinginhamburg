@@ -14,6 +14,7 @@ import ClassC from "../../components/class.astro";
 import type { Class } from "../../../cms/src/payload-types.ts";
 import { collect, payload, sortWeekdays, translateWeekday } from "../../utils";
 import RichText from "../../components/richtText.astro";
+import Layout from "../../components/layout.astro";
 
 interface Params {
   locale: "en" | "de";
@@ -25,35 +26,14 @@ const { docs: classes } = await payload.find({
   locale: locale,
 });
 
-
 const cnt = await payload.findGlobal({
   slug: "about",
   locale: locale,
 });
 ---
 
-<html lang={locale}>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Swing in Hamburg</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  </head>
-  <body>
-    <div class="page-container">
-      <header>
-        <div class="header-top">
-          <div class="title-wrap">
-            <h1>SWING IN HAMBURG</h1>
-          </div>
-          <Nav locale={locale} active="about" />
-        </div>
-        <div class="divider-light" style="margin-top: 15px; margin-bottom: 0;"></div>
-      </header>
-      <div class="page-content">
-        <RichText content={cnt.content} />
-      </div>
-  </body>
-</html>
-
-
+<Layout locale={locale}>
+  <div class="page-content">
+    <RichText content={cnt.content} />
+  </div>
+</Layout>

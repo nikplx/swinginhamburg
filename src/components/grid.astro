@@ -18,12 +18,16 @@
   @media (max-width: 768px) {
     .content-reusable-grid {
       grid-template-columns: repeat(2, 1fr);
+      gap: 30px 20px; /* Reduced gap for tablet */
+      margin-bottom: 30px;
     }
   }
 
   @media (max-width: 480px) {
     .content-reusable-grid {
       grid-template-columns: 1fr;
+      gap: 20px; /* Tighter vertical gap for mobile */
+      margin-bottom: 20px; /* Less white space at the bottom */
     }
   }
 </style>

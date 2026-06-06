@@ -10,28 +10,12 @@ export async function getStaticPaths() {
 import "../../styles/global.css";
 import Nav from "../../components/nav.astro";
 import MapC from "../../components/map.astro";
+import Layout from "../../components/layout.astro";
 interface Params {
   locale: "en" | "de";
 }
 const { locale } = Astro.params as Params;
 ---
-<html lang={locale}>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Swing in Hamburg</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  </head>
-  <body>
-    <div class="page-container">
-      <header>
-        <div class="header-top">
-          <div class="title-wrap">
-            <h1>SWING IN HAMBURG</h1>
-          </div>
-          <Nav locale={locale} active="map" />
-        </div>
-      </header>
-      <MapC locale={locale}></Map>
-  </body>
-</html>
+<Layout locale={locale}>
+    <MapC locale={locale}></Map>
+</Layout>
