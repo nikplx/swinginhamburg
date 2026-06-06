@@ -27,10 +27,10 @@ const links = {
     </button>
 
     <div class="nav-links">
-        <a href={"/" + locale} class={c("root")}>{links["listings"][locale]}</a>
+        <a href={"/" + locale} class={c("root") }>{links["listings"][locale]}</a>
         <span class="nav-separator">|</span>
         
-        <a href={"/" + locale + "/swing"} class={c("swing") + " border-btn"}>{links["swing"][locale]}</a>
+        <a href={"/" + locale + "/swing"} class={c("swing")}>{links["swing"][locale]}</a>
         <span class="nav-separator">|</span>
         
         <a href={"/" + locale + "/map"} class={c("map")}>{links["map"][locale]}</a>
@@ -53,11 +53,11 @@ const links = {
         menuToggle.addEventListener('click', () => {
             const isExpanded = menuToggle.getAttribute('aria-expanded') === 'true';
             menuToggle.setAttribute('aria-expanded', String(!isExpanded));
-            navLinks.classList.toggle('open');
-            menuToggle.classList.toggle('active');
             
-            // Prevent scrolling on the body when mobile menu is open
-            document.body.style.overflow = isExpanded ? 'auto' : 'hidden';
+            // Toggles the visibility of the nav links
+            navLinks.classList.toggle('open');
+            // Toggles the hamburger to 'X' animation
+            menuToggle.classList.toggle('active');
         });
     }
 </script>

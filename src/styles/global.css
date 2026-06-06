@@ -5,8 +5,8 @@
   --text-main: #000000;
   --text-muted: #888888;
   --accent: #000000;
-  --font-title: 16pt;
-  --font-desc: 12pt;
+  --font-title: 10pt;
+  --font-desc: 9pt;
 }
 
 body {
@@ -19,6 +19,10 @@ body {
   justify-content: center;
   font-size: var(--font-desc);
   -webkit-font-smoothing: antialiased;
+  
+  /* Add these two lines to prevent horizontal scrolling */
+  width: 100%;
+  overflow-x: hidden; 
 }
 
 .page-container {
@@ -28,6 +32,9 @@ body {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  
+  /* Add this line */
+  overflow-x: hidden;
 }
 
 /* --- Header & Layout --- */
@@ -38,18 +45,24 @@ header {
 }
 
 .header-top {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
   padding: 15px 20px;
   position: relative;
-  z-index: 2000; /* Keeps header above mobile menu */
+  z-index: 2000;
   background-color: var(--accent);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .title-wrap {
-  grid-column: 2;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   text-align: center;
+  width: max-content; /* Prevents title from squishing */
+  pointer-events: none; /* Allows clicking through if it overlaps anything */
 }
 
 .title-wrap h1 {
@@ -59,7 +72,6 @@ header {
   color: var(--bg-main);
   text-transform: uppercase;
 }
-
 .main-content {
   padding: 0 20px 40px 20px;
 }
@@ -97,7 +109,7 @@ header {
   display: none;
   flex-direction: column;
   gap: 6px;
-  padding: 10px;
+  padding: 4px;
 }
 
 .hamburger-bar {
@@ -197,49 +209,22 @@ header {
 }
 
 /* --- Mobile Nav Override (< 768px) --- */
+/* --- Mobile Nav Override (< 768px) --- */
 @media (max-width: 768px) {
+  header {
+    position: relative; /* Allows absolute nav-links to anchor directly below it */
+  }
+
   .menu-toggle {
     display: flex;
+    z-index: 2000;
   }
 
-  .nav-links {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: var(--accent);
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: 25px;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
-    z-index: 1500;
+  /* Hamburger to X Animation */
+  .menu-toggle .hamburger-bar {
+    transform-origin: center;
   }
-
-  .nav-links.open {
-    opacity: 1;
-    pointer-events: all;
-  }
-
-  .nav-links a {
-    color: var(--bg-main);
-    font-size: var(--font-title);
-    letter-spacing: 0.05em;
-  }
-
-  .nav-links .nav-separator,
-  .nav-links .lang-switch {
-    display: none; /* Hide pipes and lang toggle in strict mobile view, or restyle as needed */
-  }
-
-  .nav-links a.border-btn {
-    border: 1px solid var(--bg-main);
-    padding: 8px 16px;
-  }
-
+  
   .menu-toggle.active .hamburger-bar:nth-child(1) {
     transform: translateY(8px) rotate(45deg);
   }
@@ -248,6 +233,54 @@ header {
   }
   .menu-toggle.active .hamburger-bar:nth-child(3) {
     transform: translateY(-8px) rotate(-45deg);
+  }
+
+  .nav-links {
+    position: absolute;
+    top: 100%; /* Pushes the menu exactly below the black header bar */
+    left: 0;
+    width: 100%;
+    background-color: var(--accent); /* #000000 */
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 20px; /* Spacing derived from your Figma coordinates */
+    
+    /* Transition setup for sliding dropdown */
+    max-height: 0;
+    padding: 0;
+    opacity: 0;
+    overflow: hidden;
+    pointer-events: none;
+    transition: max-height 0.4s ease, opacity 0.3s ease, padding 0.4s ease;
+    z-index: 1500;
+  }
+
+  .nav-links.open {
+    max-height: 400px; /* Approximates the 384px height from Figma */
+    opacity: 1;
+    padding: 30px 0 50px 0;
+    pointer-events: all;
+  }
+
+  .nav-links a {
+    color: var(--bg-main); /* #FFFFFF */
+    font-size: var(--font-title); /* 16px/16pt */
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-align: center;
+  }
+
+  /* Implements Figma 'Rectangle 28' */
+  .nav-links a.border-btn {
+    border: 1px solid var(--bg-main);
+    padding: 4px 16px; 
+    border-radius: 2px; /* Optional: adjust if you need sharper/softer edges */
+  }
+
+  .nav-links .nav-separator,
+  .nav-links .lang-switch {
+    display: none; /* Hide pipes and lang toggle in mobile stack */
   }
 }
 
