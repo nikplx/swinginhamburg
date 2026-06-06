@@ -1,21 +1,25 @@
 ---
-import type {School,Class} from "../../cms/src/payload-types.ts"
+import type { School, Class } from "../../cms/src/payload-types.ts"
 
 interface Props { classs: Class }
 const { classs: clazz } = Astro.props as Props;
 
-const school = clazz.school as School || {name: ""}
-const initials = school.name.split(" ").map((str) => str[0]).join("")
+const school = clazz.school as School || { name: "" }
 const [location, num, street, ...rest] = clazz.address.split(",")
+
+const danceTag = clazz.dances && clazz.dances.length > 0 
+  ? (typeof clazz.dances[0] === 'string' ? clazz.dances[0] : clazz.dances[0].shortName) 
+  : clazz.title;
 ---
 <div class="listing-item">
-  {initials && <span class="listing-school">{school.name}</span>}
+  <div class="listing-tag">
+    {danceTag}
+  </div>
   <div class="listing-details">
-    <span class="listing-title">{clazz.title}</span>
-    <span class="listing-meta">{clazz.description} ({clazz.teachers!.map((t)=>t.name).join(", ")})</span>
-    <span class="listing-teachers">
+    <span class="listing-school">{school.name}</span>
+    <span class="listing-address">
       <a href={"http://maps.google.com/?q="+clazz.address}>
-      {location},{street},{num}
+        {street} {num} | {location}
       </a>
     </span>
     {clazz.cancelled && <span class="cancelled-text">{clazz.cancelled}</span>}

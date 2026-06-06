@@ -6,20 +6,17 @@ interface Params {
 
 const {locale, active} = Astro.props as Params;
 const c = (comp:string) => {
-    if (comp == active) {
-        return "nav-item active"
-    } else {
-        return "nav-item"
-    }
+    return comp == active ? "nav-item active" : "nav-item"
 }
 
 const otherLocale = locale == "en"? "de" : "en"
 const otherLocaleLink = Astro.url.pathname.replace(locale, otherLocale)
 const links = {
-    "listings": { "de": "TANZEN", "en": "LISTINGS" },
-    "swing": { "de": "SWING", "en": "SWING" },
-    "about": { "de": "ÜBER UNS", "en": "ABOUT" },
-    "map": { "de": "KARTE", "en": "MAP" }
+    "listings": { "de": "KURSE | WORKSHOPS", "en": "CLASSES | WORKSHOPS" },
+    "swing": { "de": "TANZSCHULEN", "en": "DANCE SCHOOLS" },
+    "map": { "de": "KARTE", "en": "MAP" },
+    "about": { "de": "GESCHICHTE", "en": "HISTORY" },
+    "conduct": { "de": "CODE OF CONDUCT", "en": "CODE OF CONDUCT" }
 }
 ---
 <nav class="site-nav">
@@ -32,112 +29,35 @@ const links = {
     <div class="nav-links">
         <a href={"/" + locale} class={c("root")}>{links["listings"][locale]}</a>
         <span class="nav-separator">|</span>
-        <a href={"/" + locale + "/swing"} class={c("swing")}>{links["swing"][locale]}</a>
+        
+        <a href={"/" + locale + "/swing"} class={c("swing") + " border-btn"}>{links["swing"][locale]}</a>
         <span class="nav-separator">|</span>
+        
         <a href={"/" + locale + "/map"} class={c("map")}>{links["map"][locale]}</a>
         <span class="nav-separator">|</span>
+        
         <a href={"/" + locale + "/about"} class={c("about")}>{links["about"][locale]}</a>
         <span class="nav-separator">|</span>
+        
+        <a href={"/" + locale + "/conduct"} class="nav-item">{links["conduct"][locale]}</a>
+        
         <a class="lang-switch" href={otherLocaleLink}>{otherLocale.toUpperCase()}</a>
     </div>
 </nav>
 
 <script>
-    // Handles client-side drawer toggling safely in Astro
     const menuToggle = document.querySelector('.menu-toggle');
     const navLinks = document.querySelector('.nav-links');
 
     if (menuToggle && navLinks) {
         menuToggle.addEventListener('click', () => {
             const isExpanded = menuToggle.getAttribute('aria-expanded') === 'true';
-            menuToggle.setAttribute('aria-expanded', !isExpanded ? 'true' : 'false');
+            menuToggle.setAttribute('aria-expanded', String(!isExpanded));
             navLinks.classList.toggle('open');
             menuToggle.classList.toggle('active');
+            
+            // Prevent scrolling on the body when mobile menu is open
+            document.body.style.overflow = isExpanded ? 'auto' : 'hidden';
         });
     }
 </script>
-
-<style>
-    /* --- Base Layout --- */
-    .site-nav {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        position: relative;
-        width: 100%;
-    }
-
-    .nav-links {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 15px;
-    }
-
-    /* Hide the button on desktop viewports */
-    .menu-toggle {
-        display: none;
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 10px;
-        flex-direction: column;
-        gap: 5px;
-        z-index: 1001;
-    }
-
-    .hamburger-bar {
-        display: block;
-        width: 25px;
-        height: 3px;
-        background-color: var(--text-dark, #1a1a1a);
-        transition: transform 0.3s ease, opacity 0.3s ease;
-    }
-
-    /* --- Responsive Mobile Blueprint (< 768px) --- */
-    @media (max-width: 768px) {
-        .site-nav {
-            justify-content: flex-end; /* Places hamburger to the right edge */
-            padding: 10px 0;
-        }
-
-        .menu-toggle {
-            display: flex; /* Reveal hamburger icon */
-        }
-
-        .nav-separator {
-            display: none; /* Hide standard pipe characters on mobile stacked layouts */
-        }
-
-        .nav-links {
-            display: none; /* Collapsed by default */
-            flex-direction: column;
-            position: absolute;
-            top: 100%;
-            left: 0;
-            width: 100%;
-            background-color: var(--bg-cream, #ede1c9);
-            padding: 20px 0;
-            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.15);
-            z-index: 1000;
-            gap: 20px;
-            border-bottom: 2px solid var(--border-dark, #222);
-        }
-
-        /* Revealed when class modifier is pushed via script block */
-        .nav-links.open {
-            display: flex;
-        }
-
-        /* Optional Animation transformations turning hamburger into an 'X' */
-        .menu-toggle.active .hamburger-bar:nth-child(1) {
-            transform: translateY(8px) rotate(45deg);
-        }
-        .menu-toggle.active .hamburger-bar:nth-child(2) {
-            opacity: 0;
-        }
-        .menu-toggle.active .hamburger-bar:nth-child(3) {
-            transform: translateY(-8px) rotate(-45deg);
-        }
-    }
-</style>
