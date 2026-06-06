@@ -9,6 +9,7 @@
   --font-emph: 14pt;
   --font-desc: 12pt;
   --font-tag: 10pt;
+  --font-xxs: 8pt;
 }
 
 html {
@@ -33,7 +34,6 @@ body {
 
 .page-container {
   width: 100%;
-  max-width: 800px;
   min-height: 100vh;
   box-sizing: border-box;
   display: flex;
@@ -51,11 +51,18 @@ header {
   background-color: #000000; /* Crucial so the map doesn't show through it */
 }
 
+.centered-list {
+  max-width: 500px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
 .header-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 20px;
+  padding: 30px 20px;
   position: relative;
   z-index: 2000;
   background-color: var(--accent);
@@ -77,8 +84,17 @@ header {
   margin: 0;
   text-transform: uppercase;
 }
+
 .main-content {
   padding: 0 20px 40px 20px;
+}
+
+@media (min-width: 769px) {
+  .main-content {
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+  }
 }
 
 .main-content p {
@@ -137,15 +153,33 @@ header {
   color: var(--text-muted); /* #FFFFFF */
 }
 
+/* --- Navigation Updates --- */
 .nav-links a {
-  text-decoration: none;
-  font-size: 7pt;
+  color: var(--bg-main);
+  font-size: var(--font-xxs);
+  text-decoration: none; /* Default state */
   font-weight: 600;
   text-transform: uppercase;
+  transition: text-decoration 0.2s ease, opacity 0.2s ease;
+  padding: 4px 8px; /* Added consistent padding so the active state doesn't shift layout */
+  border: 1px solid transparent; /* Keeps layout stable when switching to 'active' border */
+  border-radius: 2px;
 }
 
+/* Hover effect */
+.nav-links a:hover {
+  text-decoration: underline;
+}
+
+/* Active Indicator (Promoted from mobile-only to global) */
+.nav-links a.active {
+  border: 1px solid var(--bg-main);
+  text-decoration: none; /* Keeps the active state clean without underline */
+}
+
+/* Cleanup: Remove any old rules for nav-separator or specific mobile-only borders */
 .nav-separator {
-  color: var(--text-muted);
+  display: none;
 }
 
 .menu-toggle {
@@ -210,12 +244,6 @@ header {
   font-size: var(--font-emph);
 }
 
-.listing-items {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
 .listing-item {
   display: grid;
   grid-template-columns: 80px 1fr;
@@ -224,6 +252,10 @@ header {
   border-bottom: 2px dotted var(--text-main);
   /* Use 'baseline' instead of 'start' */
   align-items: baseline; 
+}
+
+.listing-item:last-child {
+  border-bottom:  none;
 }
 
 .listing-tags-wrapper {
@@ -286,6 +318,10 @@ header {
     top: 0;
   }
 
+  .header-top {
+    padding: 15px 20px;
+  }
+
   .menu-toggle {
     display: flex;
     z-index: 2000;
@@ -330,6 +366,8 @@ header {
     z-index: 1500;
   }
 
+
+
   .nav-links.open {
     max-height: 400px; /* Approximates the 384px height from Figma */
     opacity: 1;
@@ -352,9 +390,8 @@ header {
     border-radius: 2px; /* Optional: adjust if you need sharper/softer edges */
   }
 
-  .nav-links .nav-separator,
-  .nav-links .lang-switch {
-    display: none; /* Hide pipes and lang toggle in mobile stack */
+  .nav-links .nav-separator {
+    display: none; /* Keep the pipe separators hidden */
   }
 }
 
@@ -408,11 +445,6 @@ button.tab:hover.inactive {
 }
 
 /* --- Workshops Layout (Mockup 3) --- */
-.workshops-list {
-  display: flex;
-  flex-direction: column;
-}
-
 .workshop-item {
   margin-bottom: 40px;
   border-bottom: 1px dotted var(--text-main);

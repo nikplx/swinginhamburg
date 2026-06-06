@@ -104,7 +104,7 @@ const formatEventDate = (start: string, end?: string) => {
                   {translateWeekday(weekday, locale)}
                 </span>
               </div>
-              <div class="listing-items">
+              <div class="centered-list">
                 {dayClasses.map((data) => (
                   <ClassC classs={data} />
                 ))}
@@ -116,7 +116,7 @@ const formatEventDate = (start: string, end?: string) => {
     </div>
 
     <div id="content-workshops" class="tab-content">
-      <div class="workshops-list">
+      <div class="centered-list">
         {upcomingEvents.length > 0 ? (
           upcomingEvents.map((event) => <WorkshopC event={event} />)
         ) : (

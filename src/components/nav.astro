@@ -1,6 +1,6 @@
 ---
 interface Props {
-    locale: "de" | "en"
+  locale: "de" | "en";
 }
 
 const { locale } = Astro.props;
@@ -11,7 +11,8 @@ const currentPath = Astro.url.pathname;
 // 2. Helper to check if a link is the current active page
 // We remove trailing slashes to ensure robust matching
 const normalizePath = (path: string) => path.replace(/\/$/, "");
-const isActive = (href: string) => normalizePath(currentPath) === normalizePath(href);
+const isActive = (href: string) =>
+  normalizePath(currentPath) === normalizePath(href);
 
 // 3. i18n link configuration
 const otherLocale = locale === "en" ? "de" : "en";
@@ -19,41 +20,52 @@ const otherLocaleLink = currentPath.replace(`/${locale}`, `/${otherLocale}`);
 
 // Map your data structure for easy iteration
 const navItems = [
-    { href: `/${locale}`, label: locale === "en" ? "CLASSES | WORKSHOPS" : "KURSE | WORKSHOPS" },
-    { href: `/${locale}/swing`, label: locale === "en" ? "SWING DANCE" : "SWINGTANZ" },
-    { href: `/${locale}/map`, label: locale === "en" ? "MAP" : "KARTE" },
-    { href: `/${locale}/about`, label: locale === "en" ? "ABOUT" : "ÜBER UNS" },
-    { href: `/${locale}/conduct`, label: locale === "en" ? "CODE OF CONDUCT" : "CODE OF CONDUCT" }
+  {
+    href: `/${locale}`,
+    label: locale === "en" ? "CLASSES | WORKSHOPS" : "KURSE | WORKSHOPS",
+  },
+  {
+    href: `/${locale}/swing`,
+    label: locale === "en" ? "SWING DANCE" : "SWINGTANZ",
+  },
+  { href: `/${locale}/map`, label: locale === "en" ? "MAP" : "KARTE" },
+  { href: `/${locale}/about`, label: locale === "en" ? "ABOUT" : "ÜBER UNS" },
+  {
+    href: `/${locale}/conduct`,
+    label: locale === "en" ? "CODE OF CONDUCT" : "CODE OF CONDUCT",
+  },
 ];
 ---
 
 {/* Wrap the nav in a custom element for scoped Javascript */}
 <mobile-nav>
-    <nav class="site-nav">
-        <button class="menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
-            <span class="hamburger-bar"></span>
-            <span class="hamburger-bar"></span>
-            <span class="hamburger-bar"></span>
-        </button>
+  <nav class="site-nav">
+    <button
+      class="menu-toggle"
+      aria-label="Toggle navigation menu"
+      aria-expanded="false">
+      <span class="hamburger-bar"></span>
+      <span class="hamburger-bar"></span>
+      <span class="hamburger-bar"></span>
+    </button>
 
-        <div class="nav-links">
-            {/* Iterate through links, automatically applying the active class and appending separators */}
-            {navItems.map((item, index) => (
-                <>
-                    <a 
-                        href={item.href} 
-                        class={`nav-item ${isActive(item.href) ? "active border-btn" : ""}`}
-                    >
-                        {item.label}
-                    </a>
-                    {/* Add a separator after every item EXCEPT the last one */}
-                    {index < navItems.length - 1 && <span class="nav-separator">|</span>}
-                </>
-            ))}
-            
-            <a class="lang-switch" href={otherLocaleLink}>{otherLocale.toUpperCase()}</a>
-        </div>
-    </nav>
+    {/* Iterate through links, removing the separator logic */}
+    <div class="nav-links">
+      {
+        navItems.map((item) => (
+          <a
+            href={item.href}
+            class={`nav-item ${isActive(item.href) ? "active border-btn" : ""}`}>
+            {item.label}
+          </a>
+        ))
+      }
+
+      <a class="lang-switch" href={otherLocaleLink}
+        >{otherLocale.toUpperCase()}</a
+      >
+    </div>
+  </nav>
 </mobile-nav>
 
 <script>
@@ -65,7 +77,7 @@ const navItems = [
       // 1. Handle the toggle button click
       menuToggle.addEventListener("click", (event) => {
         // Prevent this click from immediately triggering the document listener below
-        event.stopPropagation(); 
+        event.stopPropagation();
         menuToggle.classList.toggle("active");
         navLinks.classList.toggle("open");
       });
@@ -96,4 +108,3 @@ const navItems = [
     }
   });
 </script>
-

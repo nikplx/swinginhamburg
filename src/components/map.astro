@@ -25,7 +25,7 @@ const events = classes.map((clazz) => {
     fullAddress: clazz.address,
     school: school.name,
     coordinates: [clazz.location[1], clazz.location[0]],
-    dances: clazz.dances?.map(d=>d.shortName).join(', '),
+    dances: clazz.dances?.map((d) => d.shortName).join(", "),
   };
 });
 ---
@@ -110,10 +110,9 @@ const events = classes.map((clazz) => {
       markerLayer.clearLayers();
 
       events.forEach((event) => {
-        console.log(event)
         if (dayFilter === "all" || event.weekday === dayFilter) {
           const marker = L.marker(event.coordinates).bindPopup(
-        `
+            `
         <div class="custom-popup-content">
           <strong>${event.school}</strong><br/>
           <span>${event.address}</span><br/>
@@ -291,13 +290,13 @@ const events = classes.map((clazz) => {
     .filter-panel.open {
       transform: translateY(0);
     }
+  }
 
-    #map :global(.leaflet-tile-pane) {
-      filter: grayscale(100%) contrast(110%);
-    }
+  #map :global(.leaflet-tile-pane) {
+    filter: grayscale(100%) contrast(110%);
+  }
 
-    #map :global(.leaflet-marker-icon) {
-      filter: grayscale(100%) contrast(150%);
-    }
+  #map :global(.leaflet-marker-icon) {
+    filter: grayscale(100%) contrast(150%);
   }
 </style>

@@ -31,7 +31,7 @@ export const translateWeekday = (d:string, locale: string) => {
     if (locale == 'de') {
         return t[d.toLowerCase()]
     } else {
-        return d
+        return d.charAt(0).toUpperCase() + d.slice(1)
     }
 
 }
