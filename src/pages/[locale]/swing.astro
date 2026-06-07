@@ -102,3 +102,33 @@ const schools = schoolsResponse.docs || [];
     )
   }
 </Layout>
+
+<style>
+  /* Container for the dance list */
+  .dance-grid {
+    display: grid;
+    grid-template-columns: 1fr; /* 1 column on mobile */
+    gap: 20px;
+  }
+
+  /* On tablet/desktop, switch to a 2-column or 3-column grid */
+  @media (min-width: 768px) {
+    .dance-grid {
+      grid-template-columns: repeat(2, 1fr); /* 2 columns */
+    }
+
+    /* Target the first item specifically to span 2 columns */
+    .dance-card:first-child {
+      grid-column: span 2;
+    }
+  }
+
+  /* Card Styling for Visual Evenness */
+  .dance-card {
+    border: 1px solid #eee; /* Light border defines the "box" */
+    padding: 20px;
+    border-radius: 8px;
+    display: flex; /* Helps ensure content sits correctly */
+    flex-direction: column;
+  }
+</style>

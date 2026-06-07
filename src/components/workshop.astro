@@ -83,3 +83,65 @@ const danceTags =
     }
   </div>
 </div>
+
+<style>
+  /* --- Workshops Layout (Mockup 3) --- */
+  .workshop-item {
+    margin-bottom: 20px;
+    border-bottom: 2px dotted var(--text-main);
+    padding-bottom: 10px;
+  }
+
+  .workshop-item:last-child {
+    border-bottom: none;
+  }
+
+  .workshop-date {
+    background-color: var(--accent);
+    color: var(--bg-main);
+
+    display: inline-block;
+    border-radius: 8px;
+    padding: 4px 12px;
+    font-weight: 600;
+    font-size: var(--font-desc);
+    margin-bottom: 20px;
+  }
+
+  .workshop-price {
+    font-size: var(--font-desc);
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: var(--text-main);
+  }
+
+  .workshop-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 0 0 10px 0;
+    letter-spacing: 0.02em;
+  }
+
+  .workshop-location {
+    font-size: var(--font-desc);
+    margin-bottom: 20px;
+    line-height: 1.4;
+  }
+
+  .workshop-location strong {
+    font-weight: 700;
+  }
+
+  .workshop-desc {
+    font-size: var(--font-tag);
+    opacity: 0.7;
+    line-height: 1.5;
+  }
+
+  .listing-tags-row {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    align-items: flex-end;
+  }
+</style>

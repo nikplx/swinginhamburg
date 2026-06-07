@@ -324,3 +324,51 @@ const events = classes.map((clazz) => {
     filter: grayscale(100%) contrast(150%);
   }
 </style>
+
+<style is:global>
+  /* Container override */
+  .custom-popup .leaflet-popup-content-wrapper {
+    background: #ffffff;
+    border-radius: 4px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    padding: 2px;
+    width: 147px; /* From your mockup specs */
+  }
+
+  /* Remove default pointer/tip */
+  .custom-popup .leaflet-popup-tip {
+    display: none;
+  }
+
+  .custom-popup .leaflet-popup-content {
+    margin: 12px;
+    width: auto !important; /* Ensure it respects the wrapper width */
+    font-family: 'Inter', sans-serif;
+    color: var(--text-main);
+    line-height: 1.2;
+  }
+
+  /* Custom internal styling */
+  .custom-popup-content strong {
+    font-size: 11pt;
+    font-weight: 700;
+    display: block;
+  }
+
+  .custom-popup-content span {
+    font-size: 9pt;
+    color: #333;
+  }
+
+  .popup-date-time {
+    font-size: 9pt;
+    font-style: italic;
+    margin-top: 6px;
+  }
+
+  .popup-title {
+    font-size: 9pt;
+    font-weight: 500;
+    margin-top: 2px;
+  }
+</style>

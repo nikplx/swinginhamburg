@@ -49,10 +49,43 @@ const danceTags =
 </div>
 
 <style>
-  /* Add this to stack the tags neatly */
+  /* --- Listings (Class Rows Inside Content) --- */
+  .listing-item {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 20px;
+    padding: 16px 0;
+    border-bottom: 2px dotted var(--text-muted);
+    align-items: start; 
+  }
+
+  .listing-item:last-child {
+    border-bottom: none;
+  }
+
   .listing-tags-wrapper {
     display: flex;
-    flex-direction: column; /* Stacks tags vertically. Use 'row' with 'flex-wrap: wrap' for horizontal */
+    flex-direction: column;
     gap: 8px;
+    align-items: flex-end;
+  }
+
+  .listing-details {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.5;
+  }
+
+  .listing-school {
+    font-weight: 700;
+    font-size: var(--font-emph);
+    color: var(--text-main);
+  }
+
+  .listing-address,
+  .listing-address a {
+    font-size: var(--font-desc);
+    color: var(--text-main);
+    text-decoration: none;
   }
 </style>
