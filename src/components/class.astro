@@ -7,23 +7,24 @@ interface Props {
 const { classs: clazz } = Astro.props as Props;
 
 const school = (clazz.school as School) || { name: "" };
-const [location, num, street, ...rest] = clazz.address.split(",");
+const [location, num, street, quarter, city, postal, country, ...rest] = clazz.address.split(",");
 
-// Map all dances into an array of strings, falling back to the title
 const danceTags =
   clazz.dances && clazz.dances.length > 0
     ? clazz.dances.map((dance) =>
         typeof dance === "string" ? dance : dance.shortName,
       )
     : [clazz.title];
+
+// ID formatting to match: school.name.replaceAll(" ", "").toLocaleLowerCase()
+const schoolSlug = school.name ? school.name.replaceAll(" ", "").toLocaleLowerCase() : "";
+const schoolHref = `/${Astro.currentLocale}/schools#${schoolSlug}`;
 ---
 
 <div class="listing-item">
-  {/* The new wrapper keeps all tags in the first CSS grid column */}
   <div class="listing-tags-wrapper">
     {
       danceTags.map((tag) => {
-        // Standardize the slug for the link
         const slug = typeof tag === "string" ? tag : tag.shortName;
         const href = `/${Astro.currentLocale}/swing#${slug.replace(/\s+/g, "-").toLowerCase()}`;
 
@@ -37,11 +38,20 @@ const danceTags =
   </div>
 
   <div class="listing-details">
-    <span class="listing-school">{school.name}</span>
+    <span class="listing-school">
+      {school.name ? (
+        <a href={schoolHref} class="school-link">
+          {school.name}
+        </a>
+      ) : (
+        ""
+      )}
+    </span>
+    
     <span class="listing-address">
       <a href={"http://maps.google.com/?q=" + clazz.address}>
-        {street}
-        {num} | {location}
+        {street} {num}, 
+        {postal}
       </a>
     </span>
     {clazz.cancelled && <span class="cancelled-text">{clazz.cancelled}</span>}
@@ -49,7 +59,6 @@ const danceTags =
 </div>
 
 <style>
-  /* --- Listings (Class Rows Inside Content) --- */
   .listing-item {
     display: grid;
     grid-template-columns: 80px 1fr;
@@ -76,16 +85,44 @@ const danceTags =
     line-height: 1.5;
   }
 
+  /* Applied the Header Nav behavior here */
   .listing-school {
     font-weight: 700;
     font-size: var(--font-emph);
     color: var(--text-main);
   }
 
-  .listing-address,
+  .school-link {
+    color: inherit;
+    text-decoration: none;
+    transition: text-decoration 0.2s ease, opacity 0.2s ease;
+  }
+
+  .school-link:hover {
+    text-decoration: underline;
+  }
+
+  .listing-address {
+    font-size: var(--font-desc);
+    color: var(--text-main);
+    text-align: left;
+  }
+
+
   .listing-address a {
     font-size: var(--font-desc);
     color: var(--text-main);
     text-decoration: none;
+  }
+
+  .listing-tag {
+    border: 1px solid var(--accent);
+    display: inline-block;
+    border-radius: 8px;
+    padding: 4px 12px;
+    font-weight: 600;
+    font-size: var(--font-desc);
+    text-decoration: none;
+    color: var(--text-main);
   }
 </style>

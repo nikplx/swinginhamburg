@@ -54,3 +54,41 @@ export function collect<T>(keyer: (arg: T)=>string) {
         return acc;
     }
 }
+
+/**
+ * Simple Seeded Random Number Generator (LCG)
+ * Returns a function that mimics Math.random() but is deterministic.
+ */
+function createSeededRandom(seed: number) {
+  return function() {
+    // Standard LCG parameters (Numerical Recipes)
+    seed = (seed * 1664525 + 1013904223) % 4294967296;
+    return seed / 4294967296;
+  };
+}
+
+/**
+ * Shuffles an array deterministically using a daily numeric seed.
+ */
+export function shuffleByDay<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  
+  // 1. Generate a stable seed based on Year, Month, and Day (YYYYMMDD)
+  const today = new Date();
+  const year = today.getUTCFullYear();
+  const month = today.getUTCMonth() + 1; // 0-11 to 1-12
+  const day = today.getUTCDate();
+  
+  const dailySeed = year * 10000 + month * 100 + day; // e.g., 20260607
+  
+  // 2. Initialize our seeded random number stream
+  const seededRandom = createSeededRandom(dailySeed);
+
+  // 3. Perform Fisher-Yates shuffle using the seeded random function
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(seededRandom() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  return shuffled;
+}

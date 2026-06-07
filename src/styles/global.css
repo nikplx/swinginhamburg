@@ -87,7 +87,7 @@ header {
 }
 
 .main-content {
-  padding: 0 20px 40px 20px;
+  padding: 0 30px 40px 30px;
 }
 
 @media (min-width: 769px) {
@@ -237,80 +237,6 @@ button.tab:hover.inactive {
   font-weight: 500;
 }
 
-/* --- Collapsible Weekday Dropdowns --- */
-.day-list {
-  width: 100%;
-  max-width: 500px;
-  margin: 0 auto;
-  /* Top line removed to match the mockup's flow where dividers only sit below elements */
-}
-
-.day-group {
-  width: 100%;
-  overflow: hidden;
-}
-
-.day-header {
-  width: 100%;
-  background: none;
-  border: none;
-  /* Reduced padding to 12px top/bottom to match the compact mockup look */
-  padding: 12px 0; 
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  /* Reduced gap to 8px for a tighter horizontal grouping */
-  gap: 8px; 
-  cursor: pointer;
-  font-family: "Inter", sans-serif;
-  color: var(--text-main);
-  /* Reset line-height to ensure the button height is driven purely by padding */
-  line-height: 1.2;
-  border-bottom: 2px solid var(--text-main);
-}
-.day-label {
-  /* Using 14pt or 16pt based on your variables to match the mockup scale */
-  font-size: var(--font-emph); 
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: capitalize;
-  margin: 0;
-}
-
-/* Dropdown Arrow Indicator (CSS Triangle) */
-.dropdown-arrow {
-  width: 0;
-  height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-top: 5px solid var(--text-main);
-  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  display: inline-block;
-}
-
-/* Smooth inversion when active */
-.day-group.open .dropdown-arrow {
-  transform: rotate(180deg);
-}
-
-/* --- Content Collapse Animation Room --- */
-.day-content {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 0.3s ease-out;
-  overflow: hidden;
-}
-
-.day-group.open .day-content {
-  grid-template-rows: 1fr;
-  padding-bottom: 10px;
-}
-
-.day-content > .centered-list {
-  min-height: 0;
-  padding-bottom: 15px; /* Keeps padding inside the border area */
-}
-
 .listing-tag {
   /* Existing styles */
   border: 1px solid var(--accent);
@@ -397,7 +323,7 @@ button.tab:hover.inactive {
   .nav-links.open {
     max-height: 400px; /* Approximates the 384px height from Figma */
     opacity: 1;
-    padding: 30px 0 50px 0;
+    padding: 30px 0 20px 0;
     pointer-events: all;
   }
 

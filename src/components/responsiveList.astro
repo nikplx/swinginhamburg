@@ -1,0 +1,103 @@
+---
+// src/components/responsiveList.astro
+interface Props {
+  maxColumns?: number;
+}
+
+const {maxColumns = 3} = Astro.props;
+---
+<div class="responsive-list">
+  <slot />
+</div>
+
+<script>
+  // Helper function to close all accordion items
+  function closeAllAccordions() {
+    const allItems = document.querySelectorAll(".responsive-item");
+    allItems.forEach((item) => {
+      item.classList.remove("open");
+      const header = item.querySelector(".responsive-item-header");
+      if (header) {
+        header.setAttribute("aria-expanded", "false");
+      }
+    });
+  }
+
+  // Function to open a specific accordion item exclusively
+  function openAccordionById(id: string) {
+    if (!id) return;
+    
+    const targetId = id.replace('#', '');
+    const targetItem = document.getElementById(targetId);
+    
+    if (targetItem && targetItem.classList.contains('responsive-item')) {
+      // 1. Close all other items first
+      closeAllAccordions();
+      
+      // 2. Open the target item
+      targetItem.classList.add('open');
+      
+      const header = targetItem.querySelector('.responsive-item-header');
+      if (header) {
+        header.setAttribute('aria-expanded', 'true');
+      }
+      
+      // 3. Smooth scroll to the item
+      targetItem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  // Setup click listeners for mobile accordion toggle
+  const responsiveHeaders = document.querySelectorAll(".responsive-item-header");
+  responsiveHeaders.forEach((header) => {
+    header.addEventListener("click", () => {
+      const group = header.parentElement;
+      if (!group) return;
+
+      const isOpen = group.classList.contains("open");
+      
+      if (isOpen) {
+        // If it's already open, just close it
+        group.classList.remove("open");
+        header.setAttribute("aria-expanded", "false");
+      } else {
+        // If it's closed, shut everything else down before opening this one
+        closeAllAccordions();
+        group.classList.add("open");
+        header.setAttribute("aria-expanded", "true");
+      }
+    });
+  });
+
+  // Check hash on initial page load
+  if (window.location.hash) {
+    setTimeout(() => {
+      openAccordionById(window.location.hash);
+    }, 100);
+  }
+
+  // Listen for hash changes
+  window.addEventListener('hashchange', () => {
+    openAccordionById(window.location.hash);
+  });
+</script>
+
+<style define:vars={{ maxColumns }}>
+  /* ... keep your existing styles ... */
+</style>
+
+<style define:vars={{ maxColumns }}>
+  .responsive-list {
+    width: 100%;
+    margin: 20px auto 40px auto;
+  }
+
+  /* Desktop Grid Layout */
+  @media (min-width: 768px) {
+    .responsive-list {
+      display: grid;
+      grid-template-columns: repeat(var(--maxColumns), 1fr);
+      gap: 30px;
+    }
+  }
+</style>

@@ -11,6 +11,8 @@ import Nav from "../../components/nav.astro";
 import RichText from "../../components/richtText.astro";
 import Grid from "../../components/grid.astro";
 import GridCard from "../../components/gridCard.astro"; // Import the card
+import ResponsiveList from "../../components/responsiveList.astro";
+import ResponsiveListItem from "../../components/responsiveListItem.astro";
 import { payload } from "../../utils";
 import Layout from "../../components/layout.astro";
 
@@ -37,14 +39,6 @@ const order = ["Lindy", "Balboa", "Charleston", "Blues", "Shag", "Solo", "Tap"];
 const sortedDances = dances.sort((a, b) => {
   return order.indexOf(a.shortName) - order.indexOf(b.shortName);
 });
-
-// Fetch Schools Collection Data
-const schoolsResponse = await payload.find({
-  collection: "schools",
-  locale: locale,
-  limit: 100,
-});
-const schools = schoolsResponse.docs || [];
 ---
 
 <Layout locale={locale}>
@@ -55,80 +49,23 @@ const schools = schoolsResponse.docs || [];
     <RichText content={cnt.whatIsSwing} />
   </div>
 
-  {/* --- GRID 1: DANCES --- */}
+  {/* --- RESPONSIVE LIST 1: DANCES --- */}
   {
     sortedDances.length > 0 && (
-      <div class="dance-grid">
-        {dances.map((dance) => (
-          <article class="dance-card"  id={dance.shortName?.toLowerCase()}>
-            <h2>{dance.name}</h2>
-            <RichText
-              style="white-space: pre-line; text-align: justify; margin: 0;"
-              content={dance.description}
-            />
-          </article>
-        ))}
-      </div>
-    )
-  }
-  <div class="page-content">
-    <RichText content={cnt.howToLearn} />
-  </div>
-
-  {/* --- GRID 2: SCHOOLS --- */}
-  {
-    schools.length > 0 && (
-      <>
-        <Grid>
-          {schools.map((school) => (
-            <GridCard title={school.name} id={school.name.replaceAll(' ').toLocaleLowerCase()}>
-              <div style="text-align: justify;">
-                <RichText content={school.description} />
-                {school.website && (
-                  <p style="margin-top: 10px; margin-bottom: 0;">
-                    <a
-                      href={school.website}
-                      target="_blank"
-                      rel="noopener noreferrer">
-                      Visit Website →
-                    </a>
-                  </p>
-                )}
-              </div>
-            </GridCard>
-          ))}
-        </Grid>
-      </>
+      <ResponsiveList>
+        {sortedDances.map((dance, index) => {
+          const isFirst = index === 0;
+          return (
+          <ResponsiveListItem title={dance.name} id={dance.shortName?.toLowerCase()} isOpen={isFirst} border="dotted">
+              <RichText
+                style="white-space: pre-line; margin: 0;"
+                content={dance.description}
+              />
+            </ResponsiveListItem>
+          );
+        })}
+      </ResponsiveList>
     )
   }
 </Layout>
 
-<style>
-  /* Container for the dance list */
-  .dance-grid {
-    display: grid;
-    grid-template-columns: 1fr; /* 1 column on mobile */
-    gap: 20px;
-  }
-
-  /* On tablet/desktop, switch to a 2-column or 3-column grid */
-  @media (min-width: 768px) {
-    .dance-grid {
-      grid-template-columns: repeat(2, 1fr); /* 2 columns */
-    }
-
-    /* Target the first item specifically to span 2 columns */
-    .dance-card:first-child {
-      grid-column: span 2;
-    }
-  }
-
-  /* Card Styling for Visual Evenness */
-  .dance-card {
-    border: 1px solid #eee; /* Light border defines the "box" */
-    padding: 20px;
-    border-radius: 8px;
-    display: flex; /* Helps ensure content sits correctly */
-    flex-direction: column;
-  }
-</style>

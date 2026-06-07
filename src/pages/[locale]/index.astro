@@ -14,7 +14,9 @@ import WorkshopC from "../../components/workshop.astro";
 import type { Class } from "../../../cms/src/payload-types.ts";
 import { collect, payload, sortWeekdays, translateWeekday } from "../../utils";
 import RichText from "../../components/richtText.astro";
+import ResponsiveList from "../../components/responsiveList.astro";
 import Layout from "../../components/layout.astro";
+import ResponsiveListItem from "../../components/responsiveListItem.astro";
 
 interface Params {
   locale: "en" | "de";
@@ -99,33 +101,22 @@ const formatEventDate = (start: string, end?: string) => {
 
   <section>
     <div id="content-classes" class="tab-content active-content">
-      <div class="day-list">
+      <ResponsiveList maxColumns=1>
         {
           Object.entries(groupedClasses).map(([weekday, dayClasses], index) => {
             const isFirst = index === 0;
             return (
-              <div class={`day-group ${isFirst ? "open" : ""}`}>
-                <button
-                  class="day-header"
-                  aria-expanded={isFirst ? "true" : "false"}>
-                  <span class="day-label">
-                    {translateWeekday(weekday, locale)}
-                  </span>
-                  <span class="dropdown-arrow" />
-                </button>
-
-                <div class="day-content">
-                  <div class="centered-list">
-                    {dayClasses.map((data) => (
-                      <ClassC classs={data} />
-                    ))}
-                  </div>
+              <ResponsiveListItem title={weekday} id={weekday.toLowerCase()} isOpen={isFirst}>
+                <div class="centered-list">
+                  {dayClasses.map((data) => (
+                    <ClassC classs={data} />
+                  ))}
                 </div>
-              </div>
+              </ResponsiveListItem>
             );
           })
         }
-      </div>
+      </ResponsiveList>
     </div>
 
     <div id="content-workshops" class="tab-content">

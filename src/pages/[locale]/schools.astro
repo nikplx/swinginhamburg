@@ -1,0 +1,82 @@
+---
+export async function getStaticPaths() {
+  const locales = ["en", "de"];
+  return locales.map((locale) => ({
+    params: { locale },
+  }));
+}
+
+import "../../styles/global.css";
+import Nav from "../../components/nav.astro";
+import RichText from "../../components/richtText.astro";
+import Grid from "../../components/grid.astro";
+import GridCard from "../../components/gridCard.astro"; // Import the card
+import ResponsiveList from "../../components/responsiveList.astro";
+import ResponsiveListItem from "../../components/responsiveListItem.astro";
+import { payload } from "../../utils";
+import Layout from "../../components/layout.astro";
+import { shuffleByDay } from "../../utils";
+
+
+interface Params {
+  locale: "en" | "de";
+}
+const { locale } = Astro.params as Params;
+
+// Fetch Global Swing Data
+const cnt = await payload.findGlobal({
+  slug: "swing",
+  locale: locale,
+});
+
+// Fetch Schools Collection Data
+const schoolsResponse = await payload.find({
+  collection: "schools",
+  locale: locale,
+  limit: 100,
+});
+const schools = schoolsResponse.docs || [];
+const shuffledSchools = shuffleByDay(schools);
+---
+
+<Layout locale={locale}>
+  <h2>
+    {cnt.title}
+  </h2>
+
+  <div class="page-content">
+    <RichText content={cnt.howToLearn} />
+  </div>
+
+  {/* --- GRID 2: SCHOOLS --- */}
+  {
+    shuffledSchools.length > 0 && (
+      <>
+        <ResponsiveList>
+          {shuffledSchools.map((school, index) => {
+            const isFirst = index === 0;
+            return (
+              <ResponsiveListItem
+                title={school.name}
+                id={school.name.replaceAll(" ").toLocaleLowerCase()}
+                isOpen={isFirst}
+                border="dotted">
+                <RichText content={school.description} />
+                {school.website && (
+                  <p style="margin-top: 10px; margin-bottom: 0;">
+                    <a
+                      href={school.website}
+                      target="_blank"
+                      rel="noopener noreferrer">
+                      {locale === "en" ? "Visit Website →": "Besuchen Sie die Webseite →"}
+                    </a>
+                  </p>
+                )}
+              </ResponsiveListItem>
+            );
+          })}
+        </ResponsiveList>
+      </>
+    )
+  }
+</Layout>

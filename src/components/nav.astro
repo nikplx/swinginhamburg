@@ -28,6 +28,10 @@ const navItems = [
     href: `/${locale}/swing`,
     label: locale === "en" ? "SWING DANCE" : "SWINGTANZ",
   },
+  {
+    href: `/${locale}/schools`,
+    label: locale === "en" ? "SCHOOLS" : "TANZSCHULEN",
+  },
   { href: `/${locale}/map`, label: locale === "en" ? "MAP" : "KARTE" },
   { href: `/${locale}/about`, label: locale === "en" ? "ABOUT" : "ÜBER UNS" },
   {
@@ -108,3 +112,41 @@ const navItems = [
     }
   });
 </script>
+
+
+<style>
+  /* --- Desktop Styling Defaults --- */
+  .lang-switch {
+    /* Uses your global 8pt variant, or inherits and forces a smaller look */
+    font-size: var(--font-xxs) !important;
+    color: var(--text-muted) !important; /* #888888 */
+    font-weight: 500;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: color 0.2s ease, opacity 0.2s ease;
+    opacity: 0.8;
+  }
+
+  .lang-switch:hover {
+    color: var(--bg-main) !important; /* Illuminates back to white against the black header background */
+    opacity: 1;
+    text-decoration: underline;
+  }
+
+  /* --- Mobile Responsive Rules (< 768px) --- */
+  @media (max-width: 768px) {
+    .lang-switch {
+      /* Scales down smaller than standard mobile menu items (e.g., 10pt/12pt instead of var(--font-emph)) */
+      font-size: var(--font-desc) !important; 
+      border-top: 1px dotted rgba(255, 255, 255, 0.2); /* Discrete line breaking it away from standard pages */
+      padding-top: 15px !important;
+      width: 60%; /* Caps width for clear layout line presentation */
+      text-align: center;
+    }
+    
+    .lang-switch:hover {
+      color: var(--bg-main) !important;
+      text-decoration: none;
+    }
+  }
+</style>

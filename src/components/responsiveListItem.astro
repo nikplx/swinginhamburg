@@ -1,0 +1,135 @@
+---
+// src/components/responsiveListItem.astro
+interface Props {
+  title: string;
+  id?: string;
+  isOpen?: boolean;
+  border?: string;
+}
+
+const { title, id, isOpen = false, border = 'solid' } = Astro.props;
+---
+
+<div class={`list-group responsive-item ${isOpen ? "open" : ""}`} id={id}>
+  <button
+    class="group-header responsive-item-header"
+    aria-expanded={isOpen ? "true" : "false"}>
+    <span class="list-label">{title}</span>
+    <span class="dropdown-arrow responsive-arrow"></span>
+  </button>
+  <div class="list-content responsive-content">
+    <div class="centered-list responsive-content-inner">
+      <slot />
+    </div>
+  </div>
+</div>
+
+<style define:vars={{ border }}>
+  .responsive-content-inner {
+    text-align: justify;
+    padding-top: 10px;
+  }
+  /* --- Collapsible Weekday Dropdowns --- */
+  .list-list {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+    /* Top line removed to match the mockup's flow where dividers only sit below elements */
+  }
+
+  .list-group {
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .group-header {
+    width: 100%;
+    background: none;
+    border: none;
+    /* Reduced padding to 12px top/bottom to match the compact mockup look */
+    padding: 12px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* Reduced gap to 8px for a tighter horizontal grouping */
+    gap: 8px;
+    cursor: pointer;
+    font-family: "Inter", sans-serif;
+    color: var(--text-main);
+    /* Reset line-height to ensure the button height is driven purely by padding */
+    line-height: 1.2;
+    border-bottom: 2px var(--border) var(--text-main);
+  }
+  .list-label {
+    /* Using 14pt or 16pt based on your variables to match the mockup scale */
+    font-size: var(--font-emph);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: capitalize;
+    margin: 0;
+  }
+
+  /* Dropdown Arrow Indicator (CSS Triangle) */
+  .dropdown-arrow {
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid var(--text-main);
+    transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-block;
+  }
+
+  /* Smooth inversion when active */
+  .list-group.open .dropdown-arrow {
+    transform: rotate(180deg);
+  }
+
+  /* --- Content Collapse Animation Room --- */
+  .list-content {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.3s ease-out;
+    overflow: hidden;
+  }
+
+  .list-group.open .list-content {
+    grid-template-rows: 1fr;
+    padding-bottom: 10px;
+  }
+
+  .list-content > .centered-list {
+    min-height: 0;
+  }
+
+  /* Override accordion logic on Desktop to make it a Grid Card */
+  @media (min-width: 768px) {
+    .responsive-item {
+      /* Grid card styling */
+      border: 1px {border} #eee;
+      padding: 20px;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      overflow: visible; /* Override list-group overflow: hidden */
+    }
+
+    .responsive-item-header {
+      pointer-events: none; /* Disable click */
+      border-bottom: none; /* Remove accordion border */
+      padding: 0 0 10px 0; /* Reset padding */
+      margin-bottom: 10px;
+      justify-content: flex-start; /* Optional: adjust alignment for desktop */
+    }
+
+    .responsive-arrow {
+      display: none; /* Hide the dropdown arrow */
+    }
+
+    .responsive-content {
+      /* Force open */
+      grid-template-rows: 1fr;
+      padding-bottom: 0;
+    }
+  }
+</style>
