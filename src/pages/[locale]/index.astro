@@ -91,11 +91,11 @@ const formatEventDate = (start: string, end?: string) => {
 <Layout locale={locale}>
   <div class="page-tabs">
     <button id="tab-classes" class="tab active" data-tab="classes"
-      >CLASSES</button
+      >{locale === "en" ? "CLASSES": "KURSE"}</button
     >
     <span class="tab-separator">|</span>
     <button id="tab-workshops" class="tab inactive" data-tab="workshops"
-      >WORKSHOPS</button
+      >{locale === "en" ? "WORKSHOPS": "WORKSHOPS"}</button
     >
   </div>
 
