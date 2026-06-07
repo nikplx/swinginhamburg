@@ -106,7 +106,7 @@ const formatEventDate = (start: string, end?: string) => {
           Object.entries(groupedClasses).map(([weekday, dayClasses], index) => {
             const isFirst = index === 0;
             return (
-              <ResponsiveListItem title={weekday} id={weekday.toLowerCase()} isOpen={isFirst}>
+              <ResponsiveListItem title={translateWeekday(weekday, locale)} id={weekday.toLowerCase()} isOpen={isFirst}>
                 <div class="centered-list">
                   {dayClasses.map((data) => (
                     <ClassC classs={data} />

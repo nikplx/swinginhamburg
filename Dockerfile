@@ -1,36 +1,35 @@
+# --- Stage 1: Builder ---
 FROM node:lts-alpine3.20 AS builder
 WORKDIR /app
 
-# Copy dependency files first to leverage Docker caching
+# 1. Copy only package files first to cache the npm install layer
 COPY package*.json ./
-
-# Install ALL dependencies (including devDependencies needed for building)
 RUN npm ci
 
-# Copy the rest of the source code
+# 2. Copy the rest of the source code and build
 COPY . .
-COPY ./cms/src/payload-types.ts ./cms/src/payload-types.ts
-
-# Build the application
 RUN npm run build
 
-# Prune devDependencies to keep production dependencies only
-RUN npm prune --production
+# 3. Strip out devDependencies to save space
+RUN npm prune --omit=dev
 
 
-# Stage 2: Production runtime
+# --- Stage 2: Runtime ---
 FROM node:lts-alpine3.20 AS runtime
 WORKDIR /app
 
-# Separate the environment variables for safety
+# Set production environment
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=4321
 
-# Copy only the compiled code and production node_modules from the builder stage
-COPY --from=builder /app/dist ./dist
+# 4. Copy ONLY the necessary compiled files and production dependencies
+COPY --from=builder /app/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/dist ./dist
+
+# Note: If your app requires a 'public' or 'assets' folder at runtime, 
+# copy it here as well (e.g., COPY --from=builder /app/public ./public)
 
 EXPOSE 4321
 CMD ["node", "./dist/server/entry.mjs"]
