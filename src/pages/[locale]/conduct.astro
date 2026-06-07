@@ -1,0 +1,21 @@
+---
+export async function getStaticPaths() {
+  const locales = ["en", "de"];
+
+  return locales.map((locale) => ({
+    params: { locale },
+  }));
+}
+
+import Layout from "../../components/layout.astro";
+import "../../styles/global.css";
+
+interface Params {
+  locale: "en" | "de";
+}
+const { locale } = Astro.params as Params;
+---
+
+<Layout locale={locale}>
+  <h1>Code of Conduct</h1>
+</Layout>
