@@ -3,7 +3,7 @@ import type { Config, Class } from '../cms/src/payload-types';
 
 
 export const payload = new PayloadSDK<Config>({
-  baseURL: process.env.PAYLOAD_URL || 'http://localhost:3000/api',
+  baseURL: import.meta.env.PAYLOAD_URL || 'http://localhost:3000',
 });
 
 

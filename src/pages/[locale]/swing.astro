@@ -58,17 +58,17 @@ const schools = schoolsResponse.docs || [];
   {/* --- GRID 1: DANCES --- */}
   {
     sortedDances.length > 0 && (
-      <Grid>
+      <div class="dance-grid">
         {dances.map((dance) => (
-          // Add the id attribute here
-          <GridCard title={dance.name} id={dance.shortName?.toLowerCase()}>
+          <article class="dance-card"  id={dance.shortName?.toLowerCase()}>
+            <h2>{dance.name}</h2>
             <RichText
               style="white-space: pre-line; text-align: justify; margin: 0;"
               content={dance.description}
             />
-          </GridCard>
+          </article>
         ))}
-      </Grid>
+      </div>
     )
   }
   <div class="page-content">
