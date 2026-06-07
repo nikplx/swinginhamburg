@@ -11,35 +11,39 @@ const formatDate = (dateStr: string) => {
   return `${d.getUTCDate().toString().padStart(2, "0")}.${(d.getUTCMonth() + 1).toString().padStart(2, "0")}`;
 };
 
-const getFormattedDateTime = () => {
+const getFormattedDate = () => {
   const startD = formatDate(event.startDate);
   const endD = event.endDate ? formatDate(event.endDate) : null;
-  const startT = event.startTime || "";
-  const endT = event.endTime || "";
 
   let datePart = startD;
   
   if (endD && startD !== endD) {
-    const startParts = startD.split("."); // [DD, MM]
-    const endParts = endD.split(".");     // [DD, MM]
+    const startParts = startD.split("."); // Expects [DD, MM, ""]
+    const endParts = endD.split(".");     // Expects [DD, MM, ""]
     
-    // If months match: "17.-19.06"
+    // If months match: e.g., "17.-19.06."
     if (startParts[1] === endParts[1]) {
-      datePart = `${startParts[0]}.-${endParts[0]}.${startParts[1]}`;
+      datePart = `${startParts[0]}.-${endParts[0]}.${startParts[1]}.`;
     } else {
-      // If months differ: "17.06 - 19.07"
-      datePart = `${startD} - ${endD}`;
+      // If months differ: e.g., "30.06.-02.07."
+      datePart = `${startD}-${endD}`;
     }
   }
 
-  const timePart = [startT, endT].filter(Boolean).join(" - ");
-  return `${datePart}${timePart ? `   ${timePart}` : ""}`;
+  return datePart;
 };
+
+const danceTags =
+  event.dances && event.dances.length > 0
+    ? event.dances.map((dance) =>
+        typeof dance === "string" ? dance : dance.shortName,
+      )
+    : [event.title];
 ---
 
 <div class="workshop-item">
   <div class="workshop-date">
-    {getFormattedDateTime()}
+    {getFormattedDate()}
   </div>
   
   <h3 class="workshop-title">{event.title}</h3>
@@ -63,4 +67,19 @@ const getFormattedDateTime = () => {
       {event.price.toFixed(2)} €
     </div>
   )}
+  <div class="listing-tags-row">
+    {
+      danceTags.map((tag) => {
+        // Standardize the slug for the link
+        const slug = typeof tag === "string" ? tag : tag.shortName;
+        const href = `/${Astro.currentLocale}/swing#${slug.replace(/\s+/g, "-").toLowerCase()}`;
+
+        return (
+          <a href={href} class="listing-tag">
+            {tag}
+          </a>
+        );
+      })
+    }
+  </div>
 </div>

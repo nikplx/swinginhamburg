@@ -331,17 +331,22 @@ button.tab:hover.inactive {
   align-items: flex-end;
 }
 
+.listing-tags-row {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: flex-end;
+}
+
 .listing-tag {
   /* Existing styles */
   border: 1px solid var(--accent);
+  display: inline-block;
   border-radius: 8px;
-  padding: 3px 8px;
-  font-weight: 700;
-  font-size: var(--font-tag);
-  white-space: nowrap;
-  background-color: var(--bg-main);
-  line-height: 1;
-  transform: translateY(5px);
+  padding: 4px 12px;
+  font-weight: 600;
+  font-size: var(--font-desc);
+  margin-bottom: 20px;
 
   /* NEW: Reset link styles to maintain exact appearance */
   text-decoration: none;
@@ -512,9 +517,9 @@ button.tab:hover.inactive {
 
 /* --- Workshops Layout (Mockup 3) --- */
 .workshop-item {
-  margin-bottom: 40px;
-  border-bottom: 1px dotted var(--text-main);
-  padding-bottom: 30px;
+  margin-bottom: 20px;
+  border-bottom: 2px dotted var(--text-main);
+  padding-bottom: 10px;
 }
 
 .workshop-item:last-child {
@@ -522,8 +527,10 @@ button.tab:hover.inactive {
 }
 
 .workshop-date {
+  background-color: var(--accent);
+  color: var(--bg-main);
+
   display: inline-block;
-  border: 1px solid var(--accent);
   border-radius: 8px;
   padding: 4px 12px;
   font-weight: 600;

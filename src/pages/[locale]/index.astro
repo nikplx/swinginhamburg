@@ -88,9 +88,13 @@ const formatEventDate = (start: string, end?: string) => {
 
 <Layout locale={locale}>
   <div class="page-tabs">
-    <button id="tab-classes" class="tab active">CLASSES</button>
+    <button id="tab-classes" class="tab active" data-tab="classes"
+      >CLASSES</button
+    >
     <span class="tab-separator">|</span>
-    <button id="tab-workshops" class="tab inactive">WORKSHOPS</button>
+    <button id="tab-workshops" class="tab inactive" data-tab="workshops"
+      >WORKSHOPS</button
+    >
   </div>
 
   <section>
@@ -144,26 +148,55 @@ const formatEventDate = (start: string, end?: string) => {
       const contentClasses = document.getElementById("content-classes");
       const contentWorkshops = document.getElementById("content-workshops");
 
-      function switchTab(activeBtn, inactiveBtn, activeView, inactiveView) {
+      function switchTab(
+        activeBtn,
+        inactiveBtn,
+        activeView,
+        inactiveView,
+        updateHash = true,
+      ) {
         if (activeBtn.classList.contains("active")) return;
+
+        // Update URL Hash for back-button support
+        if (updateHash) {
+          window.location.hash = activeBtn.dataset.tab;
+        }
 
         activeBtn.classList.remove("inactive");
         activeBtn.classList.add("active");
         inactiveBtn.classList.remove("active");
         inactiveBtn.classList.add("inactive");
 
-        inactiveView.style.opacity = "0";
-
-        setTimeout(() => {
-          inactiveView.classList.remove("active-content");
+        // Direct swap for the initial load, fade for manual clicks
+        if (!updateHash) {
           inactiveView.style.display = "none";
+          inactiveView.classList.remove("active-content");
           activeView.style.display = "block";
-
-          void activeView.offsetWidth;
-
           activeView.classList.add("active-content");
           activeView.style.opacity = "1";
-        }, 300);
+        } else {
+          inactiveView.style.opacity = "0";
+          setTimeout(() => {
+            inactiveView.classList.remove("active-content");
+            inactiveView.style.display = "none";
+            activeView.style.display = "block";
+            void activeView.offsetWidth;
+            activeView.classList.add("active-content");
+            activeView.style.opacity = "1";
+          }, 300);
+        }
+      }
+
+      // Initialize from Hash
+      const currentHash = window.location.hash.replace("#", "");
+      if (currentHash === "workshops") {
+        switchTab(
+          tabWorkshops,
+          tabClasses,
+          contentWorkshops,
+          contentClasses,
+          false,
+        );
       }
 
       if (tabClasses && tabWorkshops) {
@@ -172,7 +205,7 @@ const formatEventDate = (start: string, end?: string) => {
         });
 
         tabWorkshops.addEventListener("click", () => {
-          switchTab(tabWorkshops, tabClasses, contentWorkshops, contentClasses);
+          switchTab(tabWorkshops, tabClasses, contentWorkshops, contentClasses); // Note: Fix typo contentKurse -> contentClasses if needed
         });
       }
 
