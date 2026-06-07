@@ -200,7 +200,7 @@ header {
   transition: all 0.3s ease;
 }
 
-/* --- Page Subheader (Kurse | Workshops) --- */
+/* --- Page Subheader (Classes | Workshops) --- */
 .page-tabs {
   text-align: center;
   margin: 30px 0;
@@ -209,13 +209,26 @@ header {
   letter-spacing: 0.02em;
 }
 
-.page-tabs .tab.active {
+button.tab {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+button.tab.active {
   color: var(--text-main);
 }
 
-.page-tabs .tab.inactive {
+button.tab.inactive {
   color: var(--text-muted);
   font-weight: 500;
+}
+
+button.tab:hover.inactive {
+  color: var(--text-main);
 }
 
 .tab-separator {
@@ -224,40 +237,91 @@ header {
   font-weight: 500;
 }
 
-/* --- Listings (Class Component) --- */
+/* --- Collapsible Weekday Dropdowns --- */
+.day-list {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  /* Top line removed to match the mockup's flow where dividers only sit below elements */
+}
+
 .day-group {
+  width: 100%;
+  overflow: hidden;
+}
+
+.day-header {
+  width: 100%;
+  background: none;
+  border: none;
+  /* Reduced padding to 12px top/bottom to match the compact mockup look */
+  padding: 12px 0; 
   display: flex;
-  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  margin-bottom: 40px;
+  /* Reduced gap to 8px for a tighter horizontal grouping */
+  gap: 8px; 
+  cursor: pointer;
+  font-family: "Inter", sans-serif;
+  color: var(--text-main);
+  /* Reset line-height to ensure the button height is driven purely by padding */
+  line-height: 1.2;
+  border-bottom: 2px solid var(--text-main);
 }
-
-.day-label-wrapper {
-  margin-bottom: 20px;
-}
-
 .day-label {
-  background-color: var(--accent);
-  color: var(--bg-main);
-  padding: 6px 16px;
-  border-radius: 8px;
+  /* Using 14pt or 16pt based on your variables to match the mockup scale */
+  font-size: var(--font-emph); 
   font-weight: 700;
-  font-size: var(--font-emph);
+  letter-spacing: 0.02em;
+  text-transform: capitalize;
+  margin: 0;
 }
 
+/* Dropdown Arrow Indicator (CSS Triangle) */
+.dropdown-arrow {
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid var(--text-main);
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-block;
+}
+
+/* Smooth inversion when active */
+.day-group.open .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+/* --- Content Collapse Animation Room --- */
+.day-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s ease-out;
+  overflow: hidden;
+}
+
+.day-group.open .day-content {
+  grid-template-rows: 1fr;
+  padding-bottom: 10px;
+}
+
+.day-content > .centered-list {
+  min-height: 0;
+  padding-bottom: 15px; /* Keeps padding inside the border area */
+}
+/* --- Listings (Class Rows Inside Content) --- */
 .listing-item {
   display: grid;
   grid-template-columns: 80px 1fr;
-  gap: 15px;
-  padding: 20px 0;
-  border-bottom: 2px dotted var(--text-main);
-  
-  /* CHANGE THIS from 'baseline' to 'start' to stop jumping */
+  gap: 20px;
+  padding: 16px 0;
+  border-bottom: 2px dotted var(--text-muted);
   align-items: start; 
 }
 
 .listing-item:last-child {
-  border-bottom:  none;
+  border-bottom: none;
 }
 
 .listing-tags-wrapper {
@@ -277,7 +341,7 @@ header {
   white-space: nowrap;
   background-color: var(--bg-main);
   line-height: 1;
-  transform: translateY(-2px);
+  transform: translateY(5px);
 
   /* NEW: Reset link styles to maintain exact appearance */
   text-decoration: none;

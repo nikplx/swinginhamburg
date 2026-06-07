@@ -88,87 +88,111 @@ const formatEventDate = (start: string, end?: string) => {
 
 <Layout locale={locale}>
   <div class="page-tabs">
-    <button id="tab-kurse" class="tab active">KURSE</button>
+    <button id="tab-classes" class="tab active">CLASSES</button>
     <span class="tab-separator">|</span>
     <button id="tab-workshops" class="tab inactive">WORKSHOPS</button>
   </div>
 
   <section>
-    <div id="content-kurse" class="tab-content active-content">
+    <div id="content-classes" class="tab-content active-content">
       <div class="day-list">
         {
-          Object.entries(groupedClasses).map(([weekday, dayClasses]) => (
-            <div class="day-group">
-              <div class="day-label-wrapper">
-                <span class="day-label">
-                  {translateWeekday(weekday, locale)}
-                </span>
+          Object.entries(groupedClasses).map(([weekday, dayClasses], index) => {
+            const isFirst = index === 0;
+            return (
+              <div class={`day-group ${isFirst ? "open" : ""}`}>
+                <button
+                  class="day-header"
+                  aria-expanded={isFirst ? "true" : "false"}>
+                  <span class="day-label">
+                    {translateWeekday(weekday, locale)}
+                  </span>
+                  <span class="dropdown-arrow" />
+                </button>
+
+                <div class="day-content">
+                  <div class="centered-list">
+                    {dayClasses.map((data) => (
+                      <ClassC classs={data} />
+                    ))}
+                  </div>
+                </div>
               </div>
-              <div class="centered-list">
-                {dayClasses.map((data) => (
-                  <ClassC classs={data} />
-                ))}
-              </div>
-            </div>
-          ))
+            );
+          })
         }
       </div>
     </div>
 
     <div id="content-workshops" class="tab-content">
       <div class="centered-list">
-        {upcomingEvents.length > 0 ? (
-          upcomingEvents.map((event) => <WorkshopC event={event} />)
-        ) : (
-          <p>No upcoming events in the next 14 days.</p>
-        )}
+        {
+          upcomingEvents.length > 0 ? (
+            upcomingEvents.map((event) => <WorkshopC event={event} />)
+          ) : (
+            <p>No upcoming events in the next 14 days.</p>
+          )
+        }
       </div>
     </div>
   </section>
+
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      const tabKurse = document.getElementById("tab-kurse");
+      const tabClasses = document.getElementById("tab-classes");
       const tabWorkshops = document.getElementById("tab-workshops");
-      const contentKurse = document.getElementById("content-kurse");
+      const contentClasses = document.getElementById("content-classes");
       const contentWorkshops = document.getElementById("content-workshops");
 
       function switchTab(activeBtn, inactiveBtn, activeView, inactiveView) {
-        if (activeBtn.classList.contains("active")) return; // Prevent re-triggering
+        if (activeBtn.classList.contains("active")) return;
 
-        // 1. Toggle button styles immediately
         activeBtn.classList.remove("inactive");
         activeBtn.classList.add("active");
         inactiveBtn.classList.remove("active");
         inactiveBtn.classList.add("inactive");
 
-        // 2. Fade out current content
         inactiveView.style.opacity = "0";
 
-        // 3. Wait for fade out to complete, then swap display and fade in
         setTimeout(() => {
           inactiveView.classList.remove("active-content");
           inactiveView.style.display = "none";
-
           activeView.style.display = "block";
 
-          // Force browser reflow to ensure display: block is processed before changing opacity
           void activeView.offsetWidth;
 
           activeView.classList.add("active-content");
           activeView.style.opacity = "1";
-        }, 300); // Matches the 0.3s CSS transition duration
+        }, 300);
       }
 
-      if (tabKurse && tabWorkshops) {
-        tabKurse.addEventListener("click", () => {
-          switchTab(tabKurse, tabWorkshops, contentKurse, contentWorkshops);
+      if (tabClasses && tabWorkshops) {
+        tabClasses.addEventListener("click", () => {
+          switchTab(tabClasses, tabWorkshops, contentClasses, contentWorkshops);
         });
 
         tabWorkshops.addEventListener("click", () => {
-          switchTab(tabWorkshops, tabKurse, contentWorkshops, contentKurse);
+          switchTab(tabWorkshops, tabClasses, contentWorkshops, contentClasses);
         });
       }
+
+      // Day Accordion Toggling Logic
+      const dayHeaders = document.querySelectorAll(".day-header");
+      dayHeaders.forEach((header) => {
+        header.addEventListener("click", () => {
+          const dayGroup = header.parentElement;
+          if (!dayGroup) return;
+
+          const isOpen = dayGroup.classList.contains("open");
+          if (isOpen) {
+            dayGroup.classList.remove("open");
+            header.setAttribute("aria-expanded", "false");
+          } else {
+            dayGroup.classList.add("open");
+            header.setAttribute("aria-expanded", "true");
+          }
+        });
+      });
     });
   </script>
 </Layout>
-
