@@ -54,12 +54,11 @@ const shuffledSchools = shuffleByDay(schools);
       <>
         <ResponsiveList>
           {shuffledSchools.map((school, index) => {
-            const isFirst = index === 0;
             return (
               <ResponsiveListItem
                 title={school.name}
                 id={school.name.replaceAll(" ").toLocaleLowerCase()}
-                isOpen={isFirst}
+                isOpen={false}
                 border="dotted">
                 <RichText content={school.description} />
                 {school.website && (
@@ -68,7 +67,7 @@ const shuffledSchools = shuffleByDay(schools);
                       href={school.website}
                       target="_blank"
                       rel="noopener noreferrer">
-                      {locale === "en" ? "Visit Website →": "Besuchen Sie die Webseite →"}
+                      {locale === "en" ? "Visit Website": "Mehr Infos und Kontakt"}
                     </a>
                   </p>
                 )}

@@ -52,6 +52,17 @@ const endOf14Days = new Date(
   ),
 );
 
+// Get the current weekday name in English lowercase (e.g., "monday", "tuesday")
+// to match the keys created by your .reduce(collect(...)) function
+const currentWeekday = new Intl.DateTimeFormat("en-US", { weekday: "long" })
+  .format(today)
+  .toLowerCase();
+
+const index = await payload.findGlobal({
+  slug: "index",
+  locale: locale,
+});
+
 // Fetches the data for the workshops tab
 const { docs: upcomingEvents } = await payload.find({
   collection: "events",
@@ -68,45 +79,64 @@ const groupedClasses = classes.sort(sortWeekdays).reduce(
   collect((c) => c.weekday.toLowerCase()),
   {},
 );
-
-// Date formatter for the Workshop badge (e.g., "17.-19.06.")
-const formatEventDate = (start: string, end?: string) => {
-  const d1 = new Date(start);
-  const day1 = d1.getUTCDate().toString().padStart(2, "0");
-  const month1 = (d1.getUTCMonth() + 1).toString().padStart(2, "0");
-
-  if (!end) return `${day1}.${month1}.`;
-
-  const d2 = new Date(end);
-  const day2 = d2.getUTCDate().toString().padStart(2, "0");
-  const month2 = (d2.getUTCMonth() + 1).toString().padStart(2, "0");
-
-  if (month1 === month2) {
-    return `${day1}.-${day2}.${month1}.`;
-  }
-  return `${day1}.${month1}.-${day2}.${month2}.`;
-};
 ---
 
 <Layout locale={locale}>
+  <section>
+    <div class="greeter">
+      <RichText content={index.intro} />
+    </div>
+    <div class="disclaimer-box">
+      <div class="disclaimer">
+        <RichText content={index.donationBox} />
+      </div>
+      <div class="disclaimer-button">
+        <a href="">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="arrow-icon">
+            <path d="M5 12h14M12 5l7 7-7 7"></path>
+          </svg>
+          <span>{locale === "en" ? "Fill out Poll" : "Direkt zur Umfrage"}</span
+          >
+        </a>
+      </div>
+    </div>
+  </section>
   <div class="page-tabs">
     <button id="tab-classes" class="tab active" data-tab="classes"
-      >{locale === "en" ? "CLASSES": "KURSE"}</button
+      >{locale === "en" ? "CLASSES" : "KURSE"}</button
     >
     <span class="tab-separator">|</span>
     <button id="tab-workshops" class="tab inactive" data-tab="workshops"
-      >{locale === "en" ? "WORKSHOPS": "WORKSHOPS"}</button
+      >{locale === "en" ? "WORKSHOPS" : "WORKSHOPS"}</button
     >
   </div>
 
   <section>
     <div id="content-classes" class="tab-content active-content">
-      <ResponsiveList maxColumns=1>
+      <ResponsiveList maxColumns="1">
         {
           Object.entries(groupedClasses).map(([weekday, dayClasses], index) => {
-            const isFirst = index === 0;
+            // 1. Check if this item matches today's weekday
+            const isToday = weekday === currentWeekday;
+
+            // 2. Fallback check: If today has no classes, default open the first day in the object
+            const hasTodayClasses =
+              Object.keys(groupedClasses).includes(currentWeekday);
+            const shouldDefaultOpen = !hasTodayClasses && index === 0;
+
             return (
-              <ResponsiveListItem title={translateWeekday(weekday, locale)} id={weekday.toLowerCase()} isOpen={isFirst}>
+              <ResponsiveListItem
+                title={translateWeekday(weekday, locale)}
+                id={weekday.toLowerCase()}
+                isOpen={isToday || shouldDefaultOpen}>
                 <div class="centered-list">
                   {dayClasses.map((data) => (
                     <ClassC classs={data} />
@@ -220,3 +250,64 @@ const formatEventDate = (start: string, end?: string) => {
     });
   </script>
 </Layout>
+
+<style>
+  .greeter {
+    padding-top: 30px;
+  }
+
+  .disclaimer-box {
+    display: flex;
+    flex-direction: column; 
+    align-items: stretch;    
+    border: 1px solid #000000; 
+    padding: 24px; 
+    border-radius: 12px; 
+    width: 100%;
+    max-width: 600px; 
+    box-sizing: border-box;
+    margin-bottom: 50px;
+    gap: 16px; 
+  }
+
+  .disclaimer {
+    font-family: sans-serif; 
+    font-size: 1.1rem;
+    line-height: 1.4;
+    color: #000000;
+  }
+
+  .disclaimer :global(p) {
+    margin: 0; 
+  }
+
+  .disclaimer-button {
+    display: flex;
+    justify-content: flex-start; 
+    align-items: center;
+    width: 100%;
+  }
+
+  .disclaimer-box a {
+    display: inline-flex; 
+    align-items: center;      /* Vertically aligns arrow and text perfectly */
+    justify-content: flex-start; 
+    text-align: left;
+    gap: 8px;                /* Consistent gap between arrow and text */
+
+    color: #000000;
+    text-decoration: none;
+    font-weight: 800; 
+    font-size: 1.3rem;
+    line-height: 1;           /* Tight line height prevents text-box bounding shifts */
+    cursor: pointer;
+  }
+
+  /* SVG Specific Styles */
+  .arrow-icon {
+    width: 1.25rem;           /* Scales proportionally with text sizing units */
+    height: 1.25rem;
+    flex-shrink: 0;           /* Prevents the arrow from squeezing on ultra-small screens */
+    display: inline-block;
+  }
+</style>

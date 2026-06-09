@@ -49,7 +49,7 @@ const schoolHref = `/${Astro.currentLocale}/schools#${schoolSlug}`;
     </span>
     
     <span class="listing-address">
-      <a href={"http://maps.google.com/?q=" + clazz.address}>
+      <a href={"http://maps.google.com/?q=" + clazz.address} target="_blank" rel="noopener noreferrer">
         {street} {num}, 
         {postal}
       </a>

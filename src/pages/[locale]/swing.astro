@@ -54,9 +54,8 @@ const sortedDances = dances.sort((a, b) => {
     sortedDances.length > 0 && (
       <ResponsiveList>
         {sortedDances.map((dance, index) => {
-          const isFirst = index === 0;
           return (
-          <ResponsiveListItem title={dance.name} id={dance.shortName?.toLowerCase()} isOpen={isFirst} border="dotted">
+          <ResponsiveListItem title={dance.name} id={dance.shortName?.toLowerCase()} isOpen={false} border="dotted">
               <RichText
                 style="white-space: pre-line; margin: 0;"
                 content={dance.description}
