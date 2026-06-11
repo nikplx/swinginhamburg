@@ -2,11 +2,12 @@
 // src/components/responsiveList.astro
 interface Props {
   maxColumns?: number;
+  exclusiveOpen?: boolean; // Added configuration prop
 }
 
-const {maxColumns = 3} = Astro.props;
+const { maxColumns = 3, exclusiveOpen = true } = Astro.props;
 ---
-<div class="responsive-list">
+<div class="responsive-list" id="responsive-list-wrapper" data-exclusive-open={exclusiveOpen.toString()}>
   <slot />
 </div>
 
@@ -31,18 +32,18 @@ const {maxColumns = 3} = Astro.props;
     const targetItem = document.getElementById(targetId);
     
     if (targetItem && targetItem.classList.contains('responsive-item')) {
-      // 1. Close all other items first
-      closeAllAccordions();
+      const isExclusive = targetItem.closest('.responsive-list')?.getAttribute('data-exclusive-open') === 'true';
+
+      if (isExclusive) {
+        closeAllAccordions();
+      }
       
-      // 2. Open the target item
       targetItem.classList.add('open');
-      
       const header = targetItem.querySelector('.responsive-item-header');
       if (header) {
         header.setAttribute('aria-expanded', 'true');
       }
       
-      // 3. Smooth scroll to the item
       targetItem.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }
@@ -54,15 +55,16 @@ const {maxColumns = 3} = Astro.props;
       const group = header.parentElement;
       if (!group) return;
 
+      const isExclusive = group.closest('.responsive-list')?.getAttribute('data-exclusive-open') === 'true';
       const isOpen = group.classList.contains("open");
       
       if (isOpen) {
-        // If it's already open, just close it
         group.classList.remove("open");
         header.setAttribute("aria-expanded", "false");
       } else {
-        // If it's closed, shut everything else down before opening this one
-        closeAllAccordions();
+        if (isExclusive) {
+          closeAllAccordions();
+        }
         group.classList.add("open");
         header.setAttribute("aria-expanded", "true");
       }
@@ -76,15 +78,10 @@ const {maxColumns = 3} = Astro.props;
     }, 100);
   }
 
-  // Listen for hash changes
   window.addEventListener('hashchange', () => {
     openAccordionById(window.location.hash);
   });
 </script>
-
-<style define:vars={{ maxColumns }}>
-  /* ... keep your existing styles ... */
-</style>
 
 <style define:vars={{ maxColumns }}>
   .responsive-list {

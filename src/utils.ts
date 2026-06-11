@@ -92,3 +92,27 @@ export function shuffleByDay<T>(array: T[]): T[] {
 
   return shuffled;
 }
+
+export interface DecodedAddress {
+  location: string | null;
+  num: string;
+  street: string;
+  quarter: string;
+  city: string;
+  postal: string;
+  country: string;
+  rest: string[];
+}
+
+export const decodeAddress = (addressStr: string): DecodedAddress => {
+  const parts = addressStr.split(',').map(p => p.trim());
+  
+  // If the first part doesn't start with a number, assume it's a location
+  const hasLocation = !/^\d/.test(parts[0]);
+  
+  const [location, num, street, quarter, city, postal, country, ...rest] = hasLocation 
+    ? parts 
+    : [null, ...parts];
+
+  return { location, num, street, quarter, city, postal, country, rest };
+}

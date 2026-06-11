@@ -26,6 +26,7 @@ const { locale } = Astro.params as Params;
 const { docs: classes } = await payload.find({
   collection: "classes",
   locale: locale,
+  depth: 1, // Ensures relations like 'dances' are populated with their data, not just IDs
 });
 
 const today = new Date();
@@ -40,11 +41,11 @@ const startOfToday = new Date(
     0,
   ),
 );
-const endOf14Days = new Date(
+const endOf60Days = new Date(
   Date.UTC(
     today.getUTCFullYear(),
     today.getUTCMonth(),
-    today.getUTCDate() + 14,
+    today.getUTCDate() + 60,
     23,
     59,
     59,
@@ -52,8 +53,6 @@ const endOf14Days = new Date(
   ),
 );
 
-// Get the current weekday name in English lowercase (e.g., "monday", "tuesday")
-// to match the keys created by your .reduce(collect(...)) function
 const currentWeekday = new Intl.DateTimeFormat("en-US", { weekday: "long" })
   .format(today)
   .toLowerCase();
@@ -63,14 +62,14 @@ const index = await payload.findGlobal({
   locale: locale,
 });
 
-// Fetches the data for the workshops tab
 const { docs: upcomingEvents } = await payload.find({
   collection: "events",
   sort: "startDate",
+  depth: 1, // ADDED: Ensure events also populate their dance relations
   where: {
     and: [
       { startDate: { greater_than_equal: startOfToday.toISOString() } },
-      { startDate: { less_than_equal: endOf14Days.toISOString() } },
+      { startDate: { less_than_equal: endOf60Days.toISOString() } },
     ],
   },
 });
@@ -79,6 +78,28 @@ const groupedClasses = classes.sort(sortWeekdays).reduce(
   collect((c) => c.weekday.toLowerCase()),
   {},
 );
+
+// --- SIMPLIFIED DANCE EXTRACTION (Classes + Events) ---
+const uniqueDancesMap = new Map();
+
+// Helper function to extract dances from an array of docs
+const extractDances = (docs: any[]) => {
+  docs.forEach((doc) => {
+    if (doc.dances && Array.isArray(doc.dances)) {
+      doc.dances.forEach((dance: any) => {
+        if (dance && dance.shortName) {
+          uniqueDancesMap.set(dance.shortName, dance);
+        }
+      });
+    }
+  });
+};
+
+// Extract from both collections so the filter list is complete
+extractDances(classes);
+extractDances(upcomingEvents);
+
+const danceFilters = Array.from(uniqueDancesMap.values());
 ---
 
 <Layout locale={locale}>
@@ -109,40 +130,99 @@ const groupedClasses = classes.sort(sortWeekdays).reduce(
       </div>
     </div>
   </section>
-  <div class="page-tabs">
-    <button id="tab-classes" class="tab active" data-tab="classes"
-      >{locale === "en" ? "CLASSES" : "KURSE"}</button
-    >
-    <span class="tab-separator">|</span>
-    <button id="tab-workshops" class="tab inactive" data-tab="workshops"
-      >{locale === "en" ? "WORKSHOPS" : "WORKSHOPS"}</button
-    >
+
+  <div class="tabs-header">
+    <div class="page-tabs">
+      <button id="tab-classes" class="tab active" data-tab="classes">
+        {locale === "en" ? "CLASSES" : "KURSE"}
+      </button>
+      <span class="tab-separator">|</span>
+      <button id="tab-workshops" class="tab inactive" data-tab="workshops">
+        {locale === "en" ? "WORKSHOPS" : "WORKSHOPS"}
+      </button>
+    </div>
+
+    {
+      danceFilters.length > 0 && (
+        <button
+          id="filter-toggle"
+          class="filter-toggle"
+          aria-label="Toggle Filters">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round">
+            <line x1="4" y1="21" x2="4" y2="14" />
+            <line x1="4" y1="10" x2="4" y2="3" />
+            <line x1="12" y1="21" x2="12" y2="12" />
+            <line x1="12" y1="8" x2="12" y2="3" />
+            <line x1="20" y1="21" x2="20" y2="16" />
+            <line x1="20" y1="12" x2="20" y2="3" />
+            <line x1="1" y1="14" x2="7" y2="14" />
+            <line x1="9" y1="8" x2="15" y2="8" />
+            <line x1="17" y1="16" x2="23" y2="16" />
+          </svg>
+        </button>
+      )
+    }
   </div>
+
+  {
+    danceFilters.length > 0 && (
+      <div id="filter-panel" class="filter-panel">
+        {danceFilters.map((dance) => (
+          <button
+            class="listing-tag filter-tag"
+            data-filter={dance.shortName.toLowerCase()}>
+            {dance.name || dance.shortName}
+          </button>
+        ))}
+      </div>
+    )
+  }
 
   <section>
     <div id="content-classes" class="tab-content active-content">
-      <ResponsiveList maxColumns="1">
+      <ResponsiveList maxColumns={1} exclusiveOpen={false}>
         {
           Object.entries(groupedClasses).map(([weekday, dayClasses], index) => {
-            // 1. Check if this item matches today's weekday
+            // ... remainder of your map function stays the same
             const isToday = weekday === currentWeekday;
-
-            // 2. Fallback check: If today has no classes, default open the first day in the object
             const hasTodayClasses =
               Object.keys(groupedClasses).includes(currentWeekday);
             const shouldDefaultOpen = !hasTodayClasses && index === 0;
 
             return (
-              <ResponsiveListItem
-                title={translateWeekday(weekday, locale)}
-                id={weekday.toLowerCase()}
-                isOpen={isToday || shouldDefaultOpen}>
-                <div class="centered-list">
-                  {dayClasses.map((data) => (
-                    <ClassC classs={data} />
-                  ))}
-                </div>
-              </ResponsiveListItem>
+              <div class="day-group">
+                <ResponsiveListItem
+                  title={translateWeekday(weekday, locale)}
+                  id={weekday.toLowerCase()}
+                  isOpen={isToday || shouldDefaultOpen}>
+                  <div class="centered-list">
+                    {dayClasses.map((data: any) => {
+                      const tags = data.dances
+                        ? data.dances
+                            .map((d: any) => d.shortName.toLowerCase())
+                            .join(",")
+                        : "";
+
+                      return (
+                        <div
+                          class="filter-item-wrapper class-item"
+                          data-tags={tags}>
+                          <ClassC classs={data} />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </ResponsiveListItem>
+              </div>
             );
           })
         }
@@ -153,9 +233,35 @@ const groupedClasses = classes.sort(sortWeekdays).reduce(
       <div class="centered-list">
         {
           upcomingEvents.length > 0 ? (
-            upcomingEvents.map((event) => <WorkshopC event={event} />)
+            upcomingEvents.map((event: any) => {
+              // Extract tags for workshops just like classes
+              const tags = event.dances
+                ? event.dances
+                    .map((d: any) => d.shortName?.toLowerCase())
+                    .filter(Boolean)
+                    .join(",")
+                : "";
+
+              return (
+                <div class="filter-item-wrapper workshop-item" data-tags={tags}>
+                  <WorkshopC event={event} />
+                </div>
+              );
+            })
           ) : (
             <p>No upcoming events in the next 14 days.</p>
+          )
+        }
+        {/* Fallback message when events exist but are filtered out */}
+        {
+          upcomingEvents.length > 0 && (
+            <p
+              id="no-workshops-msg"
+              style="display: none; text-align: center; color: var(--text-muted); margin-top: 20px;">
+              {locale === "en"
+                ? "No events match the selected filters."
+                : "Keine Workshops entsprechen den ausgewählten Filtern."}
+            </p>
           )
         }
       </div>
@@ -164,6 +270,7 @@ const groupedClasses = classes.sort(sortWeekdays).reduce(
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
+      // Tab Switching Logic
       const tabClasses = document.getElementById("tab-classes");
       const tabWorkshops = document.getElementById("tab-workshops");
       const contentClasses = document.getElementById("content-classes");
@@ -176,9 +283,8 @@ const groupedClasses = classes.sort(sortWeekdays).reduce(
         inactiveView,
         updateHash = true,
       ) {
-        if (activeBtn.classList.contains("active")) return;
+        if (!activeBtn || activeBtn.classList.contains("active")) return;
 
-        // Update URL Hash for back-button support
         if (updateHash) {
           window.location.hash = activeBtn.dataset.tab;
         }
@@ -188,7 +294,6 @@ const groupedClasses = classes.sort(sortWeekdays).reduce(
         inactiveBtn.classList.remove("active");
         inactiveBtn.classList.add("inactive");
 
-        // Direct swap for the initial load, fade for manual clicks
         if (!updateHash) {
           inactiveView.style.display = "none";
           inactiveView.classList.remove("active-content");
@@ -208,7 +313,6 @@ const groupedClasses = classes.sort(sortWeekdays).reduce(
         }
       }
 
-      // Initialize from Hash
       const currentHash = window.location.hash.replace("#", "");
       if (currentHash === "workshops") {
         switchTab(
@@ -221,14 +325,86 @@ const groupedClasses = classes.sort(sortWeekdays).reduce(
       }
 
       if (tabClasses && tabWorkshops) {
-        tabClasses.addEventListener("click", () => {
-          switchTab(tabClasses, tabWorkshops, contentClasses, contentWorkshops);
-        });
+        tabClasses.addEventListener("click", () =>
+          switchTab(tabClasses, tabWorkshops, contentClasses, contentWorkshops),
+        );
+        tabWorkshops.addEventListener("click", () =>
+          switchTab(tabWorkshops, tabClasses, contentWorkshops, contentClasses),
+        );
+      }
 
-        tabWorkshops.addEventListener("click", () => {
-          switchTab(tabWorkshops, tabClasses, contentWorkshops, contentClasses); // Note: Fix typo contentKurse -> contentClasses if needed
+      // Filter Toggle Logic
+      const filterToggle = document.getElementById("filter-toggle");
+      const filterPanel = document.getElementById("filter-panel");
+      const filterTags = document.querySelectorAll(".filter-tag");
+
+      // Updated: Select ALL wrapppers (both classes and workshops)
+      const allItemWrappers = document.querySelectorAll(".filter-item-wrapper");
+      const dayGroups = document.querySelectorAll(".day-group");
+      const noWorkshopsMsg = document.getElementById("no-workshops-msg");
+
+      let activeFilters = new Set();
+
+      if (filterToggle && filterPanel) {
+        filterToggle.addEventListener("click", () => {
+          filterPanel.classList.toggle("open");
         });
       }
+
+      function applyFilters() {
+        let visibleWorkshopsCount = 0;
+
+        allItemWrappers.forEach((wrapper) => {
+          const itemTags = wrapper.dataset.tags ? wrapper.dataset.tags.split(',') : [];
+
+          if (activeFilters.size === 0) {
+            wrapper.style.display = ""; // Show all
+            if (wrapper.classList.contains("workshop-item")) visibleWorkshopsCount++;
+          } else {
+            const hasMatch = itemTags.some(tag => activeFilters.has(tag.trim()));
+            wrapper.style.display = hasMatch ? "" : "none";
+            if (hasMatch && wrapper.classList.contains("workshop-item")) visibleWorkshopsCount++;
+          }
+        });
+
+        // Handle empty day blocks and auto-open accordions
+        dayGroups.forEach((group) => {
+          const wrappers = Array.from(group.querySelectorAll('.class-item'));
+          const accordionItem = group.querySelector('.responsive-item');
+          const accordionHeader = group.querySelector('.responsive-item-header');
+
+          if (wrappers.length > 0) {
+            const hasVisible = wrappers.some(w => w.style.display !== 'none');
+            group.style.display = hasVisible ? '' : 'none';
+
+            // Auto-open logic: If filters are active and this group has visible items, force it open
+            if (activeFilters.size > 0 && hasVisible && accordionItem && accordionHeader) {
+              accordionItem.classList.add("open");
+              accordionHeader.setAttribute("aria-expanded", "true");
+            }
+          }
+        });
+
+        if (noWorkshopsMsg) {
+          noWorkshopsMsg.style.display = visibleWorkshopsCount === 0 && activeFilters.size > 0 ? "block" : "none";
+        }
+      }
+
+      filterTags.forEach((tag) => {
+        tag.addEventListener("click", (e) => {
+          const target = e.target as HTMLElement;
+          const filterValue = target.dataset.filter;
+
+          if (activeFilters.has(filterValue)) {
+            activeFilters.delete(filterValue);
+            target.classList.remove("selected");
+          } else {
+            activeFilters.add(filterValue);
+            target.classList.add("selected");
+          }
+          applyFilters();
+        });
+      });
 
       // Day Accordion Toggling Logic
       const dayHeaders = document.querySelectorAll(".day-header");
@@ -252,62 +428,189 @@ const groupedClasses = classes.sort(sortWeekdays).reduce(
 </Layout>
 
 <style>
+  /* All existing styles remain exactly the same */
   .greeter {
     padding-top: 30px;
   }
 
   .disclaimer-box {
     display: flex;
-    flex-direction: column; 
-    align-items: stretch;    
-    border: 1px solid #000000; 
-    padding: 24px; 
-    border-radius: 12px; 
+    flex-direction: column;
+    align-items: stretch;
+    border: 1px solid #000000;
+    padding: 18px;
+    border-radius: 12px;
     width: 100%;
-    max-width: 600px; 
+    max-width: 600px;
     box-sizing: border-box;
     margin-bottom: 50px;
-    gap: 16px; 
+    gap: 16px;
   }
 
   .disclaimer {
-    font-family: sans-serif; 
+    font-family: sans-serif;
     font-size: 1.1rem;
     line-height: 1.4;
     color: #000000;
   }
 
   .disclaimer :global(p) {
-    margin: 0; 
+    margin: 0;
   }
 
   .disclaimer-button {
     display: flex;
-    justify-content: flex-start; 
+    justify-content: flex-start;
     align-items: center;
     width: 100%;
   }
 
   .disclaimer-box a {
-    display: inline-flex; 
-    align-items: center;      /* Vertically aligns arrow and text perfectly */
-    justify-content: flex-start; 
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
     text-align: left;
-    gap: 8px;                /* Consistent gap between arrow and text */
+    gap: 8px;
 
     color: #000000;
     text-decoration: none;
-    font-weight: 800; 
-    font-size: 1.3rem;
-    line-height: 1;           /* Tight line height prevents text-box bounding shifts */
+    font-weight: 800;
+    font-size: var(--font-emph);
     cursor: pointer;
   }
 
-  /* SVG Specific Styles */
   .arrow-icon {
-    width: 1.25rem;           /* Scales proportionally with text sizing units */
+    width: 1.25rem;
     height: 1.25rem;
-    flex-shrink: 0;           /* Prevents the arrow from squeezing on ultra-small screens */
+    flex-shrink: 0;
     display: inline-block;
+  }
+
+  .tabs-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin: 30px 0;
+    width: 100%;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .page-tabs {
+    text-align: center;
+    font-size: var(--font-emph);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    margin: 0;
+  }
+
+  .filter-toggle {
+    position: absolute;
+    right: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    transition: opacity 0.2s ease;
+  }
+
+  .filter-toggle:hover {
+    opacity: 0.7;
+  }
+
+  .filter-panel .listing-tag:hover {
+    background-color: #f0f0f0; /* Light gray */
+    color: var(--text-main);
+  }
+
+  /* 2. Selected State: Full black */
+  .filter-panel .listing-tag.selected {
+    background-color: var(--accent);
+    color: var(--bg-main);
+  }
+
+  /* 3. Selected + Hover: Slightly lighter black to indicate it can be unclicked */
+  .filter-panel .listing-tag.selected:hover {
+    background-color: #333333; /* Dark gray */
+    color: var(--bg-main);
+  }
+
+  .filter-panel {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+
+    max-height: 0;
+    margin-bottom: 0;
+    opacity: 0;
+    overflow: hidden;
+    transform: translateY(-10px);
+    pointer-events: none;
+
+    transition:
+      max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+      opacity 0.3s ease-in-out,
+      margin-bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+      transform 0.3s ease-out;
+  }
+
+  .filter-panel.open {
+    max-height: 200px;
+    margin-bottom: 40px;
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .filter-panel .listing-tag {
+    margin-bottom: 0;
+  }
+
+  button.tab {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    cursor: pointer;
+    transition: color 0.3s ease;
+  }
+
+  button.tab.active {
+    color: var(--text-main);
+  }
+
+  button.tab.inactive {
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  button.tab:hover.inactive {
+    color: var(--text-main);
+  }
+
+  .tab-separator {
+    margin: 0 8px;
+    color: var(--text-main);
+    font-weight: 500;
+  }
+
+  .tab-content {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+  }
+
+  .tab-content.active-content {
+    display: block;
+    opacity: 1;
   }
 </style>

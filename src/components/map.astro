@@ -1,6 +1,6 @@
 ---
 import "../styles/global.css";
-import { payload, translateWeekday } from "../utils";
+import { decodeAddress, payload, translateWeekday } from "../utils";
 import type { School, Class } from "../../cms/src/payload-types";
 
 interface Params {
@@ -11,85 +11,103 @@ const { locale } = Astro.props as Params;
 const { docs: classes } = await payload.find({
   collection: "classes",
   locale: locale,
+  depth: 1, // Ensures relations like 'dances' are populated
 });
+
+// Extract unique dances for the filter UI
+const uniqueDancesMap = new Map();
+classes.forEach(c => {
+  if (c.dances && Array.isArray(c.dances)) {
+    c.dances.forEach(dance => {
+      if (dance && dance.shortName) {
+        uniqueDancesMap.set(dance.shortName, dance);
+      }
+    });
+  }
+});
+const danceFilters = Array.from(uniqueDancesMap.values());
 
 const events = classes.map((clazz) => {
   const school = clazz.school as School;
-  const [loc, num, adr, quart] = clazz.address.split(",");
-  const address = [loc, adr, num, quart].join(",");
+  const address = decodeAddress(clazz.address);
 
   return {
     title: clazz.title,
-    weekday: clazz.weekday,
-    address: address,
-    fullAddress: clazz.address,
+    // Store original weekday string for display, but also the translated one
+    weekday: translateWeekday(clazz.weekday, locale),
+    rawWeekday: clazz.weekday, // Better for stable filtering logic
+    address: address, 
     school: school.name,
     coordinates: [clazz.location[1], clazz.location[0]],
-    dances: clazz.dances?.map((d) => d.shortName).join(", "),
+    dances: clazz.dances?.map((d: any) => d.name || d.shortName).join(", "),
+    // Array of lowercase shortNames strictly for JS filtering
+    danceTags: clazz.dances?.map((d: any) => d.shortName.toLowerCase()) || [],
   };
 });
 ---
 
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
 <div class="map-wrapper">
   <div id="map"></div>
 
   <button class="mobile-filter-toggle" aria-expanded="false">
-    <span class="icon">📅</span>
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="filter-icon">
+      <line x1="4" y1="21" x2="4" y2="14"></line>
+      <line x1="4" y1="10" x2="4" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="12"></line>
+      <line x1="12" y1="8" x2="12" y2="3"></line>
+      <line x1="20" y1="21" x2="20" y2="16"></line>
+      <line x1="20" y1="12" x2="20" y2="3"></line>
+      <line x1="1" y1="14" x2="7" y2="14"></line>
+      <line x1="9" y1="8" x2="15" y2="8"></line>
+      <line x1="17" y1="16" x2="23" y2="16"></line>
+    </svg>
     {locale === "de" ? "Filter" : "Filters"}
   </button>
 
   <div class="filter-panel" id="filter-panel">
     <div class="filter-header-mobile">
-      <h3>{locale === "de" ? "Nach Tag filtern" : "Filter by Day"}</h3>
+      <h3>{locale === "de" ? "Filter" : "Filters"}</h3>
       <button class="close-filter-btn" aria-label="Close filters">✕</button>
     </div>
-    <h3 class="filter-header-desktop">
-      {locale === "de" ? "Nach Tag filtern" : "Filter by Day"}
-    </h3>
+    <div class="filter-section">
 
-    <div class="filter-options">
-      <button class="filter-btn active" data-day="all"
-        >{locale === "de" ? "Alle Kurse" : "All Classes"}</button
-      >
-      <button class="filter-btn" data-day="Monday"
-        >{translateWeekday("Monday", locale)}</button
-      >
-      <button class="filter-btn" data-day="Tuesday"
-        >{translateWeekday("Tuesday", locale)}</button
-      >
-      <button class="filter-btn" data-day="Wednesday"
-        >{translateWeekday("Wednesday", locale)}</button
-      >
-      <button class="filter-btn" data-day="Thursday"
-        >{translateWeekday("Thursday", locale)}</button
-      >
-      <button class="filter-btn" data-day="Friday"
-        >{translateWeekday("Friday", locale)}</button
-      >
-      <button class="filter-btn" data-day="Saturday"
-        >{translateWeekday("Saturday", locale)}</button
-      >
-      <button class="filter-btn" data-day="Sunday"
-        >{translateWeekday("Sunday", locale)}</button
-      >
+    {danceFilters.length > 0 && (
+      <div class="filter-section">
+        <h3 class="filter-heading">
+          {locale === "de" ? "Nach Tanz" : "By Dance"}
+        </h3>
+        <div class="dance-filter-options">
+          {danceFilters.map((dance) => (
+            <button class="listing-tag filter-tag" data-filter={dance.shortName.toLowerCase()}>
+              {dance.name || dance.shortName}
+            </button>
+          ))}
+        </div>
+      </div>
+    )}
+      <h3 class="filter-heading">
+        {locale === "de" ? "Nach Tag" : "By Day"}
+      </h3>
+      <div class="day-filter-row">
+        <button class="filter-btn active" data-day="all">
+          {locale === "de" ? "Alle" : "All"}
+        </button>
+        <button class="filter-btn" data-day="Monday">{locale === "de" ? "Mo" : "Mon"}</button>
+        <button class="filter-btn" data-day="Tuesday">{locale === "de" ? "Di" : "Tue"}</button>
+        <button class="filter-btn" data-day="Wednesday">{locale === "de" ? "Mi" : "Wed"}</button>
+        <button class="filter-btn" data-day="Thursday">{locale === "de" ? "Do" : "Thu"}</button>
+        <button class="filter-btn" data-day="Friday">{locale === "de" ? "Fr" : "Fri"}</button>
+        <button class="filter-btn" data-day="Saturday">{locale === "de" ? "Sa" : "Sat"}</button>
+        <button class="filter-btn" data-day="Sunday">{locale === "de" ? "So" : "Sun"}</button>
+      </div>
     </div>
   </div>
 </div>
 
-<script
-  set:html={JSON.stringify(events)}
-  is:inline
-  id="event-data"
-  type="application/json"
-/>
-
-<script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-></script>
+<script set:html={JSON.stringify(events)} is:inline id="event-data" type="application/json" />
+<script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script is:inline lang="ts">
   document.addEventListener("DOMContentLoaded", () => {
@@ -103,43 +121,61 @@ const events = classes.map((clazz) => {
 
     const eventDataElement = document.getElementById("event-data");
     const events = JSON.parse(eventDataElement.textContent);
-
     const markerLayer = L.layerGroup().addTo(map);
 
-    function renderMarkers(dayFilter) {
+    // Filter States
+    let currentDayFilter = "all";
+    let activeDanceFilters = new Set();
+
+    function renderMarkers() {
       markerLayer.clearLayers();
 
       events.forEach((event) => {
-        if (dayFilter === "all" || event.weekday === dayFilter) {
+        // 1. Check Day Condition
+        const dayMatch = currentDayFilter === "all" || event.rawWeekday === currentDayFilter;
+
+        // 2. Check Dance Condition
+        let danceMatch = true;
+        if (activeDanceFilters.size > 0) {
+          danceMatch = event.danceTags.some(tag => activeDanceFilters.has(tag));
+        }
+
+        // 3. Render if both match
+        if (dayMatch && danceMatch) {
           const marker = L.marker(event.coordinates).bindPopup(
             `
-        <div class="custom-popup-content">
-          <strong>${event.school}</strong><br/>
-          <span>${event.address}</span><br/>
-          <div class="popup-date-time">
-            ${event.weekday}
-          </div>
-          <div class="popup-title">${event.title} (${event.dances})</div>
-        </div>
-      `,
+            <div class="custom-popup-content">
+              <strong>${event.school}</strong><br/>
+              <span>${event.address.street} ${event.address.num}, ${event.address.quarter}</span><br/>
+              <div class="popup-date-time">
+                ${event.weekday}
+              </div>
+              <div class="popup-title">${event.dances}</div>
+            </div>
+          `,
             {
-              className: "custom-popup", // This links to the CSS below
-              closeButton: false, // Hide default X button to match mockup
+              className: "custom-popup",
+              closeButton: false,
               offset: [0, -10],
-            },
+            }
           );
           markerLayer.addLayer(marker);
         }
       });
     }
 
-    renderMarkers("all");
+    // Initial render
+    renderMarkers();
 
     // --- Filter UI Logic ---
     const filterPanel = document.getElementById("filter-panel");
     const mobileToggleBtn = document.querySelector(".mobile-filter-toggle");
     const closeBtn = document.querySelector(".close-filter-btn");
-    const filterButtons = document.querySelectorAll(".filter-btn");
+    
+    // Day Buttons
+    const dayButtons = document.querySelectorAll(".filter-btn");
+    // Dance Buttons
+    const danceButtons = document.querySelectorAll(".filter-tag");
 
     function toggleMobileDrawer() {
       if (window.innerWidth <= 768) {
@@ -147,28 +183,40 @@ const events = classes.map((clazz) => {
       }
     }
 
-    if (mobileToggleBtn)
-      mobileToggleBtn.addEventListener("click", toggleMobileDrawer);
+    if (mobileToggleBtn) mobileToggleBtn.addEventListener("click", toggleMobileDrawer);
     if (closeBtn) closeBtn.addEventListener("click", toggleMobileDrawer);
 
-    filterButtons.forEach((button) => {
+    // Day Filter Event Listeners
+    dayButtons.forEach((button) => {
       button.addEventListener("click", (e) => {
-        filterButtons.forEach((btn) => btn.classList.remove("active"));
+        dayButtons.forEach((btn) => btn.classList.remove("active"));
         e.target.classList.add("active");
 
-        const selectedDay = e.target.dataset.day;
-        renderMarkers(selectedDay);
+        currentDayFilter = e.target.dataset.day;
+        renderMarkers();
+      });
+    });
 
-        if (window.innerWidth <= 768) {
-          filterPanel.classList.remove("open");
+    // Dance Filter Event Listeners
+    danceButtons.forEach((button) => {
+      button.addEventListener("click", (e) => {
+        const target = e.target;
+        const filterValue = target.dataset.filter;
+
+        if (activeDanceFilters.has(filterValue)) {
+          activeDanceFilters.delete(filterValue);
+          target.classList.remove("selected");
+        } else {
+          activeDanceFilters.add(filterValue);
+          target.classList.add("selected");
         }
+        renderMarkers();
       });
     });
   });
 </script>
 
 <style>
-  /* 1. Ensure the body fills the entire viewport */
   body {
     margin: 0;
     padding: 0;
@@ -176,7 +224,7 @@ const events = classes.map((clazz) => {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    min-height: 100dvh; /* Dynamic viewport height handling mobile browser toolbars */
+    min-height: 100dvh; 
   }
 
   .map-wrapper {
@@ -184,41 +232,33 @@ const events = classes.map((clazz) => {
     width: 100vw;
     left: 50%;
     transform: translateX(-50%);
-
-    /* CHANGE THIS: Calculate viewport space minus layout headers */
-    /* Adjust '60px' to match the actual height of your navigation header */
     height: calc(100dvh - 60px);
-
     display: flex;
     overflow: hidden;
   }
 
   #map {
     width: 100%;
-    height: 100%; /* Now safely resolves to 100% of 100dvh */
+    height: 100%; 
     z-index: 1;
   }
-  /* 2. Make the main content expand to fill remaining space */
+
   .main-content {
     flex: 1;
     display: flex;
     flex-direction: column;
-    /* Remove fixed padding if it interferes with the map sizing */
     padding: 0;
   }
 
-  /* 3. Ensure the map container takes full height of the main-content */
   #map-container {
-    /* Replace with your specific ID or class for the map div */
     flex: 1;
     width: 100%;
   }
 
-  /* Filter Panel Base */
+  /* --- Filter Panel Base --- */
   .filter-panel {
     position: absolute;
     top: 20px;
-    /* Aligns 20px from the right edge of the screen now */
     right: 20px;
     z-index: 1000;
     background: white;
@@ -226,6 +266,25 @@ const events = classes.map((clazz) => {
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     max-width: 300px;
+    
+    /* Adds scroll if filters stack too tall */
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+  }
+
+  .filter-section {
+    margin-bottom: 1.5rem;
+  }
+
+  .filter-section:last-child {
+    margin-bottom: 0;
+  }
+
+  .filter-heading {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
+    color: #000;
   }
 
   .filter-options {
@@ -234,31 +293,115 @@ const events = classes.map((clazz) => {
     gap: 0.5rem;
   }
 
-  /* Black and White Button Design */
-  .filter-btn {
-    background-color: #ffffff;
-    color: #000000;
-    border: 2px solid #000000;
-    padding: 0.4rem 0.05rem;
-    font-size: 0.8rem;
-    font-weight: bold;
-    border-radius: 4px;
-    cursor: pointer;
-    transition:
-      background-color 0.2s ease,
-      color 0.2s ease;
-    width: 100%;
+  .dance-filter-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
-  .filter-btn:hover,
+/* --- Day Filter Row --- */
+  .day-filter-row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap; /* Allows buttons to drop to the next line safely */
+    gap: 8px;
+  }
+
+  .filter-btn {
+    flex: 1 1 calc(25% - 8px); /* Forces them to neatly fill rows of 4 */
+    min-width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #ffffff;
+    color: #000000;
+    border: 1px solid #000000;
+    font-size: 0.9rem;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease;
+    padding: 0;
+  }
+
+  .filter-btn:hover {
+    background-color: #f0f0f0;
+  }
+
   .filter-btn.active {
     background-color: #000000;
     color: #ffffff;
   }
 
+  .filter-btn:active {
+    transform: scale(0.95); /* Adds a nice pressed effect */
+  }
+
+  /* Dance Tag Design */
+  .listing-tag {
+    border: 1px solid var(--accent, #000);
+    display: inline-block;
+    border-radius: 8px;
+    padding: 4px 8px;
+    font-weight: 600;
+    font-size: var(--font-tag, 9pt);
+    text-decoration: none;
+    color: var(--text-main, #000);
+    background-color: transparent;
+    cursor: pointer;
+    width: fit-content;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .listing-tag:hover {
+    background-color: #f0f0f0;
+    color: var(--text-main, #000);
+  }
+
+  .listing-tag.selected {
+    color: var(--bg-main, #fff);
+    background-color: var(--accent, #000);
+  }
+
+  .listing-tag.selected:hover {
+    background-color: #333333;
+    color: var(--bg-main, #fff);
+  }
+
   .mobile-filter-toggle,
   .filter-header-mobile {
     display: none;
+  }
+
+  .filter-toggle {
+    position: absolute;
+    right: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    width: 40px;  /* Ensures a perfect circle */
+    height: 40px; 
+    border-radius: 50%; /* Prepares the circular hover background */
+    transition: 
+      background-color 0.2s ease, 
+      transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .filter-toggle:hover {
+    background-color: #f0f0f0; /* Soft gray highlight */
+    transform: scale(1.1);     /* Slight pop forward */
+    opacity: 1;                /* Overrides your old opacity drop */
+  }
+
+  .filter-toggle:active {
+    transform: scale(0.95);    /* Satisfying squish when clicked */
+    background-color: #e0e0e0;
   }
 
   .close-filter-btn {
@@ -271,18 +414,15 @@ const events = classes.map((clazz) => {
 
   /* Mobile adjustments */
   @media (max-width: 768px) {
-    .mobile-filter-toggle {
-      display: block !important; /* Ensure no external framework CSS is hiding it */
+  .mobile-filter-toggle {
+      display: flex !important; /* Changed to flex */
+      align-items: center;      /* Vertically centers the icon and text */
+      gap: 8px;                 /* Adds spacing between icon and text */
       position: fixed;
-
-      /* Position relative to viewport bounds */
       bottom: 40px;
       left: 50%;
       transform: translateX(-50%);
-
-      /* CRITICAL: Must be higher than Leaflet's control panels (1000+) */
       z-index: 9999;
-
       background-color: #000000;
       color: #ffffff;
       border: none;
@@ -290,6 +430,22 @@ const events = classes.map((clazz) => {
       border-radius: 30px;
       font-weight: bold;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      transition: 
+        transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), 
+        background-color 0.2s ease, 
+        box-shadow 0.25s ease !important;
+    }
+
+    .mobile-filter-toggle:hover {
+      /* IMPORTANT: We keep translateX(-50%) so it stays perfectly centered */
+      transform: translateX(-50%) scale(1.05); 
+      background-color: #333333; 
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6); 
+    }
+
+    .mobile-filter-toggle:active {
+      transform: translateX(-50%) scale(0.95); 
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
     }
 
     .filter-header-mobile {
@@ -297,10 +453,7 @@ const events = classes.map((clazz) => {
       justify-content: space-between;
       align-items: center;
       margin-bottom: 1rem;
-    }
-
-    .filter-header-desktop {
-      display: none;
+      font-size: var(--font-emph);
     }
 
     .filter-panel {
@@ -313,7 +466,6 @@ const events = classes.map((clazz) => {
       border-radius: 16px 16px 0 0;
       transform: translateY(100%);
       transition: transform 0.3s ease-in-out;
-
       max-height: 85vh;
       overflow-y: auto;
       padding: 1.5rem 1.5rem 7rem 1.5rem;
@@ -337,26 +489,24 @@ const events = classes.map((clazz) => {
   /* Container override */
   .custom-popup .leaflet-popup-content-wrapper {
     background: #ffffff;
-    border-radius: 4px;
+    border-radius: 8px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
     padding: 2px;
-    width: 147px; /* From your mockup specs */
+    width: 200px; 
   }
 
-  /* Remove default pointer/tip */
   .custom-popup .leaflet-popup-tip {
     display: none;
   }
 
   .custom-popup .leaflet-popup-content {
     margin: 12px;
-    width: auto !important; /* Ensure it respects the wrapper width */
+    width: auto !important; 
     font-family: "Inter", sans-serif;
-    color: var(--text-main);
+    color: var(--text-main, #000);
     line-height: 1.2;
   }
 
-  /* Custom internal styling */
   .custom-popup-content strong {
     font-size: 11pt;
     font-weight: 700;

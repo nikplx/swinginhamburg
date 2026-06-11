@@ -1,5 +1,6 @@
 ---
 import type { School, Class } from "../../cms/src/payload-types.ts";
+import { decodeAddress } from '../utils.ts'
 
 interface Props {
   classs: Class;
@@ -7,7 +8,7 @@ interface Props {
 const { classs: clazz } = Astro.props as Props;
 
 const school = (clazz.school as School) || { name: "" };
-const [location, num, street, quarter, city, postal, country, ...rest] = clazz.address.split(",");
+const address = decodeAddress(clazz.address);
 
 const danceTags =
   clazz.dances && clazz.dances.length > 0
@@ -50,8 +51,8 @@ const schoolHref = `/${Astro.currentLocale}/schools#${schoolSlug}`;
     
     <span class="listing-address">
       <a href={"http://maps.google.com/?q=" + clazz.address} target="_blank" rel="noopener noreferrer">
-        {street} {num}, 
-        {quarter}
+        {address.street} {address.num}, 
+        {address.quarter}
       </a>
     </span>
     {clazz.cancelled && <span class="cancelled-text">{clazz.cancelled}</span>}
@@ -61,7 +62,7 @@ const schoolHref = `/${Astro.currentLocale}/schools#${schoolSlug}`;
 <style>
   .listing-item {
     display: grid;
-    grid-template-columns: 80px 1fr;
+    grid-template-columns: .3fr 1fr;
     gap: 20px;
     padding: 16px 0;
     border-bottom: 2px dotted var(--text-muted);
@@ -93,6 +94,7 @@ const schoolHref = `/${Astro.currentLocale}/schools#${schoolSlug}`;
   }
 
   .school-link {
+    text-align: left;
     color: inherit;
     text-decoration: none;
     transition: text-decoration 0.2s ease, opacity 0.2s ease;
@@ -115,14 +117,8 @@ const schoolHref = `/${Astro.currentLocale}/schools#${schoolSlug}`;
     text-decoration: none;
   }
 
-  .listing-tag {
-    border: 1px solid var(--accent);
-    display: inline-block;
-    border-radius: 8px;
-    padding: 4px 12px;
-    font-weight: 600;
-    font-size: var(--font-desc);
-    text-decoration: none;
-    color: var(--text-main);
+
+  .cancelled-text {
+    color: darkred;
   }
 </style>

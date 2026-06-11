@@ -6,14 +6,14 @@
   --text-muted: #888888;
   --accent: #000000;
   --font-title: 16pt;
-  --font-emph: 14pt;
-  --font-desc: 12pt;
-  --font-tag: 10pt;
+  --font-emph: 12pt;
+  --font-desc: 10pt;
+  --font-tag: 9pt;
   --font-xxs: 8pt;
 }
 
 html {
-  scroll-padding-top: 100px; /* Adjust this value to match your header's height */
+  scroll-padding-top: 100px;
 }
 
 body {
@@ -26,8 +26,6 @@ body {
   justify-content: center;
   font-size: var(--font-desc);
   -webkit-font-smoothing: antialiased;
-
-  /* Add these two lines to prevent horizontal scrolling */
   width: 100%;
   overflow-x: clip;
 }
@@ -38,8 +36,6 @@ body {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-
-  /* Add this line */
   overflow-x: clip;
 }
 
@@ -47,14 +43,14 @@ body {
 header {
   position: sticky;
   top: 0;
-  z-index: 2000; /* Must be > 1000 to sit above the map and filters */
-  background-color: #000000; /* Crucial so the map doesn't show through it */
+  z-index: 2000; 
+  background-color: #000000; 
 }
 
 .centered-list {
-  width: 100%; /* Ensures it takes available space */
-  max-width: 500px; /* Caps the width on large screens */
-  margin: 0 auto; /* Keeps it centered */
+  width: 100%; 
+  max-width: 500px; 
+  margin: 0 auto; 
   display: flex;
   flex-direction: column;
 }
@@ -100,43 +96,39 @@ header {
 
 .main-content p {
   font-family: "Inter", sans-serif;
-  font-size: var(--font-desc); /* Pulls the 12pt you specified earlier */
-  font-weight: 400; /* Regular weight for standard body text */
-  line-height: 1.5; /* Gives the text room to breathe, matching the mockup */
-  color: var(--text-main); /* Black text */
+  font-size: var(--font-desc); 
+  font-weight: 400; 
+  line-height: 1.5; 
+  color: var(--text-main); 
   margin-top: 0;
-  margin-bottom: 20px; /* Adds space between multiple paragraphs */
-
-  /* Added for block style justification */
+  margin-bottom: 20px; 
   text-align: left;
   hyphens: auto;
-  -webkit-hyphens: auto; /* For Safari support */
+  -webkit-hyphens: auto; 
 }
 
 /* --- Typography for Lists (Rich Text) --- */
 .main-content ul,
 .main-content ol {
-  padding-left: 20px; /* Brings the bullets further to the left (browser default is ~40px) */
+  padding-left: 20px; 
   margin-top: 0;
-  margin-bottom: 20px; /* Matches the spacing below paragraphs */
+  margin-bottom: 20px; 
 }
 
 .main-content li {
   font-family: "Inter", sans-serif;
   font-size: var(--font-desc);
   font-weight: 400;
-  line-height: 1.5; /* Matches the paragraph line spacing */
+  line-height: 1.5; 
   color: var(--text-main);
-  margin-bottom: 3px; /* Adds vertical spacing between each list item */
-
-  /* Keeps the justified block style from your paragraphs */
+  margin-bottom: 3px; 
   text-align: justify;
   hyphens: auto;
   -webkit-hyphens: auto;
 }
 
 .main-content li:last-child {
-  margin-bottom: 0; /* Prevents double-spacing at the end of a list */
+  margin-bottom: 0; 
 }
 
 /* --- Navigation --- */
@@ -151,34 +143,30 @@ header {
   display: flex;
   gap: 5px;
   align-items: center;
-  color: var(--text-muted); /* #FFFFFF */
+  color: var(--text-muted); 
 }
 
-/* --- Navigation Updates --- */
 .nav-links a {
   color: var(--bg-main);
   font-size: var(--font-xxs);
-  text-decoration: none; /* Default state */
+  text-decoration: none; 
   font-weight: 600;
   text-transform: uppercase;
   transition: text-decoration 0.2s ease, opacity 0.2s ease;
-  padding: 4px 8px; /* Added consistent padding so the active state doesn't shift layout */
-  border: 1px solid transparent; /* Keeps layout stable when switching to 'active' border */
+  padding: 4px 8px; 
+  border: 1px solid transparent; 
   border-radius: 2px;
 }
 
-/* Hover effect */
 .nav-links a:hover {
   text-decoration: underline;
 }
 
-/* Active Indicator (Promoted from mobile-only to global) */
 .nav-links a.active {
   border: 1px solid var(--bg-main);
-  text-decoration: none; /* Keeps the active state clean without underline */
+  text-decoration: none; 
 }
 
-/* Cleanup: Remove any old rules for nav-separator or specific mobile-only borders */
 .nav-separator {
   display: none;
 }
@@ -200,73 +188,33 @@ header {
   transition: all 0.3s ease;
 }
 
-/* --- Page Subheader (Classes | Workshops) --- */
-.page-tabs {
-  text-align: center;
-  margin: 30px 0;
-  font-size: var(--font-emph);
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
-button.tab {
-  background: none;
-  border: none;
-  padding: 0;
-  font: inherit;
-  cursor: pointer;
-  transition: color 0.3s ease;
-}
-
-button.tab.active {
-  color: var(--text-main);
-}
-
-button.tab.inactive {
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-button.tab:hover.inactive {
-  color: var(--text-main);
-}
-
-.tab-separator {
-  margin: 0 8px;
-  color: var(--text-main);
-  font-weight: 500;
-}
-
+/* --- Listing Tags & Filter Additions --- */
 .listing-tag {
-  /* Existing styles */
   border: 1px solid var(--accent);
   display: inline-block;
   border-radius: 8px;
-  padding: 4px 12px;
+  padding: 4px 8px;
   font-weight: 600;
-  font-size: var(--font-desc);
-  margin-bottom: 20px;
-
-  /* NEW: Reset link styles to maintain exact appearance */
+  font-size: var(--font-tag);
+  margin-bottom: 10px;
   text-decoration: none;
   color: var(--text-main);
+  background-color: transparent;
   cursor: pointer;
-  display: inline-block; /* Helps with layout consistency when using <a> */
-}
-
-/* Optional: Add a subtle hover effect so users know it's clickable */
-.listing-tag:hover {
-  background-color: var(--accent);
-  color: var(--bg-main);
+  width: fit-content;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
+.listing-tag:hover,
+.listing-tag.selected {
+  color: var(--bg-main);
+  background-color: var(--accent);
+}
 
-/* --- Mobile Nav Override (< 768px) --- */
 /* --- Mobile Nav Override (< 768px) --- */
 @media (max-width: 768px) {
   header {
-    position: sticky; /* Keep it sticky! It still anchors absolute children. */
+    position: sticky; 
     top: 0;
   }
 
@@ -279,7 +227,6 @@ button.tab:hover.inactive {
     z-index: 2000;
   }
 
-  /* Hamburger to X Animation */
   .menu-toggle .hamburger-bar {
     transform-origin: center;
   }
@@ -296,16 +243,15 @@ button.tab:hover.inactive {
 
   .nav-links {
     position: absolute;
-    top: 100%; /* Pushes the menu exactly below the black header bar */
+    top: 100%; 
     left: 0;
     width: 100%;
-    background-color: var(--accent); /* #000000 */
+    background-color: var(--accent); 
     flex-direction: column;
     justify-content: flex-start;
     align-items: center;
-    gap: 20px; /* Spacing derived from your Figma coordinates */
+    gap: 20px; 
 
-    /* Transition setup for sliding dropdown */
     max-height: 0;
     padding: 0;
     opacity: 0;
@@ -318,80 +264,28 @@ button.tab:hover.inactive {
     z-index: 1500;
   }
 
-
-
   .nav-links.open {
-    max-height: 400px; /* Approximates the 384px height from Figma */
+    max-height: 400px; 
     opacity: 1;
     padding: 30px 0 20px 0;
     pointer-events: all;
   }
 
   .nav-links a {
-    color: var(--bg-main); /* #FFFFFF */
-    font-size: var(--font-emph); /* 16px/16pt */
+    color: var(--bg-main); 
+    font-size: var(--font-emph); 
     font-weight: 700;
     letter-spacing: 0.05em;
     text-align: center;
   }
 
-  /* Implements Figma 'Rectangle 28' */
   .nav-links a.border-btn {
     border: 1px solid var(--bg-main);
     padding: 4px 16px;
-    border-radius: 2px; /* Optional: adjust if you need sharper/softer edges */
+    border-radius: 2px; 
   }
 
   .nav-links .nav-separator {
-    display: none; /* Keep the pipe separators hidden */
+    display: none; 
   }
-}
-
-/* --- Tab Functionality --- */
-.page-tabs {
-  text-align: center;
-  margin: 30px 0;
-  font-size: var(--font-emph);
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
-button.tab {
-  background: none;
-  border: none;
-  padding: 0;
-  font: inherit;
-  cursor: pointer;
-  transition: color 0.3s ease;
-}
-
-button.tab.active {
-  color: var(--text-main);
-}
-
-button.tab.inactive {
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-button.tab:hover.inactive {
-  color: var(--text-main);
-}
-
-.tab-separator {
-  margin: 0 8px;
-  color: var(--text-main);
-  font-weight: 500;
-}
-
-/* --- Content Transitions --- */
-.tab-content {
-  display: none;
-  opacity: 0;
-  transition: opacity 0.3s ease-in-out;
-}
-
-.tab-content.active-content {
-  display: block;
-  opacity: 1;
 }
