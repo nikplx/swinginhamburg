@@ -51,7 +51,7 @@ const schoolHref = `/${Astro.currentLocale}/schools#${schoolSlug}`;
     <span class="listing-address">
       <a href={"http://maps.google.com/?q=" + clazz.address} target="_blank" rel="noopener noreferrer">
         {street} {num}, 
-        {postal}
+        {quarter}
       </a>
     </span>
     {clazz.cancelled && <span class="cancelled-text">{clazz.cancelled}</span>}

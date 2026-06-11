@@ -26,12 +26,14 @@ const getFormattedDate = () => {
       datePart = `${startParts[0]}.-${endParts[0]}.${startParts[1]}.`;
     } else {
       // If months differ: e.g., "30.06.-02.07."
-      datePart = `${startD}-${endD}`;
+      datePart = `${startD}-${endD}.`;
     }
   }
 
   return datePart;
 };
+
+const [location, num, street, quarter, city, postal, country, ...rest] = event.address.split(",");
 
 const danceTags =
   event.dances && event.dances.length > 0
@@ -49,8 +51,8 @@ const danceTags =
   <h3 class="workshop-title">{event.title}</h3>
   
   <div class="workshop-location">
-    {event.locationName && (<strong>{event.locationName} | </strong>)}
-    {event.address}
+    {event.locationName && (<strong>{event.locationName}</strong>)} |
+    {street} {num}, {quarter}
   </div>
 
 
