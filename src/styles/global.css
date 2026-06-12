@@ -196,7 +196,7 @@ header {
   padding: 4px 8px;
   font-weight: 600;
   font-size: var(--font-tag);
-  margin-bottom: 10px;
+  margin-bottom: 5px;
   text-decoration: none;
   color: var(--text-main);
   background-color: transparent;

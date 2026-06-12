@@ -42,9 +42,6 @@ const sortedDances = dances.sort((a, b) => {
 ---
 
 <Layout locale={locale}>
-  <h2>
-    {cnt.title}
-  </h2>
   <div class="page-content">
     <RichText content={cnt.whatIsSwing} />
   </div>
@@ -66,5 +63,8 @@ const sortedDances = dances.sort((a, b) => {
       </ResponsiveList>
     )
   }
+  <div class="page-content">
+    <RichText content={cnt.faq} />
+  </div>
 </Layout>
 

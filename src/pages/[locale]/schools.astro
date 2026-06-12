@@ -25,7 +25,7 @@ const { locale } = Astro.params as Params;
 
 // Fetch Global Swing Data
 const cnt = await payload.findGlobal({
-  slug: "swing",
+  slug: "schools-global",
   locale: locale,
 });
 
@@ -40,10 +40,6 @@ const shuffledSchools = shuffleByDay(schools);
 ---
 
 <Layout locale={locale}>
-  <h2>
-    {cnt.title}
-  </h2>
-
   <div class="page-content">
     <RichText content={cnt.howToLearn} />
   </div>
