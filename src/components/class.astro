@@ -51,6 +51,14 @@ const schoolHref = `/${Astro.currentLocale}/schools#${schoolSlug}`;
     
     <span class="listing-address">
       <a href={"http://maps.google.com/?q=" + clazz.address} target="_blank" rel="noopener noreferrer">
+        {
+          clazz.locationName && (
+            <>
+              <strong>{clazz.locationName}</strong>
+              <> |</>
+            </>
+          )
+        }
         {address.street} {address.num}, 
         {address.quarter}
       </a>
@@ -111,6 +119,12 @@ const schoolHref = `/${Astro.currentLocale}/schools#${schoolSlug}`;
     text-align: left;
   }
 
+  .listing-address strong {
+    font-weight: 600;
+    font-size: var(--font-desc);
+    color: var(--text-main);
+    text-align: left;
+  }
 
   .listing-address a {
     font-size: var(--font-desc);

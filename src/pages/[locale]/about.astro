@@ -37,3 +37,65 @@ const cnt = await payload.findGlobal({
     <RichText content={cnt.content} />
   </div>
 </Layout>
+
+
+<style>
+/* Use :global() to target elements rendered inside the RichText component */
+
+/* Container or table target */
+:global(.page-content table.lexical-table) {
+  width: 100%;
+  table-layout: fixed; /* <--- Forces rigid column widths */
+  border-collapse: collapse;
+  background-color: #ffffff; 
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  margin: 24px 0;
+}
+
+/* Force both header and data cells to exactly 50% width */
+:global(.page-content table.lexical-table th.lexical-table-cell),
+:global(.page-content table.lexical-table td.lexical-table-cell) {
+  width: 50% !important; /* <--- Forces 50/50 split, overwriting inline CMS styles */
+  border: none !important; 
+  padding: 8px 6px !important;
+  text-align: left;
+  vertical-align: top;
+}
+
+/* Recreate the clean top/bottom border line for headers */
+:global(.page-content table.lexical-table tr.lexical-table-row:first-child) {
+  border-bottom: 2px solid #000000; 
+}
+
+/* Header typography */
+:global(.page-content table.lexical-table th p) {
+  font-size: var(--font-emph);
+  font-weight: 600;
+  color: #000000;
+  margin: 0;
+}
+
+/* Header typography */
+:global(.page-content table.lexical-table li) {
+  font-size: var(--font-xxs);
+  color: #000000;
+  margin: 0;
+}
+
+/* Remove the aggressive browser underlines from your rich text data */
+:global(.page-content table.lexical-table th span) {
+  text-decoration: none !important; 
+}
+
+/* Body text typography */
+:global(.page-content table.lexical-table td p) {
+  font-size: var(--font-xxs);
+  color: #1a1a1a;
+  margin: 0;
+}
+
+/* Add spacing between rows */
+:global(.page-content table.lexical-table tr.lexical-table-row) {
+  height: 10px;
+}
+</style>

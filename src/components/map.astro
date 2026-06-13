@@ -12,6 +12,7 @@ const { docs: classes } = await payload.find({
   collection: "classes",
   locale: locale,
   depth: 1, // Ensures relations like 'dances' are populated
+  pagination: false,
 });
 
 // Extract unique dances for the filter UI

@@ -24,10 +24,12 @@ interface Params {
 const { locale } = Astro.params as Params;
 
 const { docs: classes } = await payload.find({
+  pagination: false,
   collection: "classes",
   locale: locale,
   depth: 1, // Ensures relations like 'dances' are populated with their data, not just IDs
 });
+console.log(classes)
 
 const today = new Date();
 const startOfToday = new Date(
@@ -72,6 +74,8 @@ const { docs: upcomingEvents } = await payload.find({
       { startDate: { less_than_equal: endOf60Days.toISOString() } },
     ],
   },
+  pagination: false,
+  locale: locale,
 });
 
 const groupedClasses = classes.sort(sortWeekdays).reduce(
