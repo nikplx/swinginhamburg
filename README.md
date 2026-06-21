@@ -1,10 +1,9 @@
-# Astro Starter Kit: Minimal
+# Swing in Hamburg
 
-```sh
-npm create astro@latest -- --template minimal
-```
+Staging environment links:
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+CMS: https://cms.swinginhamburg.eins9und30.de/admin
+Website: https://swinginhamburg.eins9und30.de/de/
 
 ## 🚀 Project Structure
 
