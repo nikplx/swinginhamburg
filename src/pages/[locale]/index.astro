@@ -10,7 +10,7 @@ import "../../styles/global.css";
 import Nav from "../../components/nav.astro";
 import MapC from "../../components/map.astro";
 import ClassC from "../../components/class.astro";
-import WorkshopC from "../../components/workshop.astro";
+import EventC from "../../components/event.astro";
 import type { Class } from "../../../cms/src/payload-types.ts";
 import { collect, payload, sortWeekdays, translateWeekday } from "../../utils";
 import RichText from "../../components/richtText.astro";
@@ -29,7 +29,6 @@ const { docs: classes } = await payload.find({
   locale: locale,
   depth: 1, // Ensures relations like 'dances' are populated with their data, not just IDs
 });
-console.log(classes)
 
 const today = new Date();
 const startOfToday = new Date(
@@ -137,12 +136,12 @@ const danceFilters = Array.from(uniqueDancesMap.values());
 
   <div class="tabs-header">
     <div class="page-tabs">
-      <button id="tab-classes" class="tab active" data-tab="classes">
-        {locale === "en" ? "CLASSES" : "KURSE"}
+      <button id="tab-events" class="tab active" data-tab="events">
+        {locale === "en" ? "EVENTS" : "EVENTS"}
       </button>
       <span class="tab-separator">|</span>
-      <button id="tab-workshops" class="tab inactive" data-tab="workshops">
-        {locale === "en" ? "WORKSHOPS" : "WORKSHOPS"}
+      <button id="tab-classes" class="tab inactive" data-tab="classes">
+        {locale === "en" ? "CLASSES" : "KURSE"}
       </button>
     </div>
 
@@ -192,7 +191,44 @@ const danceFilters = Array.from(uniqueDancesMap.values());
   }
 
   <section>
-    <div id="content-classes" class="tab-content active-content">
+    <div id="content-events" class="tab-content active-content">
+      <div class="centered-list">
+        {
+          upcomingEvents.length > 0 ? (
+            upcomingEvents.map((event: any) => {
+              // Extract tags for events just like classes
+              const tags = event.dances
+                ? event.dances
+                    .map((d: any) => d.shortName?.toLowerCase())
+                    .filter(Boolean)
+                    .join(",")
+                : "";
+
+              return (
+                <div class="filter-item-wrapper workshop-item" data-tags={tags}>
+                  <EventC event={event} />
+                </div>
+              );
+            })
+          ) : (
+            <p>No upcoming events in the next 14 days.</p>
+          )
+        }
+        {/* Fallback message when events exist but are filtered out */}
+        {
+          upcomingEvents.length > 0 && (
+            <p
+              id="no-events-msg"
+              style="display: none; text-align: center; color: var(--text-muted); margin-top: 20px;">
+              {locale === "en"
+                ? "No events match the selected filters."
+                : "Keine Events entsprechen den ausgewählten Filtern."}
+            </p>
+          )
+        }
+      </div>
+    </div>
+    <div id="content-classes" class="tab-content">
       <ResponsiveList maxColumns={1} exclusiveOpen={false}>
         {
           Object.entries(groupedClasses).map(([weekday, dayClasses], index) => {
@@ -232,53 +268,15 @@ const danceFilters = Array.from(uniqueDancesMap.values());
         }
       </ResponsiveList>
     </div>
-
-    <div id="content-workshops" class="tab-content">
-      <div class="centered-list">
-        {
-          upcomingEvents.length > 0 ? (
-            upcomingEvents.map((event: any) => {
-              // Extract tags for workshops just like classes
-              const tags = event.dances
-                ? event.dances
-                    .map((d: any) => d.shortName?.toLowerCase())
-                    .filter(Boolean)
-                    .join(",")
-                : "";
-
-              return (
-                <div class="filter-item-wrapper workshop-item" data-tags={tags}>
-                  <WorkshopC event={event} />
-                </div>
-              );
-            })
-          ) : (
-            <p>No upcoming events in the next 14 days.</p>
-          )
-        }
-        {/* Fallback message when events exist but are filtered out */}
-        {
-          upcomingEvents.length > 0 && (
-            <p
-              id="no-workshops-msg"
-              style="display: none; text-align: center; color: var(--text-muted); margin-top: 20px;">
-              {locale === "en"
-                ? "No events match the selected filters."
-                : "Keine Workshops entsprechen den ausgewählten Filtern."}
-            </p>
-          )
-        }
-      </div>
-    </div>
   </section>
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       // Tab Switching Logic
       const tabClasses = document.getElementById("tab-classes");
-      const tabWorkshops = document.getElementById("tab-workshops");
+      const tabEvents = document.getElementById("tab-events");
       const contentClasses = document.getElementById("content-classes");
-      const contentWorkshops = document.getElementById("content-workshops");
+      const contentEvents = document.getElementById("content-events");
 
       function switchTab(
         activeBtn,
@@ -318,22 +316,22 @@ const danceFilters = Array.from(uniqueDancesMap.values());
       }
 
       const currentHash = window.location.hash.replace("#", "");
-      if (currentHash === "workshops") {
+      if (currentHash === "events") {
         switchTab(
-          tabWorkshops,
+          tabEvents,
           tabClasses,
-          contentWorkshops,
+          contentEvents,
           contentClasses,
           false,
         );
       }
 
-      if (tabClasses && tabWorkshops) {
+      if (tabClasses && tabEvents) {
         tabClasses.addEventListener("click", () =>
-          switchTab(tabClasses, tabWorkshops, contentClasses, contentWorkshops),
+          switchTab(tabClasses, tabEvents, contentClasses, contentEvents),
         );
-        tabWorkshops.addEventListener("click", () =>
-          switchTab(tabWorkshops, tabClasses, contentWorkshops, contentClasses),
+        tabEvents.addEventListener("click", () =>
+          switchTab(tabEvents, tabClasses, contentEvents, contentClasses),
         );
       }
 
@@ -342,10 +340,10 @@ const danceFilters = Array.from(uniqueDancesMap.values());
       const filterPanel = document.getElementById("filter-panel");
       const filterTags = document.querySelectorAll(".filter-tag");
 
-      // Updated: Select ALL wrapppers (both classes and workshops)
+      // Updated: Select ALL wrapppers (both classes and events)
       const allItemWrappers = document.querySelectorAll(".filter-item-wrapper");
       const dayGroups = document.querySelectorAll(".day-group");
-      const noWorkshopsMsg = document.getElementById("no-workshops-msg");
+      const noEventsMsg = document.getElementById("no-events-msg");
 
       let activeFilters = new Set();
 
@@ -356,18 +354,18 @@ const danceFilters = Array.from(uniqueDancesMap.values());
       }
 
       function applyFilters() {
-        let visibleWorkshopsCount = 0;
+        let visibleEventsCount = 0;
 
         allItemWrappers.forEach((wrapper) => {
           const itemTags = wrapper.dataset.tags ? wrapper.dataset.tags.split(',') : [];
 
           if (activeFilters.size === 0) {
             wrapper.style.display = ""; // Show all
-            if (wrapper.classList.contains("workshop-item")) visibleWorkshopsCount++;
+            if (wrapper.classList.contains("workshop-item")) visibleEventsCount++;
           } else {
             const hasMatch = itemTags.some(tag => activeFilters.has(tag.trim()));
             wrapper.style.display = hasMatch ? "" : "none";
-            if (hasMatch && wrapper.classList.contains("workshop-item")) visibleWorkshopsCount++;
+            if (hasMatch && wrapper.classList.contains("workshop-item")) visibleEventsCount++;
           }
         });
 
@@ -389,8 +387,8 @@ const danceFilters = Array.from(uniqueDancesMap.values());
           }
         });
 
-        if (noWorkshopsMsg) {
-          noWorkshopsMsg.style.display = visibleWorkshopsCount === 0 && activeFilters.size > 0 ? "block" : "none";
+        if (noEventsMsg) {
+          noEventsMsg.style.display = visibleEventsCount === 0 && activeFilters.size > 0 ? "block" : "none";
         }
       }
 
