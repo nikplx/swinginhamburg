@@ -221,7 +221,7 @@ const events = classes.map((clazz) => {
   .map-wrapper {
     position: relative;
     width: 100%;
-    height: clamp(28rem, calc(100dvh - 16rem), 60rem);
+    height: clamp(22rem, calc(100dvh - 22rem), 56rem);
     display: flex;
     overflow: hidden;
   }
@@ -396,11 +396,11 @@ const events = classes.map((clazz) => {
       display: flex !important; /* Changed to flex */
       align-items: center;      /* Vertically centers the icon and text */
       gap: 8px;                 /* Adds spacing between icon and text */
-      position: fixed;
-      bottom: 40px;
+      position: absolute;
+      bottom: 1rem;
       left: 50%;
       transform: translateX(-50%);
-      z-index: 9999;
+      z-index: 999;
       background-color: var(--text-main);
       color: var(--bg-main);
       border: none;

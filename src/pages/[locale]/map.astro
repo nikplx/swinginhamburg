@@ -17,5 +17,24 @@ interface Params {
 const { locale } = Astro.params as Params;
 ---
 <Layout locale={locale} wide>
-    <MapC locale={locale}></Map>
+  <h1 class="map-title">{locale === "en" ? "Map" : "Karte"}</h1>
+  <MapC locale={locale}></Map>
 </Layout>
+
+<style>
+  .map-title {
+    font-family: var(--font-body);
+    font-size: var(--fs-h1);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    margin: 0 0 1.5rem 0;
+  }
+
+  @media (max-width: 1023px) {
+    .map-title {
+      font-size: var(--fs-h2);
+      margin-bottom: 1rem;
+    }
+  }
+</style>
