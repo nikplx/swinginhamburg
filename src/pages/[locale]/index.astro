@@ -162,11 +162,11 @@ const danceFilters = Array.from(uniqueDancesMap.values());
 
   <div class="tabs-header">
     <div class="page-tabs">
-      <button id="tab-events" class="tab active" data-tab="events">
+      <button id="tab-events" class="tab inactive" data-tab="events">
         {locale === "en" ? "Events" : "Events"}
       </button>
       <span class="tab-separator">/</span>
-      <button id="tab-classes" class="tab inactive" data-tab="classes">
+      <button id="tab-classes" class="tab active" data-tab="classes">
         {locale === "en" ? "Classes" : "Kurse"}
       </button>
     </div>
@@ -217,7 +217,7 @@ const danceFilters = Array.from(uniqueDancesMap.values());
   }
 
   <section>
-    <div id="content-events" class="tab-content active-content">
+    <div id="content-events" class="tab-content">
       <div class="centered-list">
         {
           upcomingEvents.length > 0 ? (
@@ -258,7 +258,7 @@ const danceFilters = Array.from(uniqueDancesMap.values());
         }
       </div>
     </div>
-    <div id="content-classes" class="tab-content">
+    <div id="content-classes" class="tab-content active-content">
       <ResponsiveList maxColumns={1} exclusiveOpen={false}>
         {
           Object.entries(groupedClasses).map(([weekday, dayClasses], index) => {
