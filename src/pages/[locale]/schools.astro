@@ -11,7 +11,7 @@ import Nav from "../../components/nav.astro";
 import RichText from "../../components/richtText.astro";
 import ResponsiveList from "../../components/responsiveList.astro";
 import ResponsiveListItem from "../../components/responsiveListItem.astro";
-import { payload } from "../../utils";
+import { decodeAddress, payload } from "../../utils";
 import Layout from "../../components/layout.astro";
 import { shuffleByDay } from "../../utils";
 
@@ -34,6 +34,59 @@ const schoolsResponse = await payload.find({
 });
 const schools = schoolsResponse.docs || [];
 const shuffledSchools = shuffleByDay(schools);
+
+// The schools collection has no district / dance fields, so derive both from
+// the school's classes: the address quarter gives the district, the dance
+// relations give the pills shown in the design.
+const { docs: allClasses } = await payload.find({
+  collection: "classes",
+  locale: locale,
+  depth: 1,
+  pagination: false,
+});
+
+type SchoolMeta = { districts: Set<string>; dances: Map<string, string> };
+const metaBySchool = new Map<string | number, SchoolMeta>();
+
+for (const clazz of allClasses) {
+  const schoolId =
+    typeof clazz.school === "object" && clazz.school !== null
+      ? clazz.school.id
+      : clazz.school;
+  if (!schoolId) continue;
+
+  let meta = metaBySchool.get(schoolId);
+  if (!meta) {
+    meta = { districts: new Set(), dances: new Map() };
+    metaBySchool.set(schoolId, meta);
+  }
+
+  const quarter = decodeAddress(clazz.address)
+    .quarter?.replace(/^(Quartier|Stadtteil)\s+/i, "");
+  if (quarter) meta.districts.add(quarter);
+
+  for (const dance of clazz.dances ?? []) {
+    if (dance && typeof dance === "object" && dance.shortName) {
+      meta.dances.set(dance.shortName, dance.shortName);
+    }
+  }
+}
+
+const listFormat = new Intl.ListFormat(locale === "en" ? "en" : "de", {
+  style: "long",
+  type: "conjunction",
+});
+
+const schoolMeta = (id: string | number) => {
+  const meta = metaBySchool.get(id);
+  const districts = meta ? [...meta.districts] : [];
+  return {
+    subtitle: districts.length
+      ? `${locale === "en" ? "Classes in" : "Unterricht in"} ${listFormat.format(districts)}`
+      : undefined,
+    tags: meta ? [...meta.dances.values()] : [],
+  };
+};
 ---
 
 <Layout locale={locale}>
@@ -61,7 +114,9 @@ const shuffledSchools = shuffleByDay(schools);
               title={school.name}
               id={schoolSlug}
               isOpen={false}
-              indicator="plus">
+              indicator="plus"
+              subtitle={schoolMeta(school.id).subtitle}
+              tags={schoolMeta(school.id).tags}>
               <div class="school-body">
                 <RichText content={school.description} />
                 {school.website && (
