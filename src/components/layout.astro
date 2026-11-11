@@ -2,45 +2,63 @@
 // src/layouts/Layout.astro
 import "../styles/global.css";
 import Nav from "../components/nav.astro";
+import Wave from "../components/wave.astro";
 
 interface Props {
   locale: "en" | "de";
   title?: string;
+  /** Full-width content column (used by the map page) */
+  wide?: boolean;
 }
 
-const { locale, title = "Swing in Hamburg" } = Astro.props;
+const { locale, title = "Swing in Hamburg", wide = false } = Astro.props;
+const hasSidebar = Astro.slots.has("sidebar");
 ---
+
 <html lang={locale}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
-    <style>
-      /* Prevent the link from turning blue and underlined */
-      .title-link {
-        text-decoration: none;
-        color: inherit;
-      }
-    </style>
+    <meta name="theme-color" content="#f7f3e9" />
+    <link
+      rel="preload"
+      href="/fonts/inter-latin-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/archivo-latin-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
   </head>
   <body>
     <div class="page-container">
-      <header>
-        <div class="header-top">
-          {/* Ensure the empty <div> that was here is deleted! */}
-          <div class="title-wrap">
-            {/* Routes to /en or /de based on the current page. Change to href="/" if your root handles redirects */}
-            <a href={`/${locale}`} class="title-link">
-              <h1>SWING IN HAMBURG</h1>
-            </a>
-          </div>
+      <header class="site-header">
+        <div class="shell header-inner">
+          <a href={`/${locale}`} class="wordmark">Swing<br />in Hamburg</a>
           <Nav locale={locale} />
         </div>
       </header>
 
-      <main class="main-content">
-        <slot />
-      </main>
+      <div class:list={["shell", "page-body", { "has-sidebar": hasSidebar }]}>
+        {
+          hasSidebar && (
+            <aside class="sidebar">
+              <Wave />
+              <slot name="sidebar" />
+              <Wave />
+            </aside>
+          )
+        }
+        <main class:list={["main-content", { wide }]}>
+          <slot />
+        </main>
+      </div>
     </div>
   </body>
 </html>

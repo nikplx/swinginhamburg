@@ -1,4 +1,6 @@
 ---
+import Wave from "./wave.astro";
+
 interface Props {
   locale: "de" | "en";
 }
@@ -18,26 +20,29 @@ const isActive = (href: string) =>
 const otherLocale = locale === "en" ? "de" : "en";
 const otherLocaleLink = currentPath.replace(`/${locale}`, `/${otherLocale}`);
 
-// Map your data structure for easy iteration
+const labels = {
+  de: {
+    index: "Socials / Kurse",
+    map: "Karte",
+    schools: "Tanzschulen",
+    swing: "Neu hier?",
+    about: "Über uns",
+  },
+  en: {
+    index: "Socials / Classes",
+    map: "Map",
+    schools: "Schools",
+    swing: "Get started",
+    about: "About",
+  },
+}[locale];
+
 const navItems = [
-  {
-    href: `/${locale}`,
-    label: locale === "en" ? "EVENTS | CLASSES" : "EVENTS | KURSE",
-  },
-  { href: `/${locale}/map`, label: locale === "en" ? "MAP" : "KARTE" },
-  {
-    href: `/${locale}/schools`,
-    label: locale === "en" ? "SCHOOLS" : "TANZSCHULEN",
-  },
-  {
-    href: `/${locale}/swing`,
-    label: locale === "en" ? "GET STARTED" : "NEU HIER?",
-  },
-  { href: `/${locale}/about`, label: locale === "en" ? "ABOUT" : "ÜBER UNS" },
-  /*   {
-    href: `/${locale}/conduct`,
-    label: locale === "en" ? "CODE OF CONDUCT" : "CODE OF CONDUCT",
-  }, */
+  { href: `/${locale}`, label: labels.index },
+  { href: `/${locale}/map`, label: labels.map },
+  { href: `/${locale}/schools`, label: labels.schools },
+  { href: `/${locale}/swing`, label: labels.swing },
+  { href: `/${locale}/about`, label: labels.about },
 ];
 ---
 
@@ -53,21 +58,27 @@ const navItems = [
       <span class="hamburger-bar"></span>
     </button>
 
-    {/* Iterate through links, removing the separator logic */}
     <div class="nav-links">
       {
         navItems.map((item) => (
-          <a
-            href={item.href}
-            class={`nav-item ${isActive(item.href) ? "active border-btn" : ""}`}>
+          <a href={item.href} class={`nav-item ${isActive(item.href) ? "active" : ""}`}>
             {item.label}
           </a>
         ))
       }
 
-      <a class="lang-switch" href={otherLocaleLink}
-        >{otherLocale.toUpperCase()}</a
-      >
+      <span class="lang-switch">
+        <a
+          href={locale === "de" ? currentPath : otherLocaleLink}
+          class={locale === "de" ? "active" : ""}
+          hreflang="de">DE</a
+        ><span class="lang-divider">/</span><a
+          href={locale === "en" ? currentPath : otherLocaleLink}
+          class={locale === "en" ? "active" : ""}
+          hreflang="en">EN</a
+        >
+      </span>
+      <Wave />
     </div>
   </nav>
 </mobile-nav>
@@ -82,8 +93,9 @@ const navItems = [
       menuToggle.addEventListener("click", (event) => {
         // Prevent this click from immediately triggering the document listener below
         event.stopPropagation();
-        menuToggle.classList.toggle("active");
+        const isOpen = menuToggle.classList.toggle("active");
         navLinks.classList.toggle("open");
+        document.documentElement.classList.toggle("menu-open", isOpen);
       });
 
       // 2. The Click-Out Behavior
@@ -98,6 +110,7 @@ const navItems = [
           if (!isClickInsideMenu && !isClickOnToggle) {
             menuToggle.classList.remove("active");
             navLinks.classList.remove("open");
+            document.documentElement.classList.remove("menu-open");
           }
         }
       });
@@ -107,49 +120,9 @@ const navItems = [
         if (event.key === "Escape" && navLinks.classList.contains("open")) {
           menuToggle.classList.remove("active");
           navLinks.classList.remove("open");
+          document.documentElement.classList.remove("menu-open");
         }
       });
     }
   });
 </script>
-
-<style>
-  /* --- Desktop Styling Defaults --- */
-  .lang-switch {
-    /* Uses your global 8pt variant, or inherits and forces a smaller look */
-    font-size: var(--font-xxs) !important;
-    color: var(--text-muted) !important; /* #888888 */
-    font-weight: 500;
-    text-transform: uppercase;
-    text-decoration: none;
-    transition:
-      color 0.2s ease,
-      opacity 0.2s ease;
-    opacity: 0.8;
-  }
-
-  .lang-switch:hover {
-    color: var(
-      --bg-main
-    ) !important; /* Illuminates back to white against the black header background */
-    opacity: 1;
-    text-decoration: underline;
-  }
-
-  /* --- Mobile Responsive Rules (< 768px) --- */
-  @media (max-width: 768px) {
-    .lang-switch {
-      /* Scales down smaller than standard mobile menu items (e.g., 10pt/12pt instead of var(--font-emph)) */
-      font-size: var(--font-desc) !important;
-      border-top: 1px dotted rgba(255, 255, 255, 0.2); /* Discrete line breaking it away from standard pages */
-      padding-top: 15px !important;
-      width: 60%; /* Caps width for clear layout line presentation */
-      text-align: center;
-    }
-
-    .lang-switch:hover {
-      color: var(--bg-main) !important;
-      text-decoration: none;
-    }
-  }
-</style>

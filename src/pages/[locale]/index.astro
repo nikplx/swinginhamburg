@@ -106,42 +106,31 @@ const danceFilters = Array.from(uniqueDancesMap.values());
 ---
 
 <Layout locale={locale}>
-  <section>
+  <Fragment slot="sidebar">
     <div class="greeter">
       <RichText content={index.intro} />
     </div>
+    <hr class="rule" />
     <div class="disclaimer-box">
       <div class="disclaimer">
         <RichText content={index.donationBox} />
       </div>
       <div class="disclaimer-button">
         <a href="">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="3"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="arrow-icon">
-            <path d="M5 12h14M12 5l7 7-7 7"></path>
-          </svg>
-          <span>{locale === "en" ? "Fill out Poll" : "Direkt zur Umfrage"}</span
-          >
+          <span>{locale === "en" ? "Fill out poll" : "Direkt zur Umfrage"}</span>
         </a>
       </div>
     </div>
-  </section>
+  </Fragment>
 
   <div class="tabs-header">
     <div class="page-tabs">
-      <button id="tab-events" class="tab active" data-tab="events">
-        {locale === "en" ? "EVENTS" : "EVENTS"}
+      <button id="tab-events" class="tab inactive" data-tab="events">
+        {locale === "en" ? "Events" : "Events"}
       </button>
-      <span class="tab-separator">|</span>
-      <button id="tab-classes" class="tab inactive" data-tab="classes">
-        {locale === "en" ? "CLASSES" : "KURSE"}
+      <span class="tab-separator">/</span>
+      <button id="tab-classes" class="tab active" data-tab="classes">
+        {locale === "en" ? "Classes" : "Kurse"}
       </button>
     </div>
 
@@ -153,12 +142,12 @@ const danceFilters = Array.from(uniqueDancesMap.values());
           aria-label="Toggle Filters">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
+            width="36"
+            height="35"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            stroke-width="1.5"
+            stroke-width="1.75"
             stroke-linecap="round"
             stroke-linejoin="round">
             <line x1="4" y1="21" x2="4" y2="14" />
@@ -191,7 +180,7 @@ const danceFilters = Array.from(uniqueDancesMap.values());
   }
 
   <section>
-    <div id="content-events" class="tab-content active-content">
+    <div id="content-events" class="tab-content">
       <div class="centered-list">
         {
           upcomingEvents.length > 0 ? (
@@ -211,7 +200,11 @@ const danceFilters = Array.from(uniqueDancesMap.values());
               );
             })
           ) : (
-            <p>No upcoming events in the next 14 days.</p>
+            <p>
+              {locale === "en"
+                ? "No upcoming events in the next 14 days."
+                : "Keine anstehenden Events in den nächsten 14 Tagen."}
+            </p>
           )
         }
         {/* Fallback message when events exist but are filtered out */}
@@ -219,7 +212,7 @@ const danceFilters = Array.from(uniqueDancesMap.values());
           upcomingEvents.length > 0 && (
             <p
               id="no-events-msg"
-              style="display: none; text-align: center; color: var(--text-muted); margin-top: 20px;">
+              style="display: none; color: var(--text-muted); margin-top: 20px;">
               {locale === "en"
                 ? "No events match the selected filters."
                 : "Keine Events entsprechen den ausgewählten Filtern."}
@@ -228,7 +221,7 @@ const danceFilters = Array.from(uniqueDancesMap.values());
         }
       </div>
     </div>
-    <div id="content-classes" class="tab-content">
+    <div id="content-classes" class="tab-content active-content">
       <ResponsiveList maxColumns={1} exclusiveOpen={false}>
         {
           Object.entries(groupedClasses).map(([weekday, dayClasses], index) => {
@@ -324,6 +317,14 @@ const danceFilters = Array.from(uniqueDancesMap.values());
           contentClasses,
           false,
         );
+      } else if (currentHash === "classes") {
+        switchTab(
+          tabClasses,
+          tabEvents,
+          contentClasses,
+          contentEvents,
+          false,
+        );
       }
 
       if (tabClasses && tabEvents) {
@@ -357,30 +358,44 @@ const danceFilters = Array.from(uniqueDancesMap.values());
         let visibleEventsCount = 0;
 
         allItemWrappers.forEach((wrapper) => {
-          const itemTags = wrapper.dataset.tags ? wrapper.dataset.tags.split(',') : [];
+          const itemTags = wrapper.dataset.tags
+            ? wrapper.dataset.tags.split(",")
+            : [];
 
           if (activeFilters.size === 0) {
             wrapper.style.display = ""; // Show all
             if (wrapper.classList.contains("workshop-item")) visibleEventsCount++;
           } else {
-            const hasMatch = itemTags.some(tag => activeFilters.has(tag.trim()));
+            const hasMatch = itemTags.some((tag) =>
+              activeFilters.has(tag.trim()),
+            );
             wrapper.style.display = hasMatch ? "" : "none";
-            if (hasMatch && wrapper.classList.contains("workshop-item")) visibleEventsCount++;
+            if (hasMatch && wrapper.classList.contains("workshop-item"))
+              visibleEventsCount++;
           }
         });
 
         // Handle empty day blocks and auto-open accordions
         dayGroups.forEach((group) => {
-          const wrappers = Array.from(group.querySelectorAll('.class-item'));
-          const accordionItem = group.querySelector('.responsive-item');
-          const accordionHeader = group.querySelector('.responsive-item-header');
+          const wrappers = Array.from(group.querySelectorAll(".class-item"));
+          const accordionItem = group.querySelector(".responsive-item");
+          const accordionHeader = group.querySelector(
+            ".responsive-item-header",
+          );
 
           if (wrappers.length > 0) {
-            const hasVisible = wrappers.some(w => w.style.display !== 'none');
-            group.style.display = hasVisible ? '' : 'none';
+            const hasVisible = wrappers.some(
+              (w) => w.style.display !== "none",
+            );
+            group.style.display = hasVisible ? "" : "none";
 
             // Auto-open logic: If filters are active and this group has visible items, force it open
-            if (activeFilters.size > 0 && hasVisible && accordionItem && accordionHeader) {
+            if (
+              activeFilters.size > 0 &&
+              hasVisible &&
+              accordionItem &&
+              accordionHeader
+            ) {
               accordionItem.classList.add("open");
               accordionHeader.setAttribute("aria-expanded", "true");
             }
@@ -388,7 +403,10 @@ const danceFilters = Array.from(uniqueDancesMap.values());
         });
 
         if (noEventsMsg) {
-          noEventsMsg.style.display = visibleEventsCount === 0 && activeFilters.size > 0 ? "block" : "none";
+          noEventsMsg.style.display =
+            visibleEventsCount === 0 && activeFilters.size > 0
+              ? "block"
+              : "none";
         }
       }
 
@@ -407,174 +425,94 @@ const danceFilters = Array.from(uniqueDancesMap.values());
           applyFilters();
         });
       });
-
-      // Day Accordion Toggling Logic
-      const dayHeaders = document.querySelectorAll(".day-header");
-      dayHeaders.forEach((header) => {
-        header.addEventListener("click", () => {
-          const dayGroup = header.parentElement;
-          if (!dayGroup) return;
-
-          const isOpen = dayGroup.classList.contains("open");
-          if (isOpen) {
-            dayGroup.classList.remove("open");
-            header.setAttribute("aria-expanded", "false");
-          } else {
-            dayGroup.classList.add("open");
-            header.setAttribute("aria-expanded", "true");
-          }
-        });
-      });
     });
   </script>
 </Layout>
 
 <style>
-  /* All existing styles remain exactly the same */
-  .greeter {
-    padding-top: 30px;
+  /* --- Sidebar: intro copy --- */
+  .greeter :global(p) {
+    font-size: var(--fs-body);
+    line-height: 1.33;
+    margin: 0 0 1.1em 0;
   }
 
+  .greeter :global(p:last-child) {
+    margin-bottom: 0;
+  }
+
+  .greeter :global(a) {
+    color: inherit;
+  }
+
+  /* --- Sidebar: survey teaser --- */
   .disclaimer-box {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    border: 1px solid #000000;
-    padding: 18px;
-    border-radius: 12px;
-    width: 100%;
-    max-width: 600px;
-    box-sizing: border-box;
-    margin-bottom: 50px;
-    gap: 16px;
+    gap: 1rem;
+    text-align: center;
+    margin-top: 0.5rem;
   }
 
   .disclaimer {
-    font-family: sans-serif;
-    font-size: 1.1rem;
-    line-height: 1.4;
-    color: #000000;
+    font-family: var(--font-body);
+    font-size: var(--fs-h3);
+    line-height: 1.2;
+    color: var(--text-main);
   }
 
   .disclaimer :global(p) {
-    margin: 0;
+    margin: 0 0 0.75em 0;
   }
 
-  .disclaimer-button {
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-    width: 100%;
+  .disclaimer :global(p:first-child) {
+    font-family: var(--font-display);
+    font-size: var(--fs-h1);
+    font-weight: 700;
+    line-height: 1.06;
+    letter-spacing: -0.01em;
+    margin-bottom: 0.5em;
   }
 
-  .disclaimer-box a {
-    display: inline-flex;
-    align-items: center;
-    justify-content: flex-start;
-    text-align: left;
-    gap: 8px;
-
-    color: #000000;
-    text-decoration: none;
-    font-weight: 800;
-    font-size: var(--font-emph);
-    cursor: pointer;
+  .disclaimer :global(p:last-child) {
+    margin-bottom: 0;
   }
 
-  .arrow-icon {
-    width: 1.25rem;
-    height: 1.25rem;
-    flex-shrink: 0;
+  .disclaimer-button a {
     display: inline-block;
+    font-family: var(--font-display);
+    font-size: var(--fs-h1);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--accent);
   }
 
+  .disclaimer-button a:hover {
+    color: var(--text-main);
+  }
+
+  /* --- Content column: title row --- */
   .tabs-header {
     display: flex;
     align-items: center;
-    justify-content: center;
-    position: relative;
-    margin: 30px 0;
-    width: 100%;
-    max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-bottom: 3.5rem;
   }
 
   .page-tabs {
-    text-align: center;
-    font-size: var(--font-emph);
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+    font-family: var(--font-body);
+    font-size: var(--fs-h1);
     font-weight: 700;
-    letter-spacing: 0.02em;
-    margin: 0;
-  }
-
-  .filter-toggle {
-    position: absolute;
-    right: 0;
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--text-main);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px;
-    transition: opacity 0.2s ease;
-  }
-
-  .filter-toggle:hover {
-    opacity: 0.7;
-  }
-
-  .filter-panel .listing-tag:hover {
-    background-color: #f0f0f0; /* Light gray */
-    color: var(--text-main);
-  }
-
-  /* 2. Selected State: Full black */
-  .filter-panel .listing-tag.selected {
-    background-color: var(--accent);
-    color: var(--bg-main);
-  }
-
-  /* 3. Selected + Hover: Slightly lighter black to indicate it can be unclicked */
-  .filter-panel .listing-tag.selected:hover {
-    background-color: #333333; /* Dark gray */
-    color: var(--bg-main);
-  }
-
-  .filter-panel {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    gap: 12px;
-
-    max-height: 0;
-    margin-bottom: 0;
-    opacity: 0;
-    overflow: hidden;
-    transform: translateY(-10px);
-    pointer-events: none;
-
-    transition:
-      max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-      opacity 0.3s ease-in-out,
-      margin-bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-      transform 0.3s ease-out;
-  }
-
-  .filter-panel.open {
-    max-height: 200px;
-    margin-bottom: 40px;
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
-  }
-
-  .filter-panel .listing-tag {
-    margin-bottom: 0;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
   }
 
   button.tab {
@@ -583,28 +521,76 @@ const danceFilters = Array.from(uniqueDancesMap.values());
     padding: 0;
     font: inherit;
     cursor: pointer;
-    transition: color 0.3s ease;
+    color: var(--text-muted);
+    transition: color 0.2s ease;
   }
 
   button.tab.active {
     color: var(--text-main);
   }
 
-  button.tab.inactive {
-    color: var(--text-muted);
-    font-weight: 500;
-  }
-
-  button.tab:hover.inactive {
-    color: var(--text-main);
+  button.tab:hover {
+    color: var(--accent);
   }
 
   .tab-separator {
-    margin: 0 8px;
-    color: var(--text-main);
-    font-weight: 500;
+    color: var(--text-muted);
+    font-weight: 400;
   }
 
+  .filter-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    flex: 0 0 auto;
+    transition: color 0.15s ease;
+  }
+
+  .filter-toggle:hover {
+    color: var(--accent);
+  }
+
+  /* --- Filter panel --- */
+  .filter-panel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    max-height: 0;
+    margin-bottom: 0;
+    opacity: 0;
+    overflow: hidden;
+    pointer-events: none;
+    transition:
+      max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+      opacity 0.3s ease-in-out,
+      margin-bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .filter-panel.open {
+    max-height: 20rem;
+    margin-bottom: 2.5rem;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .filter-panel .listing-tag {
+    background-color: transparent;
+    color: var(--text-main);
+    box-shadow: inset 0 0 0 1px var(--accent);
+  }
+
+  .filter-panel .listing-tag:hover,
+  .filter-panel .listing-tag.selected {
+    background-color: var(--accent);
+    color: var(--accent-contrast);
+  }
+
+  /* --- Tab panels --- */
   .tab-content {
     display: none;
     opacity: 0;
@@ -614,5 +600,45 @@ const danceFilters = Array.from(uniqueDancesMap.values());
   .tab-content.active-content {
     display: block;
     opacity: 1;
+  }
+
+  @media (max-width: 767px) {
+    .sidebar > :global(.rule) {
+      display: none;
+    }
+
+    /* The survey teaser becomes a full-bleed accent card on mobile */
+    .disclaimer-box {
+      margin-inline: calc(var(--shell-pad) * -1);
+      padding: 2rem var(--shell-pad);
+      background-color: var(--accent);
+      color: var(--accent-contrast);
+      margin-top: 0;
+    }
+
+    .disclaimer,
+    .disclaimer :global(*) {
+      color: var(--accent-contrast);
+    }
+
+    .disclaimer-button a,
+    .disclaimer-button a:hover {
+      color: var(--accent-contrast);
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .tabs-header {
+      margin-bottom: 2rem;
+    }
+
+    .page-tabs {
+      font-size: var(--fs-h2);
+    }
+
+    .disclaimer :global(p:first-child),
+    .disclaimer-button a {
+      font-size: var(--fs-h2);
+    }
   }
 </style>

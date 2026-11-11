@@ -218,22 +218,10 @@ const events = classes.map((clazz) => {
 </script>
 
 <style>
-  body {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    min-height: 100dvh; 
-  }
-
   .map-wrapper {
     position: relative;
-    width: 100vw;
-    left: 50%;
-    transform: translateX(-50%);
-    height: calc(100dvh - 60px);
+    width: 100%;
+    height: clamp(28rem, calc(100dvh - 16rem), 60rem);
     display: flex;
     overflow: hidden;
   }
@@ -262,11 +250,12 @@ const events = classes.map((clazz) => {
     top: 20px;
     right: 20px;
     z-index: 1000;
-    background: white;
+    background: var(--surface);
+    color: var(--text-main);
     padding: 1.5rem;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    max-width: 300px;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 16px rgba(40, 70, 110, 0.12);
+    max-width: 20rem;
     
     /* Adds scroll if filters stack too tall */
     max-height: calc(100vh - 100px);
@@ -284,8 +273,11 @@ const events = classes.map((clazz) => {
   .filter-heading {
     margin-top: 0;
     margin-bottom: 0.75rem;
-    font-size: 1rem;
-    color: #000;
+    font-family: var(--font-display);
+    font-size: var(--fs-h3);
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--text-main);
   }
 
   .filter-options {
@@ -315,59 +307,44 @@ const events = classes.map((clazz) => {
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #ffffff;
-    color: #000000;
-    border: 1px solid #000000;
-    font-size: 0.9rem;
-    font-weight: bold;
-    border-radius: 8px;
+    background-color: transparent;
+    color: var(--text-main);
+    border: 1px solid var(--rule-color);
+    font-family: var(--font-body);
+    font-size: var(--fs-body);
+    font-weight: 700;
+    border-radius: 0.5rem;
     cursor: pointer;
     transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease;
     padding: 0;
   }
 
   .filter-btn:hover {
-    background-color: #f0f0f0;
+    background-color: var(--accent-soft);
+    color: var(--accent);
   }
 
   .filter-btn.active {
-    background-color: #000000;
-    color: #ffffff;
+    background-color: var(--text-main);
+    color: var(--bg-main);
+    border-color: var(--text-main);
   }
 
   .filter-btn:active {
     transform: scale(0.95); /* Adds a nice pressed effect */
   }
 
-  /* Dance Tag Design */
-  .listing-tag {
-    border: 1px solid var(--accent, #000);
-    display: inline-block;
-    border-radius: 8px;
-    padding: 4px 8px;
-    font-weight: 600;
-    font-size: var(--font-tag, 9pt);
-    text-decoration: none;
-    color: var(--text-main, #000);
+  /* Dance tags inside the filter panel use the outlined pill variant */
+  .filter-panel .listing-tag {
     background-color: transparent;
-    cursor: pointer;
-    width: fit-content;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    color: var(--text-main);
+    box-shadow: inset 0 0 0 1px var(--accent);
   }
 
-  .listing-tag:hover {
-    background-color: #f0f0f0;
-    color: var(--text-main, #000);
-  }
-
-  .listing-tag.selected {
-    color: var(--bg-main, #fff);
-    background-color: var(--accent, #000);
-  }
-
-  .listing-tag.selected:hover {
-    background-color: #333333;
-    color: var(--bg-main, #fff);
+  .filter-panel .listing-tag:hover,
+  .filter-panel .listing-tag.selected {
+    background-color: var(--accent);
+    color: var(--accent-contrast);
   }
 
   .mobile-filter-toggle,
@@ -395,14 +372,14 @@ const events = classes.map((clazz) => {
   }
 
   .filter-toggle:hover {
-    background-color: #f0f0f0; /* Soft gray highlight */
+    background-color: var(--accent-soft); /* Soft highlight */
     transform: scale(1.1);     /* Slight pop forward */
     opacity: 1;                /* Overrides your old opacity drop */
   }
 
   .filter-toggle:active {
     transform: scale(0.95);    /* Satisfying squish when clicked */
-    background-color: #e0e0e0;
+    background-color: var(--accent-soft);
   }
 
   .close-filter-btn {
@@ -410,7 +387,7 @@ const events = classes.map((clazz) => {
     border: none;
     font-size: 1.5rem;
     cursor: pointer;
-    color: #000;
+    color: var(--text-main);
   }
 
   /* Mobile adjustments */
@@ -424,13 +401,14 @@ const events = classes.map((clazz) => {
       left: 50%;
       transform: translateX(-50%);
       z-index: 9999;
-      background-color: #000000;
-      color: #ffffff;
+      background-color: var(--text-main);
+      color: var(--bg-main);
       border: none;
       padding: 0.75rem 1.5rem;
-      border-radius: 30px;
-      font-weight: bold;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      border-radius: 999px;
+      font-family: var(--font-body);
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(40, 70, 110, 0.25);
       transition: 
         transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), 
         background-color 0.2s ease, 
@@ -440,8 +418,8 @@ const events = classes.map((clazz) => {
     .mobile-filter-toggle:hover {
       /* IMPORTANT: We keep translateX(-50%) so it stays perfectly centered */
       transform: translateX(-50%) scale(1.05); 
-      background-color: #333333; 
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6); 
+      background-color: var(--accent); 
+      box-shadow: 0 6px 16px rgba(138, 74, 228, 0.35); 
     }
 
     .mobile-filter-toggle:active {
@@ -489,11 +467,11 @@ const events = classes.map((clazz) => {
 <style is:global>
   /* Container override */
   .custom-popup .leaflet-popup-content-wrapper {
-    background: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    background: var(--surface);
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 16px rgba(40, 70, 110, 0.15);
     padding: 2px;
-    width: 200px; 
+    width: 200px;
   }
 
   .custom-popup .leaflet-popup-tip {
@@ -503,30 +481,32 @@ const events = classes.map((clazz) => {
   .custom-popup .leaflet-popup-content {
     margin: 12px;
     width: auto !important; 
-    font-family: "Inter", sans-serif;
-    color: var(--text-main, #000);
-    line-height: 1.2;
+    font-family: var(--font-body);
+    color: var(--text-main);
+    line-height: 1.3;
   }
 
   .custom-popup-content strong {
-    font-size: 11pt;
+    font-family: var(--font-display);
+    font-size: var(--fs-h3);
     font-weight: 700;
+    line-height: 1.1;
     display: block;
   }
 
   .custom-popup-content span {
-    font-size: 9pt;
-    color: #333;
+    font-size: var(--fs-body);
+    color: var(--text-main);
   }
 
   .popup-date-time {
-    font-size: 9pt;
+    font-size: var(--fs-body);
     font-style: italic;
     margin-top: 6px;
   }
 
   .popup-title {
-    font-size: 9pt;
+    font-size: var(--fs-body);
     font-weight: 500;
     margin-top: 2px;
   }

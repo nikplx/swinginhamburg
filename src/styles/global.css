@@ -1,225 +1,502 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap");
+/* ------------------------------------------------------------------
+   Self-hosted variable fonts (SIL Open Font License)
+   - Inter: body copy. Optical size axis replaces Google's "Inter 18pt"
+     / "Inter 24pt" families used in the design file.
+   - Archivo: display / headings. Stand-in for "Maple Bold" (Process Type
+     Foundry, commercial licence) — swap the files in public/fonts/ and the
+     --font-display token once a licence is available.
+   ------------------------------------------------------------------ */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/inter-latin-normal.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/inter-latin-ext-normal.woff2") format("woff2");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Inter";
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/inter-latin-italic.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Inter";
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/inter-latin-ext-italic.woff2") format("woff2");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Archivo";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/archivo-latin-normal.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Archivo";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/archivo-latin-ext-normal.woff2") format("woff2");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
 
+/* ------------------------------------------------------------------
+   Design tokens — values lifted from the Figma "Final Design" file
+   ------------------------------------------------------------------ */
 :root {
-  --bg-main: #ffffff;
-  --text-main: #000000;
-  --text-muted: #888888;
-  --accent: #000000;
-  --font-title: 16pt;
-  --font-emph: 12pt;
-  --font-desc: 10pt;
-  --font-tag: 9pt;
-  --font-xxs: 8pt;
+  color-scheme: light;
+
+  /* Palette */
+  --bg-main: #f7f3e9;
+  --text-main: #28466e;
+  --text-muted: rgba(40, 70, 110, 0.66);
+  --accent: #8a4ae4;
+  --accent-contrast: #f7f3e9;
+  --accent-soft: rgba(138, 74, 228, 0.1);
+  --surface: #ffffff;
+  --rule-color: #28466e;
+  --rule-width: 2px;
+  --warning: #fd1010;
+
+  /* Families */
+  --font-body: "Inter", system-ui, -apple-system, sans-serif;
+  --font-display: "Archivo", "Inter", system-ui, sans-serif;
+
+  /* Type scale (px → rem at 16px root) */
+  --fs-mega: 3.75rem; /* 60 — wordmark, "UMFRAGE" */
+  --fs-h1: 2.125rem; /* 34 — page/row titles */
+  --fs-h2: 1.625rem; /* 26 */
+  --fs-h3: 1.5rem; /* 24 — addresses, lead copy */
+  --fs-row: 1.75rem; /* 28 — list rows and list headers */
+  --fs-body: 1.125rem; /* 18 — base body */
+  --fs-small: 1rem; /* 16 */
+  --fs-tiny: 0.875rem; /* 14 */
+
+  /* Legacy aliases still referenced across components */
+  --font-title: var(--fs-h1);
+  --font-emph: var(--fs-h3);
+  --font-desc: var(--fs-body);
+  --font-tag: var(--fs-body);
+  --font-xxs: var(--fs-small);
+
+  /* Layout */
+  --shell-max: 90rem; /* 1440 */
+  --shell-pad: clamp(1.25rem, 4vw, 3.5rem);
+  --sidebar-width: clamp(15rem, 30vw, 27.1875rem); /* 435 at 1440 */
+  --column-gap: clamp(2rem, 6.5vw, 5.8125rem); /* 93 */
+  --header-pad-top: clamp(1.25rem, 3.2vw, 3.5rem);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 html {
-  scroll-padding-top: 100px;
+  scroll-padding-top: 6rem;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background-color: var(--bg-main);
-  color: var(--text-main);
-  font-family: "Inter", sans-serif;
   margin: 0;
   padding: 0;
-  display: flex;
-  justify-content: center;
-  font-size: var(--font-desc);
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: 1.33;
+  font-weight: 400;
   -webkit-font-smoothing: antialiased;
+  font-optical-sizing: auto;
   width: 100%;
   overflow-x: clip;
 }
 
+/* --- Base typography --- */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-synthesis-weight: none;
+  line-height: 1.06;
+  letter-spacing: -0.01em;
+  color: var(--text-main);
+  margin: 0 0 0.5em 0;
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: var(--fs-h1);
+}
+h2 {
+  font-size: var(--fs-h1);
+}
+h3 {
+  font-size: var(--fs-h2);
+}
+h4 {
+  font-size: var(--fs-h3);
+}
+
+p {
+  margin: 0 0 1em 0;
+  line-height: 1.33;
+}
+
+strong,
+b {
+  font-weight: 600;
+}
+
+em,
+i {
+  font-style: italic;
+}
+
+a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  text-decoration-thickness: 1px;
+  transition: color 0.15s ease;
+}
+
+a:hover {
+  color: var(--accent);
+}
+
+img,
+svg {
+  max-width: 100%;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+/* --- Shell (sidebar + content column) --- */
 .page-container {
   width: 100%;
   min-height: 100vh;
-  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   overflow-x: clip;
 }
 
-/* --- Header & Layout --- */
-header {
+.shell {
+  width: 100%;
+  max-width: var(--shell-max);
+  margin-inline: auto;
+  padding-inline: var(--shell-pad);
+}
+
+.site-header {
   position: sticky;
   top: 0;
-  z-index: 2000; 
-  background-color: #000000; 
+  z-index: 2000;
+  background-color: var(--bg-main);
 }
 
-.centered-list {
-  width: 100%; 
-  max-width: 500px; 
-  margin: 0 auto; 
+.header-inner {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  column-gap: var(--column-gap);
+  align-items: start;
+  padding-top: var(--header-pad-top);
+  padding-bottom: 1rem;
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--fs-mega);
+  line-height: 1.03;
+  letter-spacing: -0.015em;
+  color: var(--text-main);
+  text-decoration: none;
+  margin: 0;
+  display: block;
+  text-wrap: nowrap;
+}
+
+.wordmark:hover {
+  color: var(--text-main);
+}
+
+.page-body {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  column-gap: var(--column-gap);
+  align-items: start;
+  padding-block: 2.5rem 5rem;
+  flex: 1;
+}
+
+/* Pages without a sidebar keep their content aligned to the content column */
+.page-body:not(.has-sidebar) .main-content {
+  grid-column: 2;
+}
+
+.sidebar {
+  min-width: 0;
   display: flex;
   flex-direction: column;
-}
-
-.header-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 30px 20px;
-  position: relative;
-  z-index: 2000;
-  background-color: var(--accent);
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.title-wrap {
-  text-align: left;
-}
-
-.title-wrap h1 {
-  font-family: "Inter", sans-serif;
-  font-weight: 900;
-  font-size: var(--font-title);
-  line-height: 19px;
-  letter-spacing: 0.04em;
-  color: var(--bg-main);
-  margin: 0;
-  text-transform: uppercase;
+  gap: 1.75rem;
 }
 
 .main-content {
-  padding: 0 30px 40px 30px;
+  min-width: 0;
 }
 
-@media (min-width: 769px) {
-  .main-content {
-    max-width: 800px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-}
-
-.main-content p {
-  font-family: "Inter", sans-serif;
-  font-size: var(--font-desc); 
-  font-weight: 400; 
-  line-height: 1.5; 
-  color: var(--text-main); 
-  margin-top: 0;
-  margin-bottom: 20px; 
-  text-align: left;
-  hyphens: auto;
-  -webkit-hyphens: auto; 
-}
-
-/* --- Typography for Lists (Rich Text) --- */
-.main-content ul,
-.main-content ol {
-  padding-left: 20px; 
-  margin-top: 0;
-  margin-bottom: 20px; 
-}
-
-.main-content li {
-  font-family: "Inter", sans-serif;
-  font-size: var(--font-desc);
-  font-weight: 400;
-  line-height: 1.5; 
+.page-footnote {
+  font-size: var(--fs-body);
   color: var(--text-main);
-  margin-bottom: 3px; 
-  text-align: justify;
-  hyphens: auto;
-  -webkit-hyphens: auto;
+  text-align: right;
+  margin-top: 2.5rem;
 }
 
-.main-content li:last-child {
-  margin-bottom: 0; 
+/* --- Rules --- */
+.rule {
+  border: 0;
+  border-top: var(--rule-width) solid var(--rule-color);
+  margin: 0;
+}
+
+/* --- Wave divider --- */
+.wave {
+  display: block;
+  width: 100%;
+  height: 0.6875rem;
+  color: var(--rule-color);
 }
 
 /* --- Navigation --- */
 .site-nav {
-  grid-column: 3;
   display: flex;
   justify-content: flex-end;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .nav-links {
   display: flex;
-  gap: 5px;
-  align-items: center;
-  color: var(--text-muted); 
+  align-items: baseline;
+  gap: 1.25rem;
 }
 
 .nav-links a {
-  color: var(--bg-main);
-  font-size: var(--font-xxs);
-  text-decoration: none; 
-  font-weight: 600;
-  text-transform: uppercase;
-  transition: text-decoration 0.2s ease, opacity 0.2s ease;
-  padding: 4px 8px; 
-  border: 1px solid transparent; 
-  border-radius: 2px;
+  color: var(--text-main);
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.15s ease;
 }
 
 .nav-links a:hover {
-  text-decoration: underline;
+  color: var(--accent);
 }
 
 .nav-links a.active {
-  border: 1px solid var(--bg-main);
-  text-decoration: none; 
+  color: var(--accent);
 }
 
-.nav-separator {
-  display: none;
+.lang-switch {
+  display: inline-flex;
+  gap: 0.25rem;
+  color: var(--text-main);
+  font-size: var(--fs-body);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.lang-switch a {
+  color: var(--text-main);
+  text-decoration: none;
+}
+
+.lang-switch a.active {
+  color: var(--accent);
 }
 
 .menu-toggle {
+  display: none;
   background: none;
   border: none;
   cursor: pointer;
-  display: none;
   flex-direction: column;
-  gap: 5px;
-  padding: 16px;
+  gap: 6px;
+  padding: 0.5rem 0;
+  margin-left: auto;
 }
 
 .hamburger-bar {
-  width: 20px;
+  display: block;
+  width: 28px;
   height: 3px;
-  background-color: var(--bg-main);
-  transition: all 0.3s ease;
+  border-radius: 2px;
+  background-color: var(--text-main);
+  transition:
+    transform 0.25s ease,
+    opacity 0.2s ease;
 }
 
-/* --- Listing Tags & Filter Additions --- */
+/* --- Tags / pills --- */
 .listing-tag {
-  border: 1px solid var(--accent);
-  display: inline-block;
-  border-radius: 8px;
-  padding: 4px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.5rem;
+  padding: 0.0625rem 0.625rem;
+  border: 0;
+  border-radius: 999px;
+  background-color: var(--accent);
+  color: var(--accent-contrast);
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  font-style: italic;
   font-weight: 600;
-  font-size: var(--font-tag);
-  margin-bottom: 5px;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
   text-decoration: none;
-  color: var(--text-main);
-  background-color: transparent;
+  white-space: nowrap;
   cursor: pointer;
   width: fit-content;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .listing-tag:hover,
 .listing-tag.selected {
-  color: var(--bg-main);
-  background-color: var(--accent);
+  background-color: var(--text-main);
+  color: var(--accent-contrast);
 }
 
-/* --- Mobile Nav Override (< 768px) --- */
-@media (max-width: 768px) {
-  header {
-    position: sticky; 
-    top: 0;
+/* --- Rich text / content column --- */
+.page-content,
+.main-content {
+  max-width: 46.3125rem; /* 741 */
+}
+
+.page-content p,
+.main-content p,
+.page-content li,
+.main-content li {
+  font-size: var(--fs-body);
+  line-height: 1.33;
+}
+
+.page-content ul,
+.main-content ul,
+.page-content ol,
+.main-content ol {
+  padding-left: 1.25rem;
+  margin: 0 0 1.1em;
+}
+
+.page-content li,
+.main-content li {
+  margin-bottom: 0.2em;
+}
+
+.page-content h2,
+.main-content h2 {
+  font-size: var(--fs-h1);
+  margin-top: 2.5rem;
+}
+
+.page-content h3,
+.main-content h3 {
+  font-size: var(--fs-h1);
+  margin-top: 2.5rem;
+}
+
+.page-content h2:first-child,
+.main-content h2:first-child {
+  margin-top: 0;
+}
+
+.page-content table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* --- Lists (overrides the old centered narrow column) --- */
+.centered-list {
+  width: 100%;
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- Mobile --- */
+@media (max-width: 1023px) {
+  .header-inner,
+  .page-body {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .header-top {
-    padding: 15px 20px;
+  .page-body:not(.has-sidebar) .main-content {
+    grid-column: 1;
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .wordmark {
+    font-size: 2.5rem;
+    line-height: 1.02;
+  }
+
+  .page-body {
+    padding-block: 1.75rem 3.5rem;
+    row-gap: 2.5rem;
   }
 
   .menu-toggle {
@@ -227,65 +504,147 @@ header {
     z-index: 2000;
   }
 
-  .menu-toggle .hamburger-bar {
-    transform-origin: center;
-  }
-
   .menu-toggle.active .hamburger-bar:nth-child(1) {
-    transform: translateY(8px) rotate(45deg);
+    transform: translateY(9px) rotate(45deg);
   }
   .menu-toggle.active .hamburger-bar:nth-child(2) {
     opacity: 0;
   }
   .menu-toggle.active .hamburger-bar:nth-child(3) {
-    transform: translateY(-8px) rotate(-45deg);
+    transform: translateY(-9px) rotate(-45deg);
+  }
+
+  /* --- Full screen menu on the accent colour --- */
+  .menu-toggle .hamburger-bar {
+    width: 30px;
+  }
+
+  .site-nav {
+    display: block;
+  }
+
+  html.menu-open,
+  html.menu-open body {
+    background-color: var(--accent);
+  }
+
+  html.menu-open .site-header {
+    background-color: var(--accent);
+  }
+
+  html.menu-open .wordmark,
+  html.menu-open .wordmark:hover,
+  html.menu-open .lang-switch,
+  html.menu-open .lang-switch a,
+  html.menu-open .lang-divider,
+  html.menu-open .nav-links a {
+    color: var(--accent-contrast);
+  }
+
+  html.menu-open .menu-toggle .hamburger-bar {
+    background-color: var(--accent-contrast);
   }
 
   .nav-links {
     position: absolute;
-    top: 100%; 
-    left: 0;
-    width: 100%;
-    background-color: var(--accent); 
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100vw;
+    background-color: var(--accent);
+    color: var(--accent-contrast);
     flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
     justify-content: flex-start;
-    align-items: center;
-    gap: 20px; 
-
+    gap: 0;
     max-height: 0;
-    padding: 0;
+    padding: 0 var(--shell-pad);
     opacity: 0;
     overflow: hidden;
     pointer-events: none;
     transition:
-      max-height 0.4s ease,
-      opacity 0.3s ease,
-      padding 0.4s ease;
+      max-height 0.35s ease,
+      opacity 0.25s ease,
+      padding 0.35s ease;
     z-index: 1500;
   }
 
   .nav-links.open {
-    max-height: 400px; 
+    max-height: 120vh;
+    min-height: calc(100dvh - 8rem);
     opacity: 1;
-    padding: 30px 0 20px 0;
+    padding: 0.25rem var(--shell-pad) 2rem;
     pointer-events: all;
   }
 
   .nav-links a {
-    color: var(--bg-main); 
-    font-size: var(--font-emph); 
+    color: var(--accent-contrast);
+    font-family: var(--font-display);
+    font-size: var(--fs-row);
     font-weight: 700;
-    letter-spacing: 0.05em;
-    text-align: center;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    white-space: normal;
+    padding: 1rem 0;
+    border-bottom: var(--rule-width) solid var(--accent-contrast);
   }
 
-  .nav-links a.border-btn {
-    border: 1px solid var(--bg-main);
-    padding: 4px 16px;
-    border-radius: 2px; 
+  .nav-links a:first-child {
+    border-top: var(--rule-width) solid var(--accent-contrast);
   }
 
-  .nav-links .nav-separator {
-    display: none; 
+  .nav-links a:hover,
+  .nav-links a.active {
+    color: var(--accent-contrast);
   }
+
+  .nav-links .lang-switch {
+    margin-top: 1.25rem;
+    font-family: var(--font-body);
+    font-size: var(--fs-body);
+    line-height: 1.2;
+    justify-content: flex-start;
+  }
+
+  .nav-links .lang-switch a {
+    border: 0;
+    padding: 0;
+    font-family: var(--font-body);
+    font-size: inherit;
+    font-weight: 700;
+    line-height: inherit;
+  }
+
+  .nav-links > .wave {
+    display: block;
+    margin-top: 2rem;
+    color: var(--accent-contrast);
+  }
+
+  .sidebar {
+    gap: 1.5rem;
+    padding-top: 0;
+  }
+
+  .page-footnote {
+    text-align: left;
+  }
+}
+
+/* Match the design's vertical rhythm: the sidebar starts lower than the
+   content column and shares the wordmark's left edge. */
+@media (min-width: 1024px) {
+  .sidebar {
+    padding-top: 6.75rem;
+  }
+}
+
+/* Full-width main column (map page) */
+.main-content.wide {
+  max-width: none;
+}
+
+.page-body .main-content.wide {
+  grid-column: 1 / -1;
 }

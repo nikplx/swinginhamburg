@@ -16,6 +16,6 @@ interface Params {
 }
 const { locale } = Astro.params as Params;
 ---
-<Layout locale={locale}>
+<Layout locale={locale} wide>
     <MapC locale={locale}></Map>
 </Layout>
