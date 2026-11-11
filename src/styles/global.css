@@ -357,9 +357,17 @@ svg {
   display: inline-flex;
   gap: 0.25rem;
   color: var(--text-main);
+  font-family: var(--font-body);
   font-size: var(--fs-body);
   font-weight: 700;
+  line-height: 1.2;
   white-space: nowrap;
+}
+
+.lang-divider {
+  font-size: inherit;
+  font-weight: 700;
+  line-height: inherit;
 }
 
 .lang-switch a {
