@@ -661,10 +661,17 @@ svg {
 }
 
 /* Match the design's vertical rhythm: the sidebar starts lower than the
-   content column and shares the wordmark's left edge. */
+   content column and shares the wordmark's left edge. The column is
+   framed by a wave at the top and one at the bottom of the viewport. */
 @media (min-width: 1024px) {
   .sidebar {
     padding-top: 6.75rem;
+    align-self: stretch;
+    min-height: calc(100dvh - 14.25rem);
+  }
+
+  .sidebar > .wave:last-of-type {
+    margin-top: auto;
   }
 }
 

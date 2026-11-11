@@ -132,19 +132,30 @@ const danceFilters = Array.from(uniqueDancesMap.values());
     </div>
     <hr class="rule" />
     <div class="disclaimer-box">
-      <div class="disclaimer">
-        <p class="disclaimer-headline">{pollHeadline}</p>
-        {pollBody && <p class="disclaimer-body">{pollBody}</p>}
-      </div>
-      <div class="disclaimer-button">
-        <a href="">
-          <span class="disclaimer-cta-kicker">
-            {locale === "en" ? "Take the" : "Direkt zur"}
-          </span>
-          <span class="disclaimer-cta-title">
-            {locale === "en" ? "Survey" : "Umfrage"}
-          </span>
-        </a>
+      <button
+        class="disclaimer-toggle"
+        type="button"
+        aria-expanded="true"
+        aria-controls="disclaimer-panel"
+        aria-label={locale === "en" ? "Toggle survey" : "Umfrage ein-/ausklappen"}>
+        <span class="disclaimer-toggle-h"></span>
+        <span class="disclaimer-toggle-v"></span>
+      </button>
+      <div class="disclaimer-panel" id="disclaimer-panel">
+        <div class="disclaimer">
+          <p class="disclaimer-headline">{pollHeadline}</p>
+          {pollBody && <p class="disclaimer-body">{pollBody}</p>}
+        </div>
+        <div class="disclaimer-button">
+          <a href="">
+            <span class="disclaimer-cta-kicker">
+              {locale === "en" ? "Take the" : "Direkt zur"}
+            </span>
+            <span class="disclaimer-cta-title">
+              {locale === "en" ? "Survey" : "Umfrage"}
+            </span>
+          </a>
+        </div>
       </div>
     </div>
   </Fragment>
@@ -479,6 +490,50 @@ const danceFilters = Array.from(uniqueDancesMap.values());
     gap: 0;
     text-align: center;
     margin-top: 0.5rem;
+    position: relative;
+  }
+
+  /* Collapse control is only shown on the accent card (tablet/mobile) */
+  .disclaimer-toggle {
+    display: none;
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1;
+    width: 2.125rem;
+    height: 2.125rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: none;
+    border: var(--rule-width) solid var(--accent-contrast);
+    border-radius: 50%;
+    color: var(--accent-contrast);
+    cursor: pointer;
+  }
+
+  .disclaimer-toggle-h,
+  .disclaimer-toggle-v {
+    position: absolute;
+    background-color: currentColor;
+    border-radius: 1px;
+    transition: transform 0.2s ease;
+  }
+
+  .disclaimer-toggle-h {
+    width: 0.875rem;
+    height: 2px;
+  }
+
+  .disclaimer-toggle-v {
+    width: 2px;
+    height: 0.875rem;
+    display: none;
+  }
+
+  /* Expanded shows "−", collapsed shows "+" */
+  .disclaimer-box.collapsed .disclaimer-toggle-v {
+    display: block;
   }
 
   .disclaimer {
@@ -647,18 +702,35 @@ const danceFilters = Array.from(uniqueDancesMap.values());
     opacity: 1;
   }
 
-  @media (max-width: 767px) {
-    .sidebar > :global(.rule) {
+  @media (max-width: 1023px) {
+    .tabs-header {
+      margin-bottom: 2rem;
+    }
+
+    .page-tabs {
+      font-size: var(--fs-h2);
+    }
+
+    /* Survey teaser becomes the accent card from the mobile frames */
+    .disclaimer-box {
+      padding: 3rem 1.5rem 2rem;
+      background-color: var(--accent);
+      color: var(--accent-contrast);
+      border-radius: 0.5rem;
+      margin-top: 0;
+      margin-bottom: 1rem;
+    }
+
+    .disclaimer-toggle {
+      display: flex;
+    }
+
+    .disclaimer-box.collapsed .disclaimer-panel {
       display: none;
     }
 
-    /* The survey teaser becomes a full-bleed accent card on mobile */
-    .disclaimer-box {
-      margin-inline: calc(var(--shell-pad) * -1);
-      padding: 2rem var(--shell-pad);
-      background-color: var(--accent);
-      color: var(--accent-contrast);
-      margin-top: 0;
+    .disclaimer-box.collapsed {
+      padding-block: 1.75rem;
     }
 
     .disclaimer,
@@ -672,16 +744,6 @@ const danceFilters = Array.from(uniqueDancesMap.values());
     .disclaimer-button a:hover .disclaimer-cta-title {
       color: var(--accent-contrast);
       opacity: 0.8;
-    }
-  }
-
-  @media (max-width: 1023px) {
-    .tabs-header {
-      margin-bottom: 2rem;
-    }
-
-    .page-tabs {
-      font-size: var(--fs-h2);
     }
 
     .disclaimer-headline {
@@ -705,4 +767,44 @@ const danceFilters = Array.from(uniqueDancesMap.values());
       letter-spacing: 0.04em;
     }
   }
+
+  @media (max-width: 767px) {
+    .sidebar > :global(.rule) {
+      display: none;
+    }
+
+    /* Full-bleed card on phones */
+    .disclaimer-box {
+      margin-inline: calc(var(--shell-pad) * -1);
+      padding: 3rem var(--shell-pad) 2rem;
+      border-radius: 0;
+      margin-bottom: 0;
+    }
+
+    .disclaimer-toggle {
+      right: var(--shell-pad);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    /* The poll block is closed with a straight rule inside the framed column */
+    .disclaimer-box {
+      padding-bottom: 1.75rem;
+      border-bottom: var(--rule-width) solid var(--rule-color);
+    }
+  }
 </style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const box = document.querySelector(".disclaimer-box");
+    const toggle = document.querySelector(".disclaimer-toggle");
+
+    if (box && toggle) {
+      toggle.addEventListener("click", () => {
+        const collapsed = box.classList.toggle("collapsed");
+        toggle.setAttribute("aria-expanded", String(!collapsed));
+      });
+    }
+  });
+</script>
