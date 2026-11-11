@@ -301,6 +301,13 @@ svg {
   margin: 0;
 }
 
+/* The last row inside an expanded list group is closed by the next group's
+   top rule (or the list's bottom rule), so drop its own bottom border. */
+.responsive-content-inner > *:last-child .listing-item,
+.responsive-content-inner > *:last-child .workshop-item {
+  border-bottom: 0;
+}
+
 /* --- Wave divider --- */
 .wave {
   display: block;
