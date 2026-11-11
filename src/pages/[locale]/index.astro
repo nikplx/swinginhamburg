@@ -63,6 +63,26 @@ const index = await payload.findGlobal({
   locale: locale,
 });
 
+// The survey teaser in the design is split into a display headline
+// ("Wir würden euch gerne kennenlernen!") and the body copy that follows.
+// The CMS stores it as a single richtext block, so split on the first
+// sentence boundary and fall back to a single block if none is found.
+const richTextToPlain = (node: any): string => {
+  if (!node) return "";
+  if (node.type === "text") return node.text ?? "";
+  if (node.type === "linebreak") return " ";
+  return (node.children ?? []).map(richTextToPlain).join("");
+};
+
+const pollCopy = richTextToPlain(index.donationBox?.root)
+  .replace(/\s+/g, " ")
+  .trim();
+const pollSentenceEnd = pollCopy.search(/[.!?](\s|$)/);
+const pollHeadline =
+  pollSentenceEnd === -1 ? pollCopy : pollCopy.slice(0, pollSentenceEnd + 1);
+const pollBody =
+  pollSentenceEnd === -1 ? "" : pollCopy.slice(pollSentenceEnd + 1).trim();
+
 const { docs: upcomingEvents } = await payload.find({
   collection: "events",
   sort: "startDate",
@@ -113,11 +133,17 @@ const danceFilters = Array.from(uniqueDancesMap.values());
     <hr class="rule" />
     <div class="disclaimer-box">
       <div class="disclaimer">
-        <RichText content={index.donationBox} />
+        <p class="disclaimer-headline">{pollHeadline}</p>
+        {pollBody && <p class="disclaimer-body">{pollBody}</p>}
       </div>
       <div class="disclaimer-button">
         <a href="">
-          <span>{locale === "en" ? "Fill out poll" : "Direkt zur Umfrage"}</span>
+          <span class="disclaimer-cta-kicker">
+            {locale === "en" ? "Take the" : "Direkt zur"}
+          </span>
+          <span class="disclaimer-cta-title">
+            {locale === "en" ? "Survey" : "Umfrage"}
+          </span>
         </a>
       </div>
     </div>
@@ -450,48 +476,67 @@ const danceFilters = Array.from(uniqueDancesMap.values());
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 1rem;
+    gap: 0;
     text-align: center;
     margin-top: 0.5rem;
   }
 
   .disclaimer {
-    font-family: var(--font-body);
-    font-size: var(--fs-h3);
-    line-height: 1.2;
+    text-align: center;
     color: var(--text-main);
   }
 
-  .disclaimer :global(p) {
-    margin: 0 0 0.75em 0;
+  .disclaimer p {
+    margin: 0;
   }
 
-  .disclaimer :global(p:first-child) {
+  .disclaimer-headline {
     font-family: var(--font-display);
-    font-size: var(--fs-h1);
+    font-size: var(--fs-h1); /* 34 */
     font-weight: 700;
-    line-height: 1.06;
-    letter-spacing: -0.01em;
-    margin-bottom: 0.5em;
+    line-height: 1.058; /* 36/34 */
+    letter-spacing: 0;
+    color: var(--text-main);
   }
 
-  .disclaimer :global(p:last-child) {
-    margin-bottom: 0;
+  .disclaimer-body {
+    margin-top: 0.25rem;
+    font-family: var(--font-body);
+    font-size: var(--fs-h3); /* 24 */
+    font-weight: 400;
+    line-height: 1.21; /* 29/24 */
+    color: var(--text-main);
+  }
+
+  .disclaimer-button {
+    margin-top: 1.4375rem; /* 23px between body and CTA */
   }
 
   .disclaimer-button a {
     display: inline-block;
     font-family: var(--font-display);
-    font-size: var(--fs-h1);
+    font-size: var(--fs-h1); /* 34 */
     font-weight: 700;
-    line-height: 1.1;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
+    line-height: 1.2;
+    text-align: center;
     text-decoration: none;
+  }
+
+  .disclaimer-cta-kicker {
+    display: block;
+    color: var(--text-main);
+  }
+
+  .disclaimer-cta-title {
+    display: block;
+    font-size: 3.75rem; /* 60 */
+    line-height: 1.2; /* 72/60 */
+    letter-spacing: 0.04em; /* 2.4px at 60 */
+    text-transform: uppercase;
     color: var(--accent);
   }
 
-  .disclaimer-button a:hover {
+  .disclaimer-button a:hover .disclaimer-cta-title {
     color: var(--text-main);
   }
 
@@ -617,13 +662,16 @@ const danceFilters = Array.from(uniqueDancesMap.values());
     }
 
     .disclaimer,
-    .disclaimer :global(*) {
+    .disclaimer p,
+    .disclaimer-cta-kicker,
+    .disclaimer-cta-title,
+    .disclaimer-button a {
       color: var(--accent-contrast);
     }
 
-    .disclaimer-button a,
-    .disclaimer-button a:hover {
+    .disclaimer-button a:hover .disclaimer-cta-title {
       color: var(--accent-contrast);
+      opacity: 0.8;
     }
   }
 
@@ -636,9 +684,25 @@ const danceFilters = Array.from(uniqueDancesMap.values());
       font-size: var(--fs-h2);
     }
 
-    .disclaimer :global(p:first-child),
+    .disclaimer-headline {
+      font-size: 1.625rem; /* 26 */
+      line-height: 1.077; /* 28/26 */
+    }
+
+    .disclaimer-body {
+      font-size: 1.25rem; /* 20 */
+      line-height: 1.21; /* 24.2/20 */
+    }
+
     .disclaimer-button a {
-      font-size: var(--fs-h2);
+      font-size: 1.5rem; /* 24 */
+      line-height: 1.2;
+    }
+
+    .disclaimer-cta-title {
+      font-size: 3rem; /* 48 */
+      line-height: 1.2; /* 57.6/48 */
+      letter-spacing: 0.04em;
     }
   }
 </style>
