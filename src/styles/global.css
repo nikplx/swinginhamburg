@@ -321,6 +321,7 @@ svg {
   display: flex;
   justify-content: flex-end;
   align-items: flex-start;
+  gap: 1.25rem;
   min-width: 0;
 }
 
@@ -331,6 +332,7 @@ svg {
   align-items: baseline;
   gap: 0.5rem 1.25rem;
   min-width: 0;
+  order: 1;
 }
 
 .nav-links a {
@@ -366,6 +368,7 @@ svg {
   font-weight: 700;
   line-height: 1.2;
   white-space: nowrap;
+  order: 2;
 }
 
 .lang-divider {
@@ -514,8 +517,26 @@ svg {
   }
 
   .wordmark {
-    font-size: 2.5rem;
-    line-height: 1.02;
+    font-size: clamp(1.25rem, 3.2vw, 2rem); /* 20 at 393, up to 32 */
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+  }
+
+  .site-nav {
+    align-items: center;
+    gap: 1rem;
+  }
+
+  /* The language switch lives in the header on mobile */
+  .site-nav > .lang-switch {
+    display: inline-flex;
+    order: 1;
+    font-size: 0.875rem; /* 14 */
+    line-height: 1.2;
+  }
+
+  .menu-toggle {
+    order: 2;
   }
 
   .page-body {
@@ -605,9 +626,9 @@ svg {
   .nav-links a {
     color: var(--accent-contrast);
     font-family: var(--font-display);
-    font-size: var(--fs-row);
+    font-size: 1.625rem; /* 26 */
     font-weight: 700;
-    line-height: 1.1;
+    line-height: 1.2; /* 31.2/26 */
     letter-spacing: -0.01em;
     white-space: normal;
     padding: 1rem 0;
@@ -621,23 +642,6 @@ svg {
   .nav-links a:hover,
   .nav-links a.active {
     color: var(--accent-contrast);
-  }
-
-  .nav-links .lang-switch {
-    margin-top: 1.25rem;
-    font-family: var(--font-body);
-    font-size: var(--fs-body);
-    line-height: 1.2;
-    justify-content: flex-start;
-  }
-
-  .nav-links .lang-switch a {
-    border: 0;
-    padding: 0;
-    font-family: var(--font-body);
-    font-size: inherit;
-    font-weight: 700;
-    line-height: inherit;
   }
 
   .nav-links > .wave {

@@ -39,6 +39,7 @@ const labels = {
 
 const navItems = [
   { href: `/${locale}`, label: labels.index },
+  { href: `/${locale}#events`, label: "Events" },
   { href: `/${locale}/map`, label: labels.map },
   { href: `/${locale}/schools`, label: labels.schools },
   { href: `/${locale}/swing`, label: labels.swing },
@@ -66,20 +67,20 @@ const navItems = [
           </a>
         ))
       }
-
-      <span class="lang-switch">
-        <a
-          href={locale === "de" ? currentPath : otherLocaleLink}
-          class={locale === "de" ? "active" : ""}
-          hreflang="de">DE</a
-        ><span class="lang-divider">/</span><a
-          href={locale === "en" ? currentPath : otherLocaleLink}
-          class={locale === "en" ? "active" : ""}
-          hreflang="en">EN</a
-        >
-      </span>
       <Wave />
     </div>
+
+    <span class="lang-switch">
+      <a
+        href={locale === "de" ? currentPath : otherLocaleLink}
+        class={locale === "de" ? "active" : ""}
+        hreflang="de">DE</a
+      ><span class="lang-divider">/</span><a
+        href={locale === "en" ? currentPath : otherLocaleLink}
+        class={locale === "en" ? "active" : ""}
+        hreflang="en">EN</a
+      >
+    </span>
   </nav>
 </mobile-nav>
 
