@@ -163,7 +163,7 @@ const danceFilters = Array.from(uniqueDancesMap.values());
   <div class="tabs-header">
     <div class="page-tabs">
       <button id="tab-events" class="tab inactive" data-tab="events">
-        {locale === "en" ? "Events" : "Events"}
+        {locale === "en" ? "Socials" : "Socials"}
       </button>
       <span class="tab-separator">/</span>
       <button id="tab-classes" class="tab active" data-tab="classes">
@@ -239,8 +239,8 @@ const danceFilters = Array.from(uniqueDancesMap.values());
           ) : (
             <p>
               {locale === "en"
-                ? "No upcoming events in the next 14 days."
-                : "Keine anstehenden Events in den nächsten 14 Tagen."}
+                ? "No upcoming socials in the next 14 days."
+                : "Keine anstehenden Socials in den nächsten 14 Tagen."}
             </p>
           )
         }
@@ -251,8 +251,8 @@ const danceFilters = Array.from(uniqueDancesMap.values());
               id="no-events-msg"
               style="display: none; color: var(--text-muted); margin-top: 20px;">
               {locale === "en"
-                ? "No events match the selected filters."
-                : "Keine Events entsprechen den ausgewählten Filtern."}
+                ? "No socials match the selected filters."
+                : "Keine Socials entsprechen den ausgewählten Filtern."}
             </p>
           )
         }
