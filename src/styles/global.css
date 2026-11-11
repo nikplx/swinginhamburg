@@ -542,6 +542,8 @@ svg {
   .page-body {
     padding-block: 1.75rem 3.5rem;
     row-gap: 2.5rem;
+    /* Rows must not absorb spare viewport height in the stacked layout */
+    align-content: start;
   }
 
   .menu-toggle {
@@ -682,4 +684,28 @@ svg {
 
 .page-body .main-content.wide {
   grid-column: 1 / -1;
+}
+
+.page-footnote {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.5rem;
+  justify-content: flex-end;
+  align-items: baseline;
+}
+
+.page-footnote a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.page-footnote a:hover {
+  color: var(--accent);
+}
+
+@media (max-width: 1023px) {
+  .page-footnote {
+    justify-content: flex-start;
+  }
 }
