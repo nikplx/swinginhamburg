@@ -341,6 +341,11 @@ svg {
   color: var(--accent);
 }
 
+/* The squiggle is part of the full-screen mobile menu only */
+.nav-links > .wave {
+  display: none;
+}
+
 .lang-switch {
   display: inline-flex;
   gap: 0.25rem;
