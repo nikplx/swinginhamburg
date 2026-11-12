@@ -130,9 +130,9 @@ const events = classes.map((clazz) => {
     // Accent dot markers instead of the default blue pin
     const dotIcon = L.divIcon({
       className: "sih-map-marker",
-      iconSize: [16, 16],
-      iconAnchor: [8, 8],
-      popupAnchor: [0, -8],
+      iconSize: [18, 18],
+      iconAnchor: [9, 9],
+      popupAnchor: [0, -9],
     });
 
     // Filter States
@@ -486,10 +486,10 @@ const events = classes.map((clazz) => {
   }
 
   #map :global(.leaflet-tile-pane) {
-    filter: grayscale(1) sepia(0.5) hue-rotate(200deg) saturate(2.0)
-      brightness(0.82) contrast(2.0);
-    /* Multiply keeps the pale land beige while the violet roads, water and
-       labels stay dark enough to read. */
+    filter: grayscale(1) sepia(0.38) hue-rotate(208deg) saturate(1.6)
+      brightness(1.02) contrast(1.06);
+    /* Multiply keeps the pale land beige while the tinted roads and labels
+       stay readable without the harsh near-black of a contrast boost. */
     mix-blend-mode: multiply;
   }
 
@@ -499,9 +499,11 @@ const events = classes.map((clazz) => {
     border-color: var(--rule-color);
   }
 
-  #map :global(.leaflet-control-zoom a:hover) {
-    background-color: var(--accent-soft);
-    color: var(--accent);
+  @media (hover: hover) {
+    #map :global(.leaflet-control-zoom a:hover) {
+      background-color: var(--accent-soft);
+      color: var(--accent);
+    }
   }
 
   #map :global(.leaflet-control-attribution) {
@@ -544,20 +546,24 @@ const events = classes.map((clazz) => {
   /* Accent dot markers (created at runtime, so they live in global CSS) */
   .sih-map-marker {
     box-sizing: border-box;
-    width: 16px;
-    height: 16px;
-    border: 3px solid var(--bg-main);
+    width: 18px;
+    height: 18px;
+    border: 3px solid #ffffff;
     border-radius: 50%;
     background-color: var(--accent);
-    box-shadow: 0 1px 4px rgba(40, 70, 110, 0.35);
+    box-shadow:
+      0 0 0 1px rgba(40, 70, 110, 0.22),
+      0 1px 4px rgba(40, 70, 110, 0.35);
     transition:
       transform 0.15s ease,
       background-color 0.15s ease;
   }
 
-  .sih-map-marker:hover {
-    background-color: var(--text-main);
-    transform: scale(1.15);
+  @media (hover: hover) {
+    .sih-map-marker:hover {
+      background-color: var(--text-main);
+      transform: scale(1.15);
+    }
   }
 
   /* Container override */
