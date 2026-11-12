@@ -343,10 +343,30 @@ const danceFilters = Array.from(uniqueDancesMap.values());
         document.querySelectorAll(".tab-content"),
       );
 
+      let activePanel =
+        tabPanels.find((el) => el.classList.contains("active-content")) ??
+        null;
+      let swapTimer: ReturnType<typeof setTimeout> | null = null;
+      let pendingPanel: HTMLElement | null = null;
+
+      function showPanel(panel: HTMLElement) {
+        tabPanels.forEach((el) => {
+          const isTarget = el === panel;
+          el.classList.toggle("active-content", isTarget);
+          el.style.display = isTarget ? "block" : "none";
+          el.style.opacity = isTarget ? "1" : "0";
+        });
+        activePanel = panel;
+        pendingPanel = null;
+      }
+
       function switchTab(name, updateHash = true) {
         const tab = tabButtons.find((btn) => btn.dataset.tab === name);
         const panel = tabPanels.find((el) => el.dataset.tab === name);
-        if (!tab || !panel || tab.classList.contains("active")) return;
+        if (!tab || !panel) return;
+
+        // Clicking the tab that is already showing does nothing.
+        if (tab.classList.contains("active") && panel === activePanel) return;
 
         if (updateHash && window.location.hash !== `#${name}`) {
           history.replaceState(null, "", `#${name}`);
@@ -357,12 +377,49 @@ const danceFilters = Array.from(uniqueDancesMap.values());
           btn.classList.toggle("inactive", btn !== tab);
         });
 
-        tabPanels.forEach((el) => {
-          el.classList.remove("active-content");
-          el.style.display = el === panel ? "block" : "none";
-          el.style.opacity = el === panel ? "1" : "0";
-        });
-        panel.classList.add("active-content");
+        // Deep links swap instantly; clicks fade the old list out first.
+        if (!updateHash) {
+          if (swapTimer) clearTimeout(swapTimer);
+          swapTimer = null;
+          showPanel(panel);
+          return;
+        }
+
+        // Repeated click on the pending target: let the running fade finish.
+        if (swapTimer && pendingPanel === panel) return;
+
+        if (swapTimer) {
+          clearTimeout(swapTimer);
+          swapTimer = null;
+        }
+
+        // Clicked back onto the panel that is still fading out: keep it.
+        if (panel === activePanel) {
+          panel.style.display = "block";
+          panel.classList.add("active-content");
+          panel.style.opacity = "1";
+          pendingPanel = null;
+          return;
+        }
+
+        const outgoing = activePanel;
+        if (outgoing) outgoing.style.opacity = "0";
+        pendingPanel = panel;
+
+        swapTimer = setTimeout(() => {
+          swapTimer = null;
+          if (outgoing) {
+            outgoing.style.display = "none";
+            outgoing.classList.remove("active-content");
+          }
+          // Flush the display change so the opacity transition runs.
+          panel.style.display = "block";
+          void panel.offsetWidth;
+          panel.classList.add("active-content");
+          panel.style.opacity = "1";
+          activePanel = panel;
+          pendingPanel = null;
+        }, 300);
       }
 
       tabButtons.forEach((btn) => {
