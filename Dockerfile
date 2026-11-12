@@ -1,5 +1,5 @@
 # --- Stage 1: Builder ---
-FROM node:lts-alpine3.20 AS builder
+FROM node:latest AS builder
 WORKDIR /app
 
 # 1. Copy only package files first to cache the npm install layer
@@ -15,7 +15,7 @@ RUN npm prune --omit=dev
 
 
 # --- Stage 2: Runtime ---
-FROM node:lts-alpine3.20 AS runtime
+FROM node:latest AS runtime
 WORKDIR /app
 
 # Set production environment
