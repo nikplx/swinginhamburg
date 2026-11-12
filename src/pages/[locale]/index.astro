@@ -135,11 +135,9 @@ const danceFilters = Array.from(uniqueDancesMap.values());
       <button
         class="disclaimer-toggle"
         type="button"
-        aria-expanded="true"
         aria-controls="disclaimer-panel"
-        aria-label={locale === "en" ? "Toggle survey" : "Umfrage ein-/ausklappen"}>
+        aria-label={locale === "en" ? "Hide survey" : "Umfrage ausblenden"}>
         <span class="disclaimer-toggle-h"></span>
-        <span class="disclaimer-toggle-v"></span>
       </button>
       <div class="disclaimer-panel" id="disclaimer-panel">
         <div class="disclaimer">
@@ -512,28 +510,17 @@ const danceFilters = Array.from(uniqueDancesMap.values());
     cursor: pointer;
   }
 
-  .disclaimer-toggle-h,
-  .disclaimer-toggle-v {
-    position: absolute;
-    background-color: currentColor;
-    border-radius: 1px;
-    transition: transform 0.2s ease;
-  }
-
   .disclaimer-toggle-h {
+    position: absolute;
     width: 0.875rem;
     height: 2px;
+    background-color: currentColor;
+    border-radius: 1px;
   }
 
-  .disclaimer-toggle-v {
-    width: 2px;
-    height: 0.875rem;
+  /* Dismissed in a previous visit (stored in localStorage) */
+  .disclaimer-box.is-dismissed {
     display: none;
-  }
-
-  /* Expanded shows "−", collapsed shows "+" */
-  .disclaimer-box.collapsed .disclaimer-toggle-v {
-    display: block;
   }
 
   .disclaimer {
@@ -725,14 +712,6 @@ const danceFilters = Array.from(uniqueDancesMap.values());
       display: flex;
     }
 
-    .disclaimer-box.collapsed .disclaimer-panel {
-      display: none;
-    }
-
-    .disclaimer-box.collapsed {
-      padding-block: 1.75rem;
-    }
-
     .disclaimer,
     .disclaimer p,
     .disclaimer-cta-kicker,
@@ -769,10 +748,6 @@ const danceFilters = Array.from(uniqueDancesMap.values());
   }
 
   @media (max-width: 767px) {
-    .sidebar > :global(.rule) {
-      display: none;
-    }
-
     /* Full-bleed card on phones */
     .disclaimer-box {
       margin-inline: calc(var(--shell-pad) * -1);
@@ -797,13 +772,27 @@ const danceFilters = Array.from(uniqueDancesMap.values());
 
 <script>
   document.addEventListener("DOMContentLoaded", () => {
+    const DISMISS_KEY = "sih:survey-dismissed";
     const box = document.querySelector(".disclaimer-box");
     const toggle = document.querySelector(".disclaimer-toggle");
 
-    if (box && toggle) {
-      toggle.addEventListener("click", () => {
-        const collapsed = box.classList.toggle("collapsed");
-        toggle.setAttribute("aria-expanded", String(!collapsed));
+    if (box) {
+      let dismissed = false;
+      try {
+        dismissed = localStorage.getItem(DISMISS_KEY) === "1";
+      } catch {
+        /* storage may be unavailable (private mode) */
+      }
+
+      if (dismissed) box.classList.add("is-dismissed");
+
+      toggle?.addEventListener("click", () => {
+        box.classList.add("is-dismissed");
+        try {
+          localStorage.setItem(DISMISS_KEY, "1");
+        } catch {
+          /* ignore */
+        }
       });
     }
   });

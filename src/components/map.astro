@@ -124,6 +124,14 @@ const events = classes.map((clazz) => {
     const events = JSON.parse(eventDataElement.textContent);
     const markerLayer = L.layerGroup().addTo(map);
 
+    // Accent dot markers instead of the default blue pin
+    const dotIcon = L.divIcon({
+      className: "sih-map-marker",
+      iconSize: [16, 16],
+      iconAnchor: [8, 8],
+      popupAnchor: [0, -8],
+    });
+
     // Filter States
     let currentDayFilter = "all";
     let activeDanceFilters = new Set();
@@ -143,7 +151,7 @@ const events = classes.map((clazz) => {
 
         // 3. Render if both match
         if (dayMatch && danceMatch) {
-          const marker = L.marker(event.coordinates).bindPopup(
+          const marker = L.marker(event.coordinates, { icon: dotIcon }).bindPopup(
             `
             <div class="custom-popup-content">
               <strong>${event.school}</strong><br/>
@@ -455,16 +463,60 @@ const events = classes.map((clazz) => {
     }
   }
 
-  #map :global(.leaflet-tile-pane) {
-    filter: grayscale(100%) contrast(110%);
+  /* Tint the OpenStreetMap tiles into the beige/violet palette: desaturate,
+     then warm them across to the accent hue and let the beige page colour
+     show through so they read as lavender-grey rather than purple. */
+  #map {
+    background-color: var(--bg-main);
   }
 
-  #map :global(.leaflet-marker-icon) {
-    filter: grayscale(100%) contrast(150%);
+  #map :global(.leaflet-tile-pane) {
+    filter: grayscale(1) sepia(0.6) hue-rotate(200deg) saturate(2.1)
+      brightness(0.99) contrast(1.18);
+    opacity: 0.88;
+  }
+
+  #map :global(.leaflet-control-zoom a) {
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    border-color: var(--rule-color);
+  }
+
+  #map :global(.leaflet-control-zoom a:hover) {
+    background-color: var(--accent-soft);
+    color: var(--accent);
+  }
+
+  #map :global(.leaflet-control-attribution) {
+    background-color: color-mix(in srgb, var(--bg-main) 85%, transparent);
+    color: var(--text-main);
+  }
+
+  #map :global(.leaflet-control-attribution a) {
+    color: var(--accent);
   }
 </style>
 
 <style is:global>
+  /* Accent dot markers (created at runtime, so they live in global CSS) */
+  .sih-map-marker {
+    box-sizing: border-box;
+    width: 16px;
+    height: 16px;
+    border: 3px solid var(--bg-main);
+    border-radius: 50%;
+    background-color: var(--accent);
+    box-shadow: 0 1px 4px rgba(40, 70, 110, 0.35);
+    transition:
+      transform 0.15s ease,
+      background-color 0.15s ease;
+  }
+
+  .sih-map-marker:hover {
+    background-color: var(--text-main);
+    transform: scale(1.15);
+  }
+
   /* Container override */
   .custom-popup .leaflet-popup-content-wrapper {
     background: var(--surface);

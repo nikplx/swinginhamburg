@@ -72,9 +72,13 @@ Layout: `--shell-max` 1440 · `--shell-pad` `clamp(1.25rem,4vw,3.5rem)` ·
 - `src/components/class.astro` — name 28 / address 24 / pills / warning.
 - `src/components/event.astro` — date pill, title 28, tags, price.
 - `src/components/map.astro` — contained map block, filter card, restyled
-  controls; page renders `<Layout wide>`.
+  controls; OSM tiles are CSS-tinted into the beige/violet palette and the
+  markers are accent dots (`divIcon`); page renders `<Layout wide>`.
 - Pages: `index` (sidebar: intro, rule, poll) · `schools`, `swing` (sidebar copy
   only) · `about`, `conduct` (no sidebar) · `map` (wide).
+- Poll teaser: on ≤1023px it is the accent card with a circled − that dismisses
+  the banner outright and remembers it in `localStorage`
+  (`sih:survey-dismissed`). The rule above it is hidden at those widths.
 
 ## Working tree
 

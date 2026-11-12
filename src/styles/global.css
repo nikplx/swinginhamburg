@@ -662,6 +662,12 @@ svg {
     padding-top: 0;
   }
 
+  /* The poll card sits directly below the intro on tablet/mobile, so the
+     rule between the two blocks is dropped there. */
+  .sidebar > .rule {
+    display: none;
+  }
+
   .page-footnote {
     text-align: left;
   }
