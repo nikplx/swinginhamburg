@@ -720,3 +720,27 @@ svg {
     justify-content: flex-start;
   }
 }
+
+/* --- Phones: one step down across the whole type scale ----------------
+   Deliberate divergence from the frames: on a 360–430px screen the design
+   sizes (18px body, 28px rows, 26px menu) feel oversized in the hand. */
+@media (max-width: 767px) {
+  :root {
+    --fs-mega: 2.5rem; /* 40 */
+    --fs-h1: 1.75rem; /* 28 */
+    --fs-h2: 1.375rem; /* 22 */
+    --fs-h3: 1.125rem; /* 18 */
+    --fs-row: 1.375rem; /* 22 */
+    --fs-body: 1rem; /* 16 */
+    --fs-small: 0.9375rem; /* 15 */
+    --fs-tiny: 0.8125rem; /* 13 */
+  }
+
+  .wordmark {
+    font-size: 1.125rem; /* 18 */
+  }
+
+  .nav-links a {
+    font-size: 1.375rem; /* 22 */
+  }
+}
