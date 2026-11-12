@@ -113,7 +113,10 @@ const events = classes.map((clazz) => {
 <script is:inline lang="ts">
   document.addEventListener("DOMContentLoaded", () => {
     // --- Map Initialization ---
-    const map = L.map("map").setView([53.5511, 9.9937], 12);
+    const map = L.map("map", { fadeAnimation: false }).setView(
+      [53.5511, 9.9937],
+      12,
+    );
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
@@ -123,6 +126,14 @@ const events = classes.map((clazz) => {
     const eventDataElement = document.getElementById("event-data");
     const events = JSON.parse(eventDataElement.textContent);
     const markerLayer = L.layerGroup().addTo(map);
+
+    // Accent dot markers instead of the default blue pin
+    const dotIcon = L.divIcon({
+      className: "sih-map-marker",
+      iconSize: [18, 18],
+      iconAnchor: [9, 9],
+      popupAnchor: [0, -9],
+    });
 
     // Filter States
     let currentDayFilter = "all";
@@ -143,7 +154,7 @@ const events = classes.map((clazz) => {
 
         // 3. Render if both match
         if (dayMatch && danceMatch) {
-          const marker = L.marker(event.coordinates).bindPopup(
+          const marker = L.marker(event.coordinates, { icon: dotIcon }).bindPopup(
             `
             <div class="custom-popup-content">
               <strong>${event.school}</strong><br/>
@@ -218,22 +229,10 @@ const events = classes.map((clazz) => {
 </script>
 
 <style>
-  body {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    min-height: 100dvh; 
-  }
-
   .map-wrapper {
     position: relative;
-    width: 100vw;
-    left: 50%;
-    transform: translateX(-50%);
-    height: calc(100dvh - 60px);
+    width: 100%;
+    height: clamp(22rem, calc(100dvh - 22rem), 56rem);
     display: flex;
     overflow: hidden;
   }
@@ -262,11 +261,12 @@ const events = classes.map((clazz) => {
     top: 20px;
     right: 20px;
     z-index: 1000;
-    background: white;
+    background: var(--surface);
+    color: var(--text-main);
     padding: 1.5rem;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    max-width: 300px;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 16px rgba(40, 70, 110, 0.12);
+    max-width: 20rem;
     
     /* Adds scroll if filters stack too tall */
     max-height: calc(100vh - 100px);
@@ -284,8 +284,11 @@ const events = classes.map((clazz) => {
   .filter-heading {
     margin-top: 0;
     margin-bottom: 0.75rem;
-    font-size: 1rem;
-    color: #000;
+    font-family: var(--font-display);
+    font-size: var(--fs-h3);
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--text-main);
   }
 
   .filter-options {
@@ -315,59 +318,52 @@ const events = classes.map((clazz) => {
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #ffffff;
-    color: #000000;
-    border: 1px solid #000000;
-    font-size: 0.9rem;
-    font-weight: bold;
-    border-radius: 8px;
+    background-color: transparent;
+    color: var(--text-main);
+    border: 1px solid var(--rule-color);
+    font-family: var(--font-body);
+    font-size: var(--fs-body);
+    font-weight: 700;
+    border-radius: 0.5rem;
     cursor: pointer;
     transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease;
     padding: 0;
   }
 
-  .filter-btn:hover {
-    background-color: #f0f0f0;
+  @media (hover: hover) {
+    .filter-btn:hover {
+      background-color: var(--accent-soft);
+      color: var(--accent);
+    }
   }
 
   .filter-btn.active {
-    background-color: #000000;
-    color: #ffffff;
+    background-color: var(--text-main);
+    color: var(--bg-main);
+    border-color: var(--text-main);
   }
 
   .filter-btn:active {
     transform: scale(0.95); /* Adds a nice pressed effect */
   }
 
-  /* Dance Tag Design */
-  .listing-tag {
-    border: 1px solid var(--accent, #000);
-    display: inline-block;
-    border-radius: 8px;
-    padding: 4px 8px;
-    font-weight: 600;
-    font-size: var(--font-tag, 9pt);
-    text-decoration: none;
-    color: var(--text-main, #000);
+  /* Dance tags inside the filter panel use the outlined pill variant */
+  .filter-panel .listing-tag {
     background-color: transparent;
-    cursor: pointer;
-    width: fit-content;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    color: var(--text-main);
+    box-shadow: inset 0 0 0 1px var(--accent);
   }
 
-  .listing-tag:hover {
-    background-color: #f0f0f0;
-    color: var(--text-main, #000);
+  .filter-panel .listing-tag.selected {
+    background-color: var(--accent);
+    color: var(--accent-contrast);
   }
 
-  .listing-tag.selected {
-    color: var(--bg-main, #fff);
-    background-color: var(--accent, #000);
-  }
-
-  .listing-tag.selected:hover {
-    background-color: #333333;
-    color: var(--bg-main, #fff);
+  @media (hover: hover) {
+    .filter-panel .listing-tag:hover {
+      background-color: var(--accent);
+      color: var(--accent-contrast);
+    }
   }
 
   .mobile-filter-toggle,
@@ -394,15 +390,17 @@ const events = classes.map((clazz) => {
       transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .filter-toggle:hover {
-    background-color: #f0f0f0; /* Soft gray highlight */
-    transform: scale(1.1);     /* Slight pop forward */
-    opacity: 1;                /* Overrides your old opacity drop */
+  @media (hover: hover) {
+    .filter-toggle:hover {
+      background-color: var(--accent-soft); /* Soft highlight */
+      transform: scale(1.1);     /* Slight pop forward */
+      opacity: 1;                /* Overrides your old opacity drop */
+    }
   }
 
   .filter-toggle:active {
     transform: scale(0.95);    /* Satisfying squish when clicked */
-    background-color: #e0e0e0;
+    background-color: var(--accent-soft);
   }
 
   .close-filter-btn {
@@ -410,7 +408,7 @@ const events = classes.map((clazz) => {
     border: none;
     font-size: 1.5rem;
     cursor: pointer;
-    color: #000;
+    color: var(--text-main);
   }
 
   /* Mobile adjustments */
@@ -419,29 +417,32 @@ const events = classes.map((clazz) => {
       display: flex !important; /* Changed to flex */
       align-items: center;      /* Vertically centers the icon and text */
       gap: 8px;                 /* Adds spacing between icon and text */
-      position: fixed;
-      bottom: 40px;
+      position: absolute;
+      bottom: 1rem;
       left: 50%;
       transform: translateX(-50%);
-      z-index: 9999;
-      background-color: #000000;
-      color: #ffffff;
+      z-index: 999;
+      background-color: var(--text-main);
+      color: var(--bg-main);
       border: none;
       padding: 0.75rem 1.5rem;
-      border-radius: 30px;
-      font-weight: bold;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      border-radius: 999px;
+      font-family: var(--font-body);
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(40, 70, 110, 0.25);
       transition: 
         transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), 
         background-color 0.2s ease, 
         box-shadow 0.25s ease !important;
     }
 
-    .mobile-filter-toggle:hover {
-      /* IMPORTANT: We keep translateX(-50%) so it stays perfectly centered */
-      transform: translateX(-50%) scale(1.05); 
-      background-color: #333333; 
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6); 
+    @media (hover: hover) {
+      .mobile-filter-toggle:hover {
+        /* IMPORTANT: We keep translateX(-50%) so it stays perfectly centered */
+        transform: translateX(-50%) scale(1.05);
+        background-color: var(--accent);
+        box-shadow: 0 6px 16px rgba(138, 74, 228, 0.35);
+      }
     }
 
     .mobile-filter-toggle:active {
@@ -477,23 +478,101 @@ const events = classes.map((clazz) => {
     }
   }
 
-  #map :global(.leaflet-tile-pane) {
-    filter: grayscale(100%) contrast(110%);
+  /* Tint the OpenStreetMap tiles into the beige/violet palette: desaturate,
+     then warm them across to the accent hue and let the beige page colour
+     show through so they read as lavender-grey rather than purple. */
+  #map {
+    background-color: var(--bg-main);
   }
 
-  #map :global(.leaflet-marker-icon) {
-    filter: grayscale(100%) contrast(150%);
+  #map :global(.leaflet-tile-pane) {
+    filter: grayscale(1) sepia(0.38) hue-rotate(208deg) saturate(1.6)
+      brightness(1.02) contrast(1.06);
+    /* Multiply keeps the pale land beige while the tinted roads and labels
+       stay readable without the harsh near-black of a contrast boost. */
+    mix-blend-mode: multiply;
+  }
+
+  #map :global(.leaflet-control-zoom a) {
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    border-color: var(--rule-color);
+  }
+
+  @media (hover: hover) {
+    #map :global(.leaflet-control-zoom a:hover) {
+      background-color: var(--accent-soft);
+      color: var(--accent);
+    }
+  }
+
+  #map :global(.leaflet-control-attribution) {
+    background-color: color-mix(in srgb, var(--bg-main) 85%, transparent);
+    color: var(--text-main);
+  }
+
+  #map :global(.leaflet-control-attribution a) {
+    color: var(--accent);
   }
 </style>
 
 <style is:global>
+  /* Phones: the map was fullscreen on the old site, so let it fill the
+     viewport below the sticky header again and keep the page from scrolling. */
+  @media (max-width: 768px) {
+    body.wide-page,
+    body.wide-page .page-container {
+      overflow: hidden;
+    }
+
+    body.wide-page .page-container {
+      height: 100dvh;
+      min-height: 0;
+    }
+
+    body.wide-page .page-body {
+      flex: 1;
+      display: block;
+      min-height: 0;
+      padding: 0;
+    }
+
+    body.wide-page .main-content,
+    body.wide-page .map-wrapper {
+      height: 100%;
+    }
+  }
+
+  /* Accent dot markers (created at runtime, so they live in global CSS) */
+  .sih-map-marker {
+    box-sizing: border-box;
+    width: 18px;
+    height: 18px;
+    border: 3px solid #ffffff;
+    border-radius: 50%;
+    background-color: var(--accent);
+    box-shadow:
+      0 0 0 1px rgba(40, 70, 110, 0.22),
+      0 1px 4px rgba(40, 70, 110, 0.35);
+    transition:
+      transform 0.15s ease,
+      background-color 0.15s ease;
+  }
+
+  @media (hover: hover) {
+    .sih-map-marker:hover {
+      background-color: var(--text-main);
+      transform: scale(1.15);
+    }
+  }
+
   /* Container override */
   .custom-popup .leaflet-popup-content-wrapper {
-    background: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    background: var(--surface);
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 16px rgba(40, 70, 110, 0.15);
     padding: 2px;
-    width: 200px; 
+    width: 200px;
   }
 
   .custom-popup .leaflet-popup-tip {
@@ -503,30 +582,32 @@ const events = classes.map((clazz) => {
   .custom-popup .leaflet-popup-content {
     margin: 12px;
     width: auto !important; 
-    font-family: "Inter", sans-serif;
-    color: var(--text-main, #000);
-    line-height: 1.2;
+    font-family: var(--font-body);
+    color: var(--text-main);
+    line-height: 1.3;
   }
 
   .custom-popup-content strong {
-    font-size: 11pt;
+    font-family: var(--font-display);
+    font-size: var(--fs-h3);
     font-weight: 700;
+    line-height: 1.1;
     display: block;
   }
 
   .custom-popup-content span {
-    font-size: 9pt;
-    color: #333;
+    font-size: var(--fs-body);
+    color: var(--text-main);
   }
 
   .popup-date-time {
-    font-size: 9pt;
+    font-size: var(--fs-body);
     font-style: italic;
     margin-top: 6px;
   }
 
   .popup-title {
-    font-size: 9pt;
+    font-size: var(--fs-body);
     font-weight: 500;
     margin-top: 2px;
   }

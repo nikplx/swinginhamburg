@@ -1,11 +1,15 @@
 ---
 import type { School, Class } from "../../cms/src/payload-types.ts";
-import { decodeAddress } from '../utils.ts'
+import { decodeAddress } from "../utils.ts";
 
 interface Props {
   classs: Class;
 }
 const { classs: clazz } = Astro.props as Props;
+
+// `Astro.currentLocale` is undefined without an i18n config in astro.config,
+// so derive the locale from the [locale] route segment instead.
+const locale = (Astro.params.locale ?? "de") as string;
 
 const school = (clazz.school as School) || { name: "" };
 const address = decodeAddress(clazz.address);
@@ -18,123 +22,132 @@ const danceTags =
     : [clazz.title];
 
 // ID formatting to match: school.name.replaceAll(" ", "").toLocaleLowerCase()
-const schoolSlug = school.name ? school.name.replaceAll(" ", "").toLocaleLowerCase() : "";
-const schoolHref = `/${Astro.currentLocale}/schools#${schoolSlug}`;
+const schoolSlug = school.name
+  ? school.name.replaceAll(" ", "").toLocaleLowerCase()
+  : "";
+const schoolHref = `/${locale}/schools#${schoolSlug}`;
 ---
 
 <div class="listing-item">
-  <div class="listing-tags-wrapper">
-    {
-      danceTags.map((tag) => {
-        const slug = typeof tag === "string" ? tag : tag.shortName;
-        const href = `/${Astro.currentLocale}/swing#${slug.replace(/\s+/g, "-").toLowerCase()}`;
-
-        return (
-          <a href={href} class="listing-tag">
-            {tag}
-          </a>
-        );
-      })
-    }
-  </div>
-
   <div class="listing-details">
     <span class="listing-school">
-      {school.name ? (
-        <a href={schoolHref} class="school-link">
-          {school.name}
-        </a>
-      ) : (
-        ""
-      )}
+      {
+        school.name ? (
+          <a href={schoolHref} class="school-link">
+            {school.name}
+          </a>
+        ) : (
+          ""
+        )
+      }
     </span>
-    
+
     <span class="listing-address">
-      <a href={"http://maps.google.com/?q=" + clazz.address} target="_blank" rel="noopener noreferrer">
+      <a
+        href={"http://maps.google.com/?q=" + clazz.address}
+        target="_blank"
+        rel="noopener noreferrer">
         {
           clazz.locationName && (
             <>
               <strong>{clazz.locationName}</strong>
-              <> |</>
+              <> | </>
             </>
           )
         }
-        {address.street} {address.num}, 
-        {address.quarter}
+        {address.street} {address.num}, {address.quarter}
       </a>
     </span>
-    {clazz.cancelled && <span class="cancelled-text">{clazz.cancelled}</span>}
+
+    {clazz.cancelled && <span class="cancelled-text">⚠ {clazz.cancelled}</span>}
   </div>
+
+  {
+    danceTags.length > 0 && (
+      <div class="listing-tags-wrapper">
+        {danceTags.map((tag) => {
+          const slug = typeof tag === "string" ? tag : tag.shortName;
+          const href = `/${locale}/swing#${String(slug)
+            .replace(/\s+/g, "-")
+            .toLowerCase()}`;
+
+          return (
+            <a href={href} class="listing-tag">
+              {tag}
+            </a>
+          );
+        })}
+      </div>
+    )
+  }
 </div>
 
 <style>
   .listing-item {
-    display: grid;
-    grid-template-columns: .4fr 1fr;
-    gap: 20px;
-    padding: 16px 0;
-    border-bottom: 2px dotted var(--text-muted);
-    align-items: start; 
-  }
-
-  .listing-item:last-child {
-    border-bottom: none;
-  }
-
-  .listing-tags-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    align-items: flex-end;
+    gap: 0.25rem;
+    padding: 0.625rem 0 1rem 0;
+    border-bottom: var(--rule-width) solid var(--rule-color);
   }
 
   .listing-details {
     display: flex;
     flex-direction: column;
-    line-height: 1.5;
+    gap: 0.125rem;
+    min-width: 0;
   }
 
-  /* Applied the Header Nav behavior here */
   .listing-school {
+    font-family: var(--font-display);
+    font-size: var(--fs-row);
     font-weight: 700;
-    font-size: var(--font-emph);
+    line-height: 1.1;
+    letter-spacing: -0.01em;
     color: var(--text-main);
-    text-align: left;
   }
 
   .school-link {
-    text-align: left;
     color: inherit;
+    font-size: var(--fs-h3);
     text-decoration: none;
-    transition: text-decoration 0.2s ease, opacity 0.2s ease;
+    transition: color 0.15s ease;
   }
 
   .school-link:hover {
-    text-decoration: underline;
+    color: var(--accent);
   }
 
   .listing-address {
-    font-size: var(--font-desc);
+    font-size: var(--fs-body);
+    line-height: 1.2;
     color: var(--text-main);
-    text-align: left;
   }
 
   .listing-address strong {
-    font-weight: 600;
-    font-size: var(--font-desc);
-    color: var(--text-main);
-    text-align: left;
+    font-weight: 400;
   }
 
   .listing-address a {
-    font-size: var(--font-desc);
-    color: var(--text-main);
+    color: inherit;
     text-decoration: none;
   }
 
+  .listing-address a:hover {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    color: inherit;
+  }
 
   .cancelled-text {
-    color: darkred;
-    text-align: left;
+    font-size: var(--fs-body);
+    color: var(--accent);
+  }
+
+  .listing-tags-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin-top: 0.5rem;
   }
 </style>

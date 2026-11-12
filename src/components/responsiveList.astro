@@ -5,9 +5,12 @@ interface Props {
   exclusiveOpen?: boolean; // Added configuration prop
 }
 
-const { maxColumns = 3, exclusiveOpen = true } = Astro.props;
+const { maxColumns = 1, exclusiveOpen = true } = Astro.props;
 ---
-<div class="responsive-list" id="responsive-list-wrapper" data-exclusive-open={exclusiveOpen.toString()}>
+<div
+  class="responsive-list"
+  id="responsive-list-wrapper"
+  data-exclusive-open={exclusiveOpen.toString()}>
   <slot />
 </div>
 
@@ -27,37 +30,53 @@ const { maxColumns = 3, exclusiveOpen = true } = Astro.props;
   // Function to open a specific accordion item exclusively
   function openAccordionById(id: string) {
     if (!id) return;
-    
-    const targetId = id.replace('#', '');
+
+    const targetId = id.replace("#", "");
     const targetItem = document.getElementById(targetId);
-    
-    if (targetItem && targetItem.classList.contains('responsive-item')) {
-      const isExclusive = targetItem.closest('.responsive-list')?.getAttribute('data-exclusive-open') === 'true';
+
+    if (targetItem && targetItem.classList.contains("responsive-item")) {
+      const isExclusive =
+        targetItem.closest(".responsive-list")?.getAttribute(
+          "data-exclusive-open",
+        ) === "true";
 
       if (isExclusive) {
         closeAllAccordions();
       }
-      
-      targetItem.classList.add('open');
-      const header = targetItem.querySelector('.responsive-item-header');
+
+      targetItem.classList.add("open");
+      const header = targetItem.querySelector(".responsive-item-header");
       if (header) {
-        header.setAttribute('aria-expanded', 'true');
+        header.setAttribute("aria-expanded", "true");
       }
-      
-      targetItem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      // Offset by the sticky header instead of relying on scroll-padding:
+      // the header height depends on the wordmark, so measuring it keeps the
+      // opened item's header visible at any viewport width.
+      const siteHeader = document.querySelector(".site-header");
+      const headerOffset =
+        (siteHeader?.getBoundingClientRect().height ?? 0) + 12;
+      const targetTop =
+        window.scrollY + targetItem.getBoundingClientRect().top - headerOffset;
+      window.scrollTo({ top: targetTop, behavior: "smooth" });
     }
   }
 
   // Setup click listeners for mobile accordion toggle
-  const responsiveHeaders = document.querySelectorAll(".responsive-item-header");
+  const responsiveHeaders = document.querySelectorAll(
+    ".responsive-item-header",
+  );
   responsiveHeaders.forEach((header) => {
     header.addEventListener("click", () => {
       const group = header.parentElement;
       if (!group) return;
 
-      const isExclusive = group.closest('.responsive-list')?.getAttribute('data-exclusive-open') === 'true';
+      const isExclusive =
+        group.closest(".responsive-list")?.getAttribute(
+          "data-exclusive-open",
+        ) === "true";
       const isOpen = group.classList.contains("open");
-      
+
       if (isOpen) {
         group.classList.remove("open");
         header.setAttribute("aria-expanded", "false");
@@ -78,7 +97,7 @@ const { maxColumns = 3, exclusiveOpen = true } = Astro.props;
     }, 100);
   }
 
-  window.addEventListener('hashchange', () => {
+  window.addEventListener("hashchange", () => {
     openAccordionById(window.location.hash);
   });
 </script>
@@ -86,15 +105,13 @@ const { maxColumns = 3, exclusiveOpen = true } = Astro.props;
 <style define:vars={{ maxColumns }}>
   .responsive-list {
     width: 100%;
-    margin: 20px auto 40px auto;
+    margin: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    border-bottom: var(--rule-width) solid var(--rule-color);
   }
 
-  /* Desktop Grid Layout */
-  @media (min-width: 768px) {
-    .responsive-list {
-      display: grid;
-      grid-template-columns: repeat(var(--maxColumns), 1fr);
-      gap: 30px;
-    }
+  .responsive-list + :global(*) {
+    margin-top: 2rem;
   }
 </style>

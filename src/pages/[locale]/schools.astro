@@ -9,14 +9,11 @@ export async function getStaticPaths() {
 import "../../styles/global.css";
 import Nav from "../../components/nav.astro";
 import RichText from "../../components/richtText.astro";
-import Grid from "../../components/grid.astro";
-import GridCard from "../../components/gridCard.astro"; // Import the card
 import ResponsiveList from "../../components/responsiveList.astro";
 import ResponsiveListItem from "../../components/responsiveListItem.astro";
-import { payload } from "../../utils";
+import { decodeAddress, payload } from "../../utils";
 import Layout from "../../components/layout.astro";
 import { shuffleByDay } from "../../utils";
-
 
 interface Params {
   locale: "en" | "de";
@@ -37,44 +34,149 @@ const schoolsResponse = await payload.find({
 });
 const schools = schoolsResponse.docs || [];
 const shuffledSchools = shuffleByDay(schools);
+
+// The schools collection has no district / dance fields, so derive both from
+// the school's classes: the address quarter gives the district, the dance
+// relations give the pills shown in the design.
+const { docs: allClasses } = await payload.find({
+  collection: "classes",
+  locale: locale,
+  depth: 1,
+  pagination: false,
+});
+
+type SchoolMeta = { districts: Set<string>; dances: Map<string, string> };
+const metaBySchool = new Map<string | number, SchoolMeta>();
+
+for (const clazz of allClasses) {
+  const schoolId =
+    typeof clazz.school === "object" && clazz.school !== null
+      ? clazz.school.id
+      : clazz.school;
+  if (!schoolId) continue;
+
+  let meta = metaBySchool.get(schoolId);
+  if (!meta) {
+    meta = { districts: new Set(), dances: new Map() };
+    metaBySchool.set(schoolId, meta);
+  }
+
+  const quarter = decodeAddress(clazz.address)
+    .quarter?.replace(/^(Quartier|Stadtteil)\s+/i, "");
+  if (quarter) meta.districts.add(quarter);
+
+  for (const dance of clazz.dances ?? []) {
+    if (dance && typeof dance === "object" && dance.shortName) {
+      meta.dances.set(dance.shortName, dance.shortName);
+    }
+  }
+}
+
+const listFormat = new Intl.ListFormat(locale === "en" ? "en" : "de", {
+  style: "long",
+  type: "conjunction",
+});
+
+const schoolMeta = (id: string | number) => {
+  const meta = metaBySchool.get(id);
+  const districts = meta ? [...meta.districts] : [];
+  return {
+    subtitle: districts.length
+      ? `${locale === "en" ? "Classes in" : "Unterricht in"} ${listFormat.format(districts)}`
+      : undefined,
+    tags: meta ? [...meta.dances.values()] : [],
+  };
+};
 ---
 
 <Layout locale={locale}>
-  <div class="page-content">
-    <RichText content={cnt.howToLearn} />
-  </div>
+  <Fragment slot="sidebar">
+    <div class="page-content sidebar-copy">
+      <RichText content={cnt.howToLearn} />
+    </div>
+  </Fragment>
 
-  {/* --- GRID 2: SCHOOLS --- */}
+  <h1 class="section-title">
+    {locale === "en" ? "Schools" : "Tanzschulen"}
+  </h1>
+
+  {/* --- SCHOOLS --- */}
   {
     shuffledSchools.length > 0 && (
-      <>
-        <ResponsiveList>
-          {shuffledSchools.map((school, index) => {
+      <ResponsiveList>
+        {shuffledSchools.map((school) => {
+          const schoolSlug = school.name
+            ? school.name.replaceAll(" ", "").toLocaleLowerCase()
+            : "";
 
-            const schoolSlug = school.name ? school.name.replaceAll(" ", "").toLocaleLowerCase() : "";
-
-            return (
-              <ResponsiveListItem
-                title={school.name}
-                id={schoolSlug}
-                isOpen={false}
-                border="dotted">
+          return (
+            <ResponsiveListItem
+              title={school.name}
+              id={schoolSlug}
+              isOpen={false}
+              indicator="plus"
+              subtitle={schoolMeta(school.id).subtitle}
+              tags={schoolMeta(school.id).tags}>
+              <div class="school-body">
                 <RichText content={school.description} />
                 {school.website && (
-                  <p style="margin-top: 10px; margin-bottom: 0;">
+                  <p class="school-link-row">
                     <a
                       href={school.website}
                       target="_blank"
                       rel="noopener noreferrer">
-                      {locale === "en" ? "Visit Website": "Mehr Infos und Kontakt"}
+                      {locale === "en"
+                        ? "Website & contact"
+                        : "Internetadresse oder andere Kontaktmöglichkeit"}
                     </a>
                   </p>
                 )}
-              </ResponsiveListItem>
-            );
-          })}
-        </ResponsiveList>
-      </>
+              </div>
+            </ResponsiveListItem>
+          );
+        })}
+      </ResponsiveList>
     )
   }
 </Layout>
+
+<style>
+  .section-title {
+    font-family: var(--font-body);
+    font-size: var(--fs-h1);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    margin: 0 0 3.5rem 0;
+  }
+
+  .sidebar-copy :global(p) {
+    font-size: var(--fs-body);
+    line-height: 1.33;
+    margin: 0 0 1.1em 0;
+  }
+
+  .sidebar-copy :global(p:last-child) {
+    margin-bottom: 0;
+  }
+
+  .school-body {
+    font-size: var(--fs-body);
+    line-height: 1.33;
+  }
+
+  .school-link-row {
+    margin: 0.75rem 0 0 0;
+  }
+
+  .school-link-row a {
+    color: var(--accent);
+  }
+
+  @media (max-width: 1023px) {
+    .section-title {
+      font-size: var(--fs-h2);
+      margin-bottom: 2rem;
+    }
+  }
+</style>

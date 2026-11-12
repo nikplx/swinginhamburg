@@ -9,8 +9,6 @@ export async function getStaticPaths() {
 import "../../styles/global.css";
 import Nav from "../../components/nav.astro";
 import RichText from "../../components/richtText.astro";
-import Grid from "../../components/grid.astro";
-import GridCard from "../../components/gridCard.astro"; // Import the card
 import ResponsiveList from "../../components/responsiveList.astro";
 import ResponsiveListItem from "../../components/responsiveListItem.astro";
 import { payload } from "../../utils";
@@ -42,29 +40,75 @@ const sortedDances = dances.sort((a, b) => {
 ---
 
 <Layout locale={locale}>
-  <div class="page-content">
-    <RichText content={cnt.whatIsSwing} />
-  </div>
+  <Fragment slot="sidebar">
+    <div class="page-content sidebar-copy">
+      <RichText content={cnt.whatIsSwing} />
+    </div>
+  </Fragment>
+
+  <h1 class="section-title">
+    {locale === "en" ? "Get started" : "Neu hier?"}
+  </h1>
 
   {/* --- RESPONSIVE LIST 1: DANCES --- */}
   {
     sortedDances.length > 0 && (
       <ResponsiveList>
-        {sortedDances.map((dance, index) => {
+        {sortedDances.map((dance) => {
           return (
-          <ResponsiveListItem title={dance.name} id={dance.shortName?.toLowerCase()} isOpen={false} border="dotted">
-              <RichText
-                style="white-space: pre-line; margin: 0;"
-                content={dance.description}
-              />
+            <ResponsiveListItem
+              title={dance.name}
+              id={dance.shortName?.toLowerCase()}
+              isOpen={false}
+              indicator="plus">
+              <div class="dance-body">
+                <RichText content={dance.description} />
+              </div>
             </ResponsiveListItem>
           );
         })}
       </ResponsiveList>
     )
   }
-  <div class="page-content">
+
+  <div class="page-content faq">
     <RichText content={cnt.faq} />
   </div>
 </Layout>
 
+<style>
+  .section-title {
+    font-family: var(--font-body);
+    font-size: var(--fs-h1);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    margin: 0 0 3.5rem 0;
+  }
+
+  .sidebar-copy :global(p) {
+    font-size: var(--fs-body);
+    line-height: 1.33;
+    margin: 0 0 1.1em 0;
+  }
+
+  .sidebar-copy :global(p:last-child) {
+    margin-bottom: 0;
+  }
+
+  .dance-body {
+    font-size: var(--fs-body);
+    line-height: 1.33;
+  }
+
+  .faq {
+    margin-top: 3rem;
+  }
+
+  @media (max-width: 1023px) {
+    .section-title {
+      font-size: var(--fs-h2);
+      margin-bottom: 2rem;
+    }
+  }
+</style>

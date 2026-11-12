@@ -63,6 +63,26 @@ const index = await payload.findGlobal({
   locale: locale,
 });
 
+// The survey teaser in the design is split into a display headline
+// ("Wir würden euch gerne kennenlernen!") and the body copy that follows.
+// The CMS stores it as a single richtext block, so split on the first
+// sentence boundary and fall back to a single block if none is found.
+const richTextToPlain = (node: any): string => {
+  if (!node) return "";
+  if (node.type === "text") return node.text ?? "";
+  if (node.type === "linebreak") return " ";
+  return (node.children ?? []).map(richTextToPlain).join("");
+};
+
+const pollCopy = richTextToPlain(index.donationBox?.root)
+  .replace(/\s+/g, " ")
+  .trim();
+const pollSentenceEnd = pollCopy.search(/[.!?](\s|$)/);
+const pollHeadline =
+  pollSentenceEnd === -1 ? pollCopy : pollCopy.slice(0, pollSentenceEnd + 1);
+const pollBody =
+  pollSentenceEnd === -1 ? "" : pollCopy.slice(pollSentenceEnd + 1).trim();
+
 const { docs: upcomingEvents } = await payload.find({
   collection: "events",
   sort: "startDate",
@@ -76,6 +96,41 @@ const { docs: upcomingEvents } = await payload.find({
   pagination: false,
   locale: locale,
 });
+
+// Split the feed the same way the tabs do: `type: "Social"` is the socials
+// list, everything else (workshops etc.) is the events list.
+const isSocialEvent = (event: any) =>
+  String(event.type ?? "").toLowerCase() === "social";
+
+const socialEvents = upcomingEvents.filter(isSocialEvent);
+const otherEvents = upcomingEvents.filter((event) => !isSocialEvent(event));
+
+const eventPanels = [
+  {
+    key: "socials",
+    items: socialEvents,
+    empty:
+      locale === "en"
+        ? "No upcoming socials in the next 2 months."
+        : "Keine anstehenden Socials in den nächsten 2 Monaten.",
+    noMatch:
+      locale === "en"
+        ? "No socials match the selected filters."
+        : "Keine Socials entsprechen den ausgewählten Filtern.",
+  },
+  {
+    key: "events",
+    items: otherEvents,
+    empty:
+      locale === "en"
+        ? "No upcoming events in the next 2 months."
+        : "Keine anstehenden Events in den nächsten 2 Monaten.",
+    noMatch:
+      locale === "en"
+        ? "No events match the selected filters."
+        : "Keine Events entsprechen den ausgewählten Filtern.",
+  },
+];
 
 const groupedClasses = classes.sort(sortWeekdays).reduce(
   collect((c) => c.weekday.toLowerCase()),
@@ -106,41 +161,47 @@ const danceFilters = Array.from(uniqueDancesMap.values());
 ---
 
 <Layout locale={locale}>
-  <section>
+  <Fragment slot="sidebar">
     <div class="greeter">
       <RichText content={index.intro} />
     </div>
     <div class="disclaimer-box">
-      <div class="disclaimer">
-        <RichText content={index.donationBox} />
-      </div>
-      <div class="disclaimer-button">
-        <a href="">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="3"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="arrow-icon">
-            <path d="M5 12h14M12 5l7 7-7 7"></path>
-          </svg>
-          <span>{locale === "en" ? "Fill out Poll" : "Direkt zur Umfrage"}</span
-          >
-        </a>
+      <button
+        class="disclaimer-toggle"
+        type="button"
+        aria-controls="disclaimer-panel"
+        aria-label={locale === "en" ? "Hide survey" : "Umfrage ausblenden"}>
+      </button>
+      <div class="disclaimer-panel" id="disclaimer-panel">
+        <div class="disclaimer">
+          <p class="disclaimer-headline">{pollHeadline}</p>
+          {pollBody && <p class="disclaimer-body">{pollBody}</p>}
+        </div>
+        <div class="disclaimer-button">
+          <a href="">
+            <span class="disclaimer-cta-kicker">
+              {locale === "en" ? "Take the" : "Direkt zur"}
+            </span>
+            <span class="disclaimer-cta-title">
+              {locale === "en" ? "Survey" : "Umfrage"}
+            </span>
+          </a>
+        </div>
       </div>
     </div>
-  </section>
+  </Fragment>
 
   <div class="tabs-header">
     <div class="page-tabs">
-      <button id="tab-events" class="tab active" data-tab="events">
+      <button id="tab-socials" class="tab inactive" data-tab="socials">
+        {locale === "en" ? "SOCIALS" : "SOCIALS"}
+      </button>
+      <span class="tab-separator">/</span>
+      <button id="tab-events" class="tab inactive" data-tab="events">
         {locale === "en" ? "EVENTS" : "EVENTS"}
       </button>
-      <span class="tab-separator">|</span>
-      <button id="tab-classes" class="tab inactive" data-tab="classes">
+      <span class="tab-separator">/</span>
+      <button id="tab-classes" class="tab active" data-tab="classes">
         {locale === "en" ? "CLASSES" : "KURSE"}
       </button>
     </div>
@@ -153,12 +214,12 @@ const danceFilters = Array.from(uniqueDancesMap.values());
           aria-label="Toggle Filters">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
+            width="33"
+            height="31"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            stroke-width="1.5"
+            stroke-width="1.75"
             stroke-linecap="round"
             stroke-linejoin="round">
             <line x1="4" y1="21" x2="4" y2="14" />
@@ -191,44 +252,46 @@ const danceFilters = Array.from(uniqueDancesMap.values());
   }
 
   <section>
-    <div id="content-events" class="tab-content active-content">
-      <div class="centered-list">
-        {
-          upcomingEvents.length > 0 ? (
-            upcomingEvents.map((event: any) => {
-              // Extract tags for events just like classes
-              const tags = event.dances
-                ? event.dances
-                    .map((d: any) => d.shortName?.toLowerCase())
-                    .filter(Boolean)
-                    .join(",")
-                : "";
+    {
+      eventPanels.map((panel) => (
+        <div
+          id={`content-${panel.key}`}
+          class="tab-content"
+          data-tab={panel.key}>
+          <div class="centered-list">
+            {panel.items.length > 0 ? (
+              panel.items.map((event: any) => {
+                // Extract tags for events just like classes
+                const tags = event.dances
+                  ? event.dances
+                      .map((d: any) => d.shortName?.toLowerCase())
+                      .filter(Boolean)
+                      .join(",")
+                  : "";
 
-              return (
-                <div class="filter-item-wrapper workshop-item" data-tags={tags}>
-                  <EventC event={event} />
-                </div>
-              );
-            })
-          ) : (
-            <p>No upcoming events in the next 14 days.</p>
-          )
-        }
-        {/* Fallback message when events exist but are filtered out */}
-        {
-          upcomingEvents.length > 0 && (
-            <p
-              id="no-events-msg"
-              style="display: none; text-align: center; color: var(--text-muted); margin-top: 20px;">
-              {locale === "en"
-                ? "No events match the selected filters."
-                : "Keine Events entsprechen den ausgewählten Filtern."}
-            </p>
-          )
-        }
-      </div>
-    </div>
-    <div id="content-classes" class="tab-content">
+                return (
+                  <div
+                    class="filter-item-wrapper workshop-item"
+                    data-tags={tags}>
+                    <EventC event={event} />
+                  </div>
+                );
+              })
+            ) : (
+              <p>{panel.empty}</p>
+            )}
+            {panel.items.length > 0 && (
+              <p
+                data-no-match
+                style="display: none; color: var(--text-muted); margin-top: 20px;">
+                {panel.noMatch}
+              </p>
+            )}
+          </div>
+        </div>
+      ))
+    }
+    <div id="content-classes" class="tab-content active-content" data-tab="classes">
       <ResponsiveList maxColumns={1} exclusiveOpen={false}>
         {
           Object.entries(groupedClasses).map(([weekday, dayClasses], index) => {
@@ -273,66 +336,100 @@ const danceFilters = Array.from(uniqueDancesMap.values());
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       // Tab Switching Logic
-      const tabClasses = document.getElementById("tab-classes");
-      const tabEvents = document.getElementById("tab-events");
-      const contentClasses = document.getElementById("content-classes");
-      const contentEvents = document.getElementById("content-events");
+      const tabButtons = Array.from(
+        document.querySelectorAll(".page-tabs .tab"),
+      );
+      const tabPanels = Array.from(
+        document.querySelectorAll(".tab-content"),
+      );
 
-      function switchTab(
-        activeBtn,
-        inactiveBtn,
-        activeView,
-        inactiveView,
-        updateHash = true,
-      ) {
-        if (!activeBtn || activeBtn.classList.contains("active")) return;
+      let activePanel =
+        tabPanels.find((el) => el.classList.contains("active-content")) ??
+        null;
+      let swapTimer: ReturnType<typeof setTimeout> | null = null;
+      let pendingPanel: HTMLElement | null = null;
 
-        if (updateHash) {
-          window.location.hash = activeBtn.dataset.tab;
+      function showPanel(panel: HTMLElement) {
+        tabPanels.forEach((el) => {
+          const isTarget = el === panel;
+          el.classList.toggle("active-content", isTarget);
+          el.style.display = isTarget ? "block" : "none";
+          el.style.opacity = isTarget ? "1" : "0";
+        });
+        activePanel = panel;
+        pendingPanel = null;
+      }
+
+      function switchTab(name, updateHash = true) {
+        const tab = tabButtons.find((btn) => btn.dataset.tab === name);
+        const panel = tabPanels.find((el) => el.dataset.tab === name);
+        if (!tab || !panel) return;
+
+        // Clicking the tab that is already showing does nothing.
+        if (tab.classList.contains("active") && panel === activePanel) return;
+
+        if (updateHash && window.location.hash !== `#${name}`) {
+          history.replaceState(null, "", `#${name}`);
         }
 
-        activeBtn.classList.remove("inactive");
-        activeBtn.classList.add("active");
-        inactiveBtn.classList.remove("active");
-        inactiveBtn.classList.add("inactive");
+        tabButtons.forEach((btn) => {
+          btn.classList.toggle("active", btn === tab);
+          btn.classList.toggle("inactive", btn !== tab);
+        });
 
+        // Deep links swap instantly; clicks fade the old list out first.
         if (!updateHash) {
-          inactiveView.style.display = "none";
-          inactiveView.classList.remove("active-content");
-          activeView.style.display = "block";
-          activeView.classList.add("active-content");
-          activeView.style.opacity = "1";
-        } else {
-          inactiveView.style.opacity = "0";
-          setTimeout(() => {
-            inactiveView.classList.remove("active-content");
-            inactiveView.style.display = "none";
-            activeView.style.display = "block";
-            void activeView.offsetWidth;
-            activeView.classList.add("active-content");
-            activeView.style.opacity = "1";
-          }, 300);
+          if (swapTimer) clearTimeout(swapTimer);
+          swapTimer = null;
+          showPanel(panel);
+          return;
         }
+
+        // Repeated click on the pending target: let the running fade finish.
+        if (swapTimer && pendingPanel === panel) return;
+
+        if (swapTimer) {
+          clearTimeout(swapTimer);
+          swapTimer = null;
+        }
+
+        // Clicked back onto the panel that is still fading out: keep it.
+        if (panel === activePanel) {
+          panel.style.display = "block";
+          panel.classList.add("active-content");
+          panel.style.opacity = "1";
+          pendingPanel = null;
+          return;
+        }
+
+        const outgoing = activePanel;
+        if (outgoing) outgoing.style.opacity = "0";
+        pendingPanel = panel;
+
+        swapTimer = setTimeout(() => {
+          swapTimer = null;
+          if (outgoing) {
+            outgoing.style.display = "none";
+            outgoing.classList.remove("active-content");
+          }
+          // Flush the display change so the opacity transition runs.
+          panel.style.display = "block";
+          void panel.offsetWidth;
+          panel.classList.add("active-content");
+          panel.style.opacity = "1";
+          activePanel = panel;
+          pendingPanel = null;
+        }, 300);
       }
 
-      const currentHash = window.location.hash.replace("#", "");
-      if (currentHash === "events") {
-        switchTab(
-          tabEvents,
-          tabClasses,
-          contentEvents,
-          contentClasses,
-          false,
-        );
-      }
+      tabButtons.forEach((btn) => {
+        btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+      });
 
-      if (tabClasses && tabEvents) {
-        tabClasses.addEventListener("click", () =>
-          switchTab(tabClasses, tabEvents, contentClasses, contentEvents),
-        );
-        tabEvents.addEventListener("click", () =>
-          switchTab(tabEvents, tabClasses, contentEvents, contentClasses),
-        );
+      // Deep links: #socials / #events / #classes
+      const initialTab = window.location.hash.replace("#", "");
+      if (tabButtons.some((btn) => btn.dataset.tab === initialTab)) {
+        switchTab(initialTab, false);
       }
 
       // Filter Toggle Logic
@@ -343,7 +440,7 @@ const danceFilters = Array.from(uniqueDancesMap.values());
       // Updated: Select ALL wrapppers (both classes and events)
       const allItemWrappers = document.querySelectorAll(".filter-item-wrapper");
       const dayGroups = document.querySelectorAll(".day-group");
-      const noEventsMsg = document.getElementById("no-events-msg");
+      const noMatchMessages = document.querySelectorAll("[data-no-match]");
 
       let activeFilters = new Set();
 
@@ -354,42 +451,58 @@ const danceFilters = Array.from(uniqueDancesMap.values());
       }
 
       function applyFilters() {
-        let visibleEventsCount = 0;
-
         allItemWrappers.forEach((wrapper) => {
-          const itemTags = wrapper.dataset.tags ? wrapper.dataset.tags.split(',') : [];
+          const itemTags = wrapper.dataset.tags
+            ? wrapper.dataset.tags.split(",")
+            : [];
 
           if (activeFilters.size === 0) {
             wrapper.style.display = ""; // Show all
-            if (wrapper.classList.contains("workshop-item")) visibleEventsCount++;
           } else {
-            const hasMatch = itemTags.some(tag => activeFilters.has(tag.trim()));
+            const hasMatch = itemTags.some((tag) =>
+              activeFilters.has(tag.trim()),
+            );
             wrapper.style.display = hasMatch ? "" : "none";
-            if (hasMatch && wrapper.classList.contains("workshop-item")) visibleEventsCount++;
           }
         });
 
         // Handle empty day blocks and auto-open accordions
         dayGroups.forEach((group) => {
-          const wrappers = Array.from(group.querySelectorAll('.class-item'));
-          const accordionItem = group.querySelector('.responsive-item');
-          const accordionHeader = group.querySelector('.responsive-item-header');
+          const wrappers = Array.from(group.querySelectorAll(".class-item"));
+          const accordionItem = group.querySelector(".responsive-item");
+          const accordionHeader = group.querySelector(
+            ".responsive-item-header",
+          );
 
           if (wrappers.length > 0) {
-            const hasVisible = wrappers.some(w => w.style.display !== 'none');
-            group.style.display = hasVisible ? '' : 'none';
+            const hasVisible = wrappers.some(
+              (w) => w.style.display !== "none",
+            );
+            group.style.display = hasVisible ? "" : "none";
 
             // Auto-open logic: If filters are active and this group has visible items, force it open
-            if (activeFilters.size > 0 && hasVisible && accordionItem && accordionHeader) {
+            if (
+              activeFilters.size > 0 &&
+              hasVisible &&
+              accordionItem &&
+              accordionHeader
+            ) {
               accordionItem.classList.add("open");
               accordionHeader.setAttribute("aria-expanded", "true");
             }
           }
         });
 
-        if (noEventsMsg) {
-          noEventsMsg.style.display = visibleEventsCount === 0 && activeFilters.size > 0 ? "block" : "none";
-        }
+        // Show the "nothing matches" note per event panel
+        noMatchMessages.forEach((msg) => {
+          const panel = msg.closest(".tab-content");
+          if (!panel) return;
+          const visible = Array.from(
+            panel.querySelectorAll(".filter-item-wrapper"),
+          ).some((wrapper) => wrapper.style.display !== "none");
+          msg.style.display =
+            activeFilters.size > 0 && !visible ? "block" : "none";
+        });
       }
 
       filterTags.forEach((tag) => {
@@ -407,174 +520,157 @@ const danceFilters = Array.from(uniqueDancesMap.values());
           applyFilters();
         });
       });
-
-      // Day Accordion Toggling Logic
-      const dayHeaders = document.querySelectorAll(".day-header");
-      dayHeaders.forEach((header) => {
-        header.addEventListener("click", () => {
-          const dayGroup = header.parentElement;
-          if (!dayGroup) return;
-
-          const isOpen = dayGroup.classList.contains("open");
-          if (isOpen) {
-            dayGroup.classList.remove("open");
-            header.setAttribute("aria-expanded", "false");
-          } else {
-            dayGroup.classList.add("open");
-            header.setAttribute("aria-expanded", "true");
-          }
-        });
-      });
     });
   </script>
 </Layout>
 
 <style>
-  /* All existing styles remain exactly the same */
-  .greeter {
-    padding-top: 30px;
+  /* --- Sidebar: intro copy --- */
+  .greeter :global(p) {
+    font-size: var(--fs-body);
+    line-height: 1.33;
+    margin: 0 0 1.1em 0;
   }
 
+  .greeter :global(p:last-child) {
+    margin-bottom: 0;
+  }
+
+  .greeter :global(a) {
+    color: inherit;
+  }
+
+  /* --- Sidebar: survey teaser --- */
   .disclaimer-box {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    border: 1px solid #000000;
-    padding: 18px;
-    border-radius: 12px;
-    width: 100%;
-    max-width: 600px;
-    box-sizing: border-box;
-    margin-bottom: 50px;
-    gap: 16px;
+    gap: 0;
+    text-align: center;
+    margin-top: 0.5rem;
+    position: relative;
+  }
+
+  /* Collapse control is only shown on the accent card (tablet/mobile) */
+  .disclaimer-toggle {
+    display: none;
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1;
+    width: 2.125rem;
+    height: 2.125rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: none;
+    border: var(--rule-width) solid var(--accent-contrast);
+    border-radius: 50%;
+    color: var(--accent-contrast);
+    cursor: pointer;
+  }
+
+  /* Close cross */
+  .disclaimer-toggle::before,
+  .disclaimer-toggle::after {
+    content: "";
+    position: absolute;
+    width: 0.875rem;
+    height: 2px;
+    background-color: currentColor;
+    border-radius: 1px;
+  }
+
+  .disclaimer-toggle::before {
+    transform: rotate(45deg);
+  }
+
+  .disclaimer-toggle::after {
+    transform: rotate(-45deg);
+  }
+
+  /* Dismissed in a previous visit (stored in localStorage) */
+  .disclaimer-box.is-dismissed {
+    display: none;
   }
 
   .disclaimer {
-    font-family: sans-serif;
-    font-size: 1.1rem;
-    line-height: 1.4;
-    color: #000000;
+    text-align: center;
+    color: var(--text-main);
   }
 
-  .disclaimer :global(p) {
+  .disclaimer p {
     margin: 0;
+  }
+
+  .disclaimer-headline {
+    font-family: var(--font-display);
+    font-size: var(--fs-h1); /* 34 */
+    font-weight: 700;
+    line-height: 1.058; /* 36/34 */
+    letter-spacing: 0;
+    color: var(--text-main);
+  }
+
+  .disclaimer-body {
+    margin-top: 0.25rem;
+    font-family: var(--font-body);
+    font-size: var(--fs-h3); /* 24 */
+    font-weight: 400;
+    line-height: 1.21; /* 29/24 */
+    color: var(--text-main);
   }
 
   .disclaimer-button {
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-    width: 100%;
+    margin-top: 1.4375rem; /* 23px between body and CTA */
   }
 
-  .disclaimer-box a {
-    display: inline-flex;
-    align-items: center;
-    justify-content: flex-start;
-    text-align: left;
-    gap: 8px;
-
-    color: #000000;
-    text-decoration: none;
-    font-weight: 800;
-    font-size: var(--font-emph);
-    cursor: pointer;
-  }
-
-  .arrow-icon {
-    width: 1.25rem;
-    height: 1.25rem;
-    flex-shrink: 0;
+  .disclaimer-button a {
     display: inline-block;
+    font-family: var(--font-display);
+    font-size: var(--fs-h1); /* 34 */
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: center;
+    text-decoration: none;
   }
 
+  .disclaimer-cta-kicker {
+    display: block;
+    color: var(--text-main);
+  }
+
+  .disclaimer-cta-title {
+    display: block;
+    font-size: 3.75rem; /* 60 */
+    line-height: 1.2; /* 72/60 */
+    letter-spacing: 0.04em; /* 2.4px at 60 */
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .disclaimer-button a:hover .disclaimer-cta-title {
+    color: var(--text-main);
+  }
+
+  /* --- Content column: title row --- */
   .tabs-header {
     display: flex;
     align-items: center;
-    justify-content: center;
-    position: relative;
-    margin: 30px 0;
-    width: 100%;
-    max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-bottom: 3.5rem;
   }
 
   .page-tabs {
-    text-align: center;
-    font-size: var(--font-emph);
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+    font-family: var(--font-body);
+    font-size: var(--fs-h1);
     font-weight: 700;
-    letter-spacing: 0.02em;
-    margin: 0;
-  }
-
-  .filter-toggle {
-    position: absolute;
-    right: 0;
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--text-main);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px;
-    transition: opacity 0.2s ease;
-  }
-
-  .filter-toggle:hover {
-    opacity: 0.7;
-  }
-
-  .filter-panel .listing-tag:hover {
-    background-color: #f0f0f0; /* Light gray */
-    color: var(--text-main);
-  }
-
-  /* 2. Selected State: Full black */
-  .filter-panel .listing-tag.selected {
-    background-color: var(--accent);
-    color: var(--bg-main);
-  }
-
-  /* 3. Selected + Hover: Slightly lighter black to indicate it can be unclicked */
-  .filter-panel .listing-tag.selected:hover {
-    background-color: #333333; /* Dark gray */
-    color: var(--bg-main);
-  }
-
-  .filter-panel {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    gap: 12px;
-
-    max-height: 0;
-    margin-bottom: 0;
-    opacity: 0;
-    overflow: hidden;
-    transform: translateY(-10px);
-    pointer-events: none;
-
-    transition:
-      max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-      opacity 0.3s ease-in-out,
-      margin-bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-      transform 0.3s ease-out;
-  }
-
-  .filter-panel.open {
-    max-height: 200px;
-    margin-bottom: 40px;
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
-  }
-
-  .filter-panel .listing-tag {
-    margin-bottom: 0;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
   }
 
   button.tab {
@@ -583,28 +679,91 @@ const danceFilters = Array.from(uniqueDancesMap.values());
     padding: 0;
     font: inherit;
     cursor: pointer;
-    transition: color 0.3s ease;
+    color: var(--text-muted);
+    transition: color 0.2s ease;
   }
 
   button.tab.active {
     color: var(--text-main);
   }
 
-  button.tab.inactive {
-    color: var(--text-muted);
-    font-weight: 500;
-  }
-
-  button.tab:hover.inactive {
-    color: var(--text-main);
+  @media (hover: hover) {
+    button.tab:hover {
+      color: var(--accent);
+    }
   }
 
   .tab-separator {
-    margin: 0 8px;
-    color: var(--text-main);
-    font-weight: 500;
+    color: var(--text-muted);
+    font-weight: 400;
   }
 
+  .filter-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem;
+    flex: 0 0 auto;
+    transition: color 0.15s ease;
+  }
+
+  .filter-toggle svg {
+    width: 1.75rem; /* 28, was 33 */
+    height: auto;
+  }
+
+  @media (hover: hover) {
+    .filter-toggle:hover {
+      color: var(--accent);
+    }
+  }
+
+  /* --- Filter panel --- */
+  .filter-panel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    max-height: 0;
+    margin-bottom: 0;
+    opacity: 0;
+    overflow: hidden;
+    pointer-events: none;
+    transition:
+      max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+      opacity 0.3s ease-in-out,
+      margin-bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .filter-panel.open {
+    max-height: 20rem;
+    margin-bottom: 2.5rem;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .filter-panel .listing-tag {
+    background-color: transparent;
+    color: var(--text-main);
+    box-shadow: inset 0 0 0 1px var(--accent);
+  }
+
+  .filter-panel .listing-tag.selected {
+    background-color: var(--accent);
+    color: var(--accent-contrast);
+  }
+
+  @media (hover: hover) {
+    .filter-panel .listing-tag:hover {
+      background-color: var(--accent);
+      color: var(--accent-contrast);
+    }
+  }
+
+  /* --- Tab panels --- */
   .tab-content {
     display: none;
     opacity: 0;
@@ -615,4 +774,142 @@ const danceFilters = Array.from(uniqueDancesMap.values());
     display: block;
     opacity: 1;
   }
+
+  @media (max-width: 1023px) {
+    .tabs-header {
+      margin-bottom: 2rem;
+    }
+
+    .page-tabs {
+      font-size: var(--fs-h2);
+    }
+
+    /* Survey teaser becomes the accent card from the mobile frames */
+    .disclaimer-box {
+      padding: 3rem 1.5rem 2rem;
+      background-color: var(--accent);
+      color: var(--accent-contrast);
+      border-radius: 0.5rem;
+      margin-top: 0;
+      margin-bottom: 1rem;
+    }
+
+    .disclaimer-toggle {
+      display: flex;
+    }
+
+    .disclaimer,
+    .disclaimer p,
+    .disclaimer-cta-kicker,
+    .disclaimer-cta-title,
+    .disclaimer-button a {
+      color: var(--accent-contrast);
+    }
+
+    .disclaimer-button a:hover .disclaimer-cta-title {
+      color: var(--accent-contrast);
+      opacity: 0.8;
+    }
+
+    .disclaimer-headline {
+      font-size: 1.625rem; /* 26 */
+      line-height: 1.077; /* 28/26 */
+    }
+
+    .disclaimer-body {
+      font-size: 1.25rem; /* 20 */
+      line-height: 1.21; /* 24.2/20 */
+    }
+
+    .disclaimer-button a {
+      font-size: 1.5rem; /* 24 */
+      line-height: 1.2;
+    }
+
+    .disclaimer-cta-title {
+      font-size: 3rem; /* 48 */
+      line-height: 1.2; /* 57.6/48 */
+      letter-spacing: 0.04em;
+    }
+  }
+
+  @media (max-width: 767px) {
+    /* All three tabs stay on one line with the filter button, so they run a
+       step smaller than the tablet size. */
+    .tabs-header {
+      gap: 0.75rem;
+    }
+
+    .page-tabs {
+      font-size: 1.25rem; /* 20 */
+      column-gap: 0.125rem;
+    }
+
+    /* Full-bleed card on phones */
+    .disclaimer-box {
+      margin-inline: calc(var(--shell-pad) * -1);
+      padding: 3rem var(--shell-pad) 2rem;
+      border-radius: 0;
+      margin-bottom: 0;
+    }
+
+    .disclaimer-toggle {
+      right: var(--shell-pad);
+    }
+
+    /* Phone sizes: slightly smaller than the tablet card */
+    .disclaimer-headline {
+      font-size: 1.375rem; /* 22 */
+      line-height: 1.09;
+    }
+
+    .disclaimer-body {
+      font-size: 1.0625rem; /* 17 */
+      line-height: 1.25;
+    }
+
+    .disclaimer-button a {
+      font-size: 1.25rem; /* 20 */
+    }
+
+    .disclaimer-cta-title {
+      font-size: 2.25rem; /* 36 */
+    }
+  }
+
+  @media (min-width: 1024px) {
+    /* The poll block is closed with a straight rule inside the framed column */
+    .disclaimer-box {
+      padding-bottom: 1.75rem;
+      border-bottom: var(--rule-width) solid var(--rule-color);
+    }
+  }
 </style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const DISMISS_KEY = "sih:survey-dismissed";
+    const box = document.querySelector(".disclaimer-box");
+    const toggle = document.querySelector(".disclaimer-toggle");
+
+    if (box) {
+      let dismissed = false;
+      try {
+        dismissed = localStorage.getItem(DISMISS_KEY) === "1";
+      } catch {
+        /* storage may be unavailable (private mode) */
+      }
+
+      if (dismissed) box.classList.add("is-dismissed");
+
+      toggle?.addEventListener("click", () => {
+        box.classList.add("is-dismissed");
+        try {
+          localStorage.setItem(DISMISS_KEY, "1");
+        } catch {
+          /* ignore */
+        }
+      });
+    }
+  });
+</script>

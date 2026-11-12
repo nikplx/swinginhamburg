@@ -90,7 +90,7 @@ const danceTags =
         danceTags.map((tag) => {
           // Standardize the slug for the link
           const slug = typeof tag === "string" ? tag : tag.shortName;
-          const href = `/${Astro.currentLocale}/swing#${slug.replace(/\s+/g, "-").toLowerCase()}`;
+          const href = `/${Astro.params.locale ?? "de"}/swing#${slug.replace(/\s+/g, "-").toLowerCase()}`;
 
           return (
             <a href={href} class="listing-tag">
@@ -127,76 +127,88 @@ const danceTags =
 </script>
 
 <style>
-  /* --- Events Layout (Mockup 3) --- */
+  /* --- Events: one row per listing, rule between rows --- */
   .workshop-item {
-    margin-bottom: 15px;
-    border-bottom: 2px dotted var(--text-main);
-    padding-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    padding: 0.625rem 0 1rem 0;
+    border-bottom: var(--rule-width) solid var(--rule-color);
+    margin: 0;
   }
 
   .workshop-date {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: flex-start;
+    min-height: 1.5rem;
+    padding: 0.0625rem 0.625rem;
+    border-radius: 999px;
     background-color: var(--accent);
-    color: var(--bg-main);
-    display: inline-block;
-    border-radius: 8px;
-    padding: 4px 8px;
+    color: var(--accent-contrast);
+    font-size: var(--fs-body);
     font-weight: 600;
-    font-size: var(--font-desc);
-    margin-bottom: 15px;
-  }
-
-  /* Price styling changes: margins handled by flex container */
-  .workshop-price {
-    font-size: var(--font-desc);
-    font-weight: 700;
-    color: var(--text-main);
-    white-space: nowrap; /* Keeps the price on a single line */
-    margin-left: auto;   /* Pushes the price completely to the right edge */
+    font-style: italic;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
   }
 
   .workshop-title {
-    font-size: 1.2rem;
+    font-family: var(--font-display);
+    font-size: var(--fs-row);
     font-weight: 700;
-    margin: 0 0 10px 0;
-    letter-spacing: 0.02em;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    color: var(--text-main);
+    margin: 0.25rem 0 0 0;
   }
 
   .workshop-location {
-    font-size: var(--font-desc);
-    margin-bottom: 8px;
-    line-height: 1.4;
+    font-size: var(--fs-h3);
+    line-height: 1.2;
+    color: var(--text-main);
   }
 
   .workshop-location strong {
-    font-weight: 700;
+    font-weight: 400;
   }
 
   .workshop-desc {
-    font-size: var(--font-tag);
-    opacity: 0.7;
-    line-height: 1.5;
+    font-size: var(--fs-body);
+    line-height: 1.33;
+    color: var(--text-main);
   }
 
-  /* Switch layout from strict Grid to a fluid Flex container */
+  .workshop-desc :global(p) {
+    margin: 0 0 0.75em 0;
+  }
+
   .listing-tags-row {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
-    gap: 20px;
+    justify-content: space-between;
+    gap: 1.25rem;
     width: 100%;
+    margin-top: 0.5rem;
   }
 
-  /* Internal tag container allows multi-tag lists to wrap left smoothly */
   .workshop-tags-group {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    flex: 1; /* Automatically stretches to full remaining width if no price exists */
+    gap: 0.375rem;
+    flex: 1;
   }
 
-  /* --- Mobile Collapsible Logic --- */
+  .workshop-price {
+    font-size: var(--fs-body);
+    font-weight: 700;
+    color: var(--text-main);
+    white-space: nowrap;
+    margin-left: auto;
+  }
 
-  /* Desktop defaults: Hide the toggle button */
+  /* --- Mobile collapsible description --- */
   .toggle-desc-btn {
     display: none;
   }
@@ -204,17 +216,15 @@ const danceTags =
   @media (max-width: 768px) {
     .workshop-desc-container {
       position: relative;
-      margin-bottom: 10px;
+      margin-bottom: 0.625rem;
     }
 
-    /* Collapsed state constraints */
     .workshop-desc-container.collapsed .workshop-desc {
-      max-height: 4.5em; /* Approximately 3 lines of text */
+      max-height: 4.5em;
       overflow: hidden;
       position: relative;
     }
 
-    /* Fading Overlay effect when collapsed */
     .workshop-desc-container.collapsed .workshop-desc::after {
       content: "";
       position: absolute;
@@ -225,21 +235,21 @@ const danceTags =
       background: linear-gradient(
         to bottom,
         transparent,
-        var(--bg-main, #fff) 90%
+        var(--bg-main) 90%
       );
       pointer-events: none;
     }
 
-    /* Style button for mobile viewport */
     .toggle-desc-btn {
       display: block;
       background: none;
       border: none;
       color: var(--accent);
-      font-size: var(--font-tag);
+      font-family: var(--font-body);
+      font-size: var(--fs-body);
       font-weight: 600;
-      padding: 4px 0;
-      margin-top: 4px;
+      padding: 0.25rem 0;
+      margin-top: 0.25rem;
       cursor: pointer;
       text-decoration: underline;
     }
