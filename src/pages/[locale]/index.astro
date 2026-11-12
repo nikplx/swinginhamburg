@@ -137,7 +137,6 @@ const danceFilters = Array.from(uniqueDancesMap.values());
         type="button"
         aria-controls="disclaimer-panel"
         aria-label={locale === "en" ? "Hide survey" : "Umfrage ausblenden"}>
-        <span class="disclaimer-toggle-h"></span>
       </button>
       <div class="disclaimer-panel" id="disclaimer-panel">
         <div class="disclaimer">
@@ -510,12 +509,23 @@ const danceFilters = Array.from(uniqueDancesMap.values());
     cursor: pointer;
   }
 
-  .disclaimer-toggle-h {
+  /* Close cross */
+  .disclaimer-toggle::before,
+  .disclaimer-toggle::after {
+    content: "";
     position: absolute;
     width: 0.875rem;
     height: 2px;
     background-color: currentColor;
     border-radius: 1px;
+  }
+
+  .disclaimer-toggle::before {
+    transform: rotate(45deg);
+  }
+
+  .disclaimer-toggle::after {
+    transform: rotate(-45deg);
   }
 
   /* Dismissed in a previous visit (stored in localStorage) */
