@@ -649,10 +649,14 @@ const danceFilters = Array.from(uniqueDancesMap.values());
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0;
+    padding: 0.25rem;
     flex: 0 0 auto;
     transition: color 0.15s ease;
-    padding: 0.4rem;
+  }
+
+  .filter-toggle svg {
+    width: 1.75rem; /* 28, was 33 */
+    height: auto;
   }
 
   @media (hover: hover) {
@@ -773,34 +777,15 @@ const danceFilters = Array.from(uniqueDancesMap.values());
   }
 
   @media (max-width: 767px) {
-    /* Three tabs no longer fit next to the filter button, so let them wrap
-       and put the classes tab on its own line. */
+    /* All three tabs stay on one line with the filter button, so they run a
+       step smaller than the tablet size. */
     .tabs-header {
-      align-items: flex-start;
+      gap: 0.75rem;
     }
 
     .page-tabs {
-      flex-wrap: wrap;
-      column-gap: 0.25rem;
-      row-gap: 0.125rem;
-    }
-
-    /* The break happens before the classes tab, so its separator is carried
-       by the tab itself and reads as a leading slash on the second line. */
-    .tab-separator:last-of-type {
-      display: none;
-    }
-
-    .page-tabs .tab:last-child {
-      flex-basis: 100%;
-      text-align: left;
-    }
-
-    .page-tabs .tab:last-child::before {
-      content: "/";
-      margin-right: 0.25rem;
-      color: var(--text-muted);
-      font-weight: 400;
+      font-size: 1.25rem; /* 20 */
+      column-gap: 0.125rem;
     }
 
     /* Full-bleed card on phones */
