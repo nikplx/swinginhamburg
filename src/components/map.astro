@@ -113,7 +113,10 @@ const events = classes.map((clazz) => {
 <script is:inline lang="ts">
   document.addEventListener("DOMContentLoaded", () => {
     // --- Map Initialization ---
-    const map = L.map("map").setView([53.5511, 9.9937], 12);
+    const map = L.map("map", { fadeAnimation: false }).setView(
+      [53.5511, 9.9937],
+      12,
+    );
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
@@ -471,9 +474,11 @@ const events = classes.map((clazz) => {
   }
 
   #map :global(.leaflet-tile-pane) {
-    filter: grayscale(1) sepia(0.6) hue-rotate(200deg) saturate(2.1)
-      brightness(0.99) contrast(1.18);
-    opacity: 0.88;
+    filter: grayscale(1) sepia(0.5) hue-rotate(200deg) saturate(2.0)
+      brightness(0.82) contrast(2.0);
+    /* Multiply keeps the pale land beige while the violet roads, water and
+       labels stay dark enough to read. */
+    mix-blend-mode: multiply;
   }
 
   #map :global(.leaflet-control-zoom a) {
