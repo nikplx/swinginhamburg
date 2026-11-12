@@ -96,7 +96,7 @@
   --font-display: "Archivo", "Inter", system-ui, sans-serif;
 
   /* Type scale (px → rem at 16px root) */
-  --fs-mega: 3.75rem; /* 60 — wordmark, "UMFRAGE" */
+  --fs-mega: 2.75rem; /* 60 — wordmark, "UMFRAGE" */
   --fs-h1: 2.125rem; /* 34 — page/row titles */
   --fs-h2: 1.625rem; /* 26 */
   --fs-h3: 1.5rem; /* 24 — addresses, lead copy */
@@ -633,7 +633,7 @@ svg {
 
   .nav-links.open {
     max-height: 120vh;
-    min-height: calc(100dvh - 8rem);
+    min-height: calc(100dvh);
     opacity: 1;
     padding: 0.25rem var(--shell-pad) 2rem;
     pointer-events: all;
@@ -692,9 +692,9 @@ svg {
    framed by a wave at the top and one at the bottom of the viewport. */
 @media (min-width: 1024px) {
   .sidebar {
-    padding-top: 6.75rem;
+    padding-top: 5.85rem;
     align-self: stretch;
-    min-height: calc(100dvh - 14.25rem);
+    min-height: calc(100dvh - 17.25rem);
   }
 
   .sidebar > .wave:last-of-type {
@@ -751,7 +751,7 @@ svg {
   }
 
   .wordmark {
-    font-size: 1.125rem; /* 18 */
+    font-size: 1.5rem; /* 18 */
   }
 
   .nav-links a {

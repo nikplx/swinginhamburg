@@ -81,20 +81,6 @@ const formattedUpdate =
         }
         <main class:list={["main-content", { wide }]}>
           <slot />
-          {
-            formattedUpdate && (
-              <footer class="page-footnote">
-                <span>
-                  {locale === "de"
-                    ? `Letztes Update ${formattedUpdate} Uhr`
-                    : `Last update ${formattedUpdate}`}
-                </span>
-                <a href={`/${locale}/about`}>
-                  {locale === "de" ? "Impressum" : "Legal notice"}
-                </a>
-              </footer>
-            )
-          }
         </main>
       </div>
     </div>
