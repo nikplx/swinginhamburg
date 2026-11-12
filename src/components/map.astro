@@ -515,6 +515,32 @@ const events = classes.map((clazz) => {
 </style>
 
 <style is:global>
+  /* Phones: the map was fullscreen on the old site, so let it fill the
+     viewport below the sticky header again and keep the page from scrolling. */
+  @media (max-width: 768px) {
+    body.wide-page,
+    body.wide-page .page-container {
+      overflow: hidden;
+    }
+
+    body.wide-page .page-container {
+      height: 100dvh;
+      min-height: 0;
+    }
+
+    body.wide-page .page-body {
+      flex: 1;
+      display: block;
+      min-height: 0;
+      padding: 0;
+    }
+
+    body.wide-page .main-content,
+    body.wide-page .map-wrapper {
+      height: 100%;
+    }
+  }
+
   /* Accent dot markers (created at runtime, so they live in global CSS) */
   .sih-map-marker {
     box-sizing: border-box;
