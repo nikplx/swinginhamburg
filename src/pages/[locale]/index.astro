@@ -781,16 +781,26 @@ const danceFilters = Array.from(uniqueDancesMap.values());
 
     .page-tabs {
       flex-wrap: wrap;
-      column-gap: 0.75rem;
+      column-gap: 0.25rem;
       row-gap: 0.125rem;
     }
 
-    .tab-separator {
+    /* The break happens before the classes tab, so its separator is carried
+       by the tab itself and reads as a leading slash on the second line. */
+    .tab-separator:last-of-type {
       display: none;
     }
 
     .page-tabs .tab:last-child {
       flex-basis: 100%;
+      text-align: left;
+    }
+
+    .page-tabs .tab:last-child::before {
+      content: "/";
+      margin-right: 0.25rem;
+      color: var(--text-muted);
+      font-weight: 400;
     }
 
     /* Full-bleed card on phones */
