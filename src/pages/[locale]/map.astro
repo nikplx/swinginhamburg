@@ -17,7 +17,6 @@ interface Params {
 const { locale } = Astro.params as Params;
 ---
 <Layout locale={locale} wide>
-  <h1 class="map-title">{locale === "en" ? "Map" : "Karte"}</h1>
   <MapC locale={locale}></Map>
 </Layout>
 
