@@ -50,7 +50,15 @@ const { maxColumns = 1, exclusiveOpen = true } = Astro.props;
         header.setAttribute("aria-expanded", "true");
       }
 
-      targetItem.scrollIntoView({ behavior: "smooth", block: "start" });
+      // Offset by the sticky header instead of relying on scroll-padding:
+      // the header height depends on the wordmark, so measuring it keeps the
+      // opened item's header visible at any viewport width.
+      const siteHeader = document.querySelector(".site-header");
+      const headerOffset =
+        (siteHeader?.getBoundingClientRect().height ?? 0) + 12;
+      const targetTop =
+        window.scrollY + targetItem.getBoundingClientRect().top - headerOffset;
+      window.scrollTo({ top: targetTop, behavior: "smooth" });
     }
   }
 

@@ -131,6 +131,14 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+/* Hash targets sit under the sticky header. The accordion JS measures the
+   real header height; this is the fallback for the initial browser jump. */
+@media (min-width: 1024px) {
+  html {
+    scroll-padding-top: 11rem;
+  }
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -434,10 +442,16 @@ svg {
     color 0.15s ease;
 }
 
-.listing-tag:hover,
 .listing-tag.selected {
   background-color: var(--text-main);
   color: var(--accent-contrast);
+}
+
+@media (hover: hover) {
+  .listing-tag:hover {
+    background-color: var(--text-main);
+    color: var(--accent-contrast);
+  }
 }
 
 /* --- Rich text / content column --- */

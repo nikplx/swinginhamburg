@@ -630,8 +630,10 @@ const danceFilters = Array.from(uniqueDancesMap.values());
     color: var(--text-main);
   }
 
-  button.tab:hover {
-    color: var(--accent);
+  @media (hover: hover) {
+    button.tab:hover {
+      color: var(--accent);
+    }
   }
 
   .tab-separator {
@@ -653,8 +655,10 @@ const danceFilters = Array.from(uniqueDancesMap.values());
     padding: 0.4rem;
   }
 
-  .filter-toggle:hover {
-    color: var(--accent);
+  @media (hover: hover) {
+    .filter-toggle:hover {
+      color: var(--accent);
+    }
   }
 
   /* --- Filter panel --- */
@@ -686,10 +690,16 @@ const danceFilters = Array.from(uniqueDancesMap.values());
     box-shadow: inset 0 0 0 1px var(--accent);
   }
 
-  .filter-panel .listing-tag:hover,
   .filter-panel .listing-tag.selected {
     background-color: var(--accent);
     color: var(--accent-contrast);
+  }
+
+  @media (hover: hover) {
+    .filter-panel .listing-tag:hover {
+      background-color: var(--accent);
+      color: var(--accent-contrast);
+    }
   }
 
   /* --- Tab panels --- */
@@ -763,6 +773,26 @@ const danceFilters = Array.from(uniqueDancesMap.values());
   }
 
   @media (max-width: 767px) {
+    /* Three tabs no longer fit next to the filter button, so let them wrap
+       and put the classes tab on its own line. */
+    .tabs-header {
+      align-items: flex-start;
+    }
+
+    .page-tabs {
+      flex-wrap: wrap;
+      column-gap: 0.75rem;
+      row-gap: 0.125rem;
+    }
+
+    .tab-separator {
+      display: none;
+    }
+
+    .page-tabs .tab:last-child {
+      flex-basis: 100%;
+    }
+
     /* Full-bleed card on phones */
     .disclaimer-box {
       margin-inline: calc(var(--shell-pad) * -1);
