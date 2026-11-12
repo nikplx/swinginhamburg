@@ -7,6 +7,10 @@ interface Props {
 }
 const { classs: clazz } = Astro.props as Props;
 
+// `Astro.currentLocale` is undefined without an i18n config in astro.config,
+// so derive the locale from the [locale] route segment instead.
+const locale = (Astro.params.locale ?? "de") as string;
+
 const school = (clazz.school as School) || { name: "" };
 const address = decodeAddress(clazz.address);
 
@@ -21,7 +25,7 @@ const danceTags =
 const schoolSlug = school.name
   ? school.name.replaceAll(" ", "").toLocaleLowerCase()
   : "";
-const schoolHref = `/${Astro.currentLocale}/schools#${schoolSlug}`;
+const schoolHref = `/${locale}/schools#${schoolSlug}`;
 ---
 
 <div class="listing-item">
@@ -63,7 +67,7 @@ const schoolHref = `/${Astro.currentLocale}/schools#${schoolSlug}`;
       <div class="listing-tags-wrapper">
         {danceTags.map((tag) => {
           const slug = typeof tag === "string" ? tag : tag.shortName;
-          const href = `/${Astro.currentLocale}/swing#${String(slug)
+          const href = `/${locale}/swing#${String(slug)
             .replace(/\s+/g, "-")
             .toLowerCase()}`;
 

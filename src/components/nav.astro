@@ -20,22 +20,26 @@ const isActive = (href: string) =>
 const otherLocale = locale === "en" ? "de" : "en";
 const otherLocaleLink = currentPath.replace(`/${locale}`, `/${otherLocale}`);
 
-const labels = {
+const labelsByLocale = {
   de: {
-    index: "Socials / Kurse",
+    index: "Socials / Events / Kurse",
     map: "Karte",
     schools: "Tanzschulen",
     swing: "Neu hier?",
     about: "Über uns",
   },
   en: {
-    index: "Socials / Classes",
+    index: "Socials / Events / Classes",
     map: "Map",
     schools: "Schools",
     swing: "Get started",
     about: "About",
   },
-}[locale];
+};
+
+// Fall back to German so a stray locale segment (e.g. /undefined/...) renders
+// instead of throwing on the missing labels object.
+const labels = labelsByLocale[locale] ?? labelsByLocale.de;
 
 const navItems = [
   { href: `/${locale}`, label: labels.index },

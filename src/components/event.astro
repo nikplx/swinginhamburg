@@ -90,7 +90,7 @@ const danceTags =
         danceTags.map((tag) => {
           // Standardize the slug for the link
           const slug = typeof tag === "string" ? tag : tag.shortName;
-          const href = `/${Astro.currentLocale}/swing#${slug.replace(/\s+/g, "-").toLowerCase()}`;
+          const href = `/${Astro.params.locale ?? "de"}/swing#${slug.replace(/\s+/g, "-").toLowerCase()}`;
 
           return (
             <a href={href} class="listing-tag">
