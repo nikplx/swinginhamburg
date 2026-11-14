@@ -315,12 +315,11 @@ svg {
 .responsive-content-inner > *:last-child .workshop-item {
   border-bottom: 0;
 }
-
 /* --- Wave divider --- */
 .wave {
   display: block;
   width: 100%;
-  height: 0.6875rem;
+  height: 0.8125rem;
   color: var(--rule-color);
 }
 
