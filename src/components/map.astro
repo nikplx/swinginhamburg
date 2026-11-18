@@ -1,50 +1,63 @@
 ---
 import "../styles/global.css";
-import { decodeAddress, payload, translateWeekday } from "../utils";
-import type { School, Class } from "../../cms/src/payload-types";
+import {
+  addDays,
+  decodeAddress,
+  fetchOccurrences,
+  formatLocalDate,
+  todayInBerlin,
+} from "../utils";
 
 interface Params {
   locale: "en" | "de";
 }
 const { locale } = Astro.props as Params;
 
-const { docs: classes } = await payload.find({
-  collection: "classes",
-  locale: locale,
-  depth: 1, // Ensures relations like 'dances' are populated
-  pagination: false,
-});
+const from = todayInBerlin();
+const occurrences = await fetchOccurrences({ from, to: addDays(from, 30), locale });
 
-// Extract unique dances for the filter UI
-const uniqueDancesMap = new Map();
-classes.forEach(c => {
-  if (c.dances && Array.isArray(c.dances)) {
-    c.dances.forEach(dance => {
-      if (dance && dance.shortName) {
-        uniqueDancesMap.set(dance.shortName, dance);
-      }
-    });
+const danceFilterMap = new Map<string, string>();
+const seen = new Set<string>();
+const events = [];
+
+for (const occurrence of occurrences) {
+  // The map is the class map: organizers and other event types are not shown.
+  if (occurrence.event.type !== "class") continue;
+
+  const location = occurrence.event.location;
+  if (location?.lat == null || location?.lng == null) continue;
+
+  for (const style of occurrence.event.danceStyles) {
+    const key = style.slug ?? style.shortName;
+    if (key) danceFilterMap.set(key.toLowerCase(), style.name ?? style.shortName ?? key);
   }
-});
-const danceFilters = Array.from(uniqueDancesMap.values());
 
-const events = classes.map((clazz) => {
-  const school = clazz.school as School;
-  const address = decodeAddress(clazz.address);
+  const weekdayRaw = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Berlin",
+    weekday: "long",
+  }).format(new Date(occurrence.start));
 
-  return {
-    title: clazz.title,
-    // Store original weekday string for display, but also the translated one
-    weekday: translateWeekday(clazz.weekday, locale),
-    rawWeekday: clazz.weekday, // Better for stable filtering logic
-    address: address, 
-    school: school.name,
-    coordinates: [clazz.location[1], clazz.location[0]],
-    dances: clazz.dances?.map((d: any) => d.name || d.shortName).join(", "),
-    // Array of lowercase shortNames strictly for JS filtering
-    danceTags: clazz.dances?.map((d: any) => d.shortName.toLowerCase()) || [],
-  };
-});
+  const markerKey = `${occurrence.eventId}|${weekdayRaw}|${location.lat}|${location.lng}`;
+  if (seen.has(markerKey)) continue;
+  seen.add(markerKey);
+
+  events.push({
+    title: occurrence.event.title,
+    address: decodeAddress(location.address),
+    coordinates: [location.lat, location.lng],
+    // English weekday name keeps the existing data-day filter buttons working.
+    rawWeekday: weekdayRaw,
+    weekday: formatLocalDate(occurrence.start, locale, { weekday: "long" }),
+    dances: occurrence.event.danceStyles
+      .map((style) => style.name ?? style.shortName)
+      .join(", "),
+    danceTags: occurrence.event.danceStyles
+      .map((style) => (style.slug ?? style.shortName ?? "").toLowerCase())
+      .filter(Boolean),
+  });
+}
+
+const danceFilters = [...danceFilterMap.entries()].map(([slug, name]) => ({ slug, name }));
 ---
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -81,8 +94,8 @@ const events = classes.map((clazz) => {
         </h3>
         <div class="dance-filter-options">
           {danceFilters.map((dance) => (
-            <button class="listing-tag filter-tag" data-filter={dance.shortName.toLowerCase()}>
-              {dance.name || dance.shortName}
+            <button class="listing-tag filter-tag" data-filter={dance.slug}>
+              {dance.name}
             </button>
           ))}
         </div>
@@ -157,7 +170,7 @@ const events = classes.map((clazz) => {
           const marker = L.marker(event.coordinates, { icon: dotIcon }).bindPopup(
             `
             <div class="custom-popup-content">
-              <strong>${event.school}</strong><br/>
+              <strong>${event.title}</strong><br/>
               <span>${event.address.street} ${event.address.num}, ${event.address.quarter}</span><br/>
               <div class="popup-date-time">
                 ${event.weekday}

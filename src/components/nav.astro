@@ -22,16 +22,16 @@ const otherLocaleLink = currentPath.replace(`/${locale}`, `/${otherLocale}`);
 
 const labelsByLocale = {
   de: {
-    index: "Socials / Events / Kurse",
+    index: "Kalender",
     map: "Karte",
-    schools: "Tanzschulen",
+    organizations: "Organisationen",
     swing: "Neu hier?",
     about: "Über uns",
   },
   en: {
-    index: "Socials / Events / Classes",
+    index: "Calendar",
     map: "Map",
-    schools: "Schools",
+    organizations: "Organizations",
     swing: "Get started",
     about: "About",
   },
@@ -44,7 +44,7 @@ const labels = labelsByLocale[locale] ?? labelsByLocale.de;
 const navItems = [
   { href: `/${locale}`, label: labels.index },
   { href: `/${locale}/map`, label: labels.map },
-  { href: `/${locale}/schools`, label: labels.schools },
+  { href: `/${locale}/organizations`, label: labels.organizations },
   { href: `/${locale}/swing`, label: labels.swing },
   { href: `/${locale}/about`, label: labels.about },
 ];

@@ -1,115 +1,161 @@
 ---
 import RichText from "./richtText.astro";
-import type { Event } from "../../cms/src/payload-types.ts";
-import { decodeAddress } from "../utils";
+import type { OccurrenceView } from "../utils";
+import {
+  decodeAddress,
+  formatLocalDate,
+  formatLocalTime,
+} from "../utils";
 
 interface Props {
-  event: Event;
+  occurrence: OccurrenceView;
+  /** Classes are grouped by weekday, so the date chip is redundant there. */
+  hideDate?: boolean;
 }
-const { event } = Astro.props;
+const { occurrence, hideDate = false } = Astro.props;
+const locale = (Astro.params.locale ?? "de") as string;
 
-// Helper formats date as DD.MM (No trailing dot)
-const formatDate = (dateStr: string) => {
-  const d = new Date(dateStr);
-  return `${d.getUTCDate().toString().padStart(2, "0")}.${(d.getUTCMonth() + 1).toString().padStart(2, "0")}.`;
-};
+const event = occurrence.event;
+const venue = event.location ?? null;
+const address = decodeAddress(venue?.address);
 
-const getFormattedDate = () => {
-  const startD = formatDate(event.startDate);
-  const endD = event.endDate ? formatDate(event.endDate) : null;
+const organizers = event.organizers.filter((organizer) => organizer.name);
 
-  let datePart = startD;
+const danceTags = event.danceStyles.length
+  ? event.danceStyles.map((style) => ({
+      name: style.shortName ?? style.name ?? "",
+      slug: style.slug ?? style.shortName ?? "style",
+    }))
+  : [
+      {
+        name: locale === "en" ? "Style not specified" : "Stil nicht angegeben",
+        slug: "none",
+      },
+    ];
 
-  if (endD && startD !== endD) {
-    const startParts = startD.split("."); // Expects [DD, MM, ""]
-    const endParts = endD.split("."); // Expects [DD, MM, ""]
+function levelLabel(level: string, lang: string): string {
+  const labels: Record<string, Record<string, string>> = {
+    all: { de: "Alle Niveaus", en: "All levels" },
+    beginner: { de: "Anfänger", en: "Beginner" },
+    intermediate: { de: "Mittelstufe", en: "Intermediate" },
+    advanced: { de: "Fortgeschritten", en: "Advanced" },
+    open: { de: "Offen", en: "Open" },
+  };
+  return labels[level]?.[lang] ?? level;
+}
 
-    // If months match: e.g., "17.-19.06."
-    if (startParts[1] === endParts[1]) {
-      datePart = `${startParts[0]}.-${endParts[0]}.${startParts[1]}.`;
-    } else {
-      // If months differ: e.g., "30.06.-02.07."
-      datePart = `${startD}-${endD}.`;
-    }
-  }
-
-  return datePart;
-};
-
-
-const address = decodeAddress(event.address);
-
-const danceTags =
-  event.dances && event.dances.length > 0
-    ? event.dances.map((dance) =>
-        typeof dance === "string" ? dance : dance.shortName,
-      )
-    : [event.title];
+const dayLabel = formatLocalDate(occurrence.start, locale, {
+  weekday: "short",
+  day: "2-digit",
+  month: "2-digit",
+});
+const timeLabel = formatLocalTime(occurrence.start);
+const endLabel = formatLocalTime(occurrence.end);
 ---
 
-<div class="workshop-item">
-  <div class="workshop-date">
-    {getFormattedDate()}
-  </div>
+<div class:list={["workshop-item", { "is-cancelled": occurrence.cancelled }]}>
+  {
+    hideDate ? (
+      <div class="workshop-time">{timeLabel}–{endLabel}</div>
+    ) : (
+      <div class="workshop-date">
+        {dayLabel} · {timeLabel}–{endLabel}
+      </div>
+    )
+  }
 
-  <h3 class="workshop-title">{event.title}</h3>
-
-  <div class="workshop-location">
+  <h3 class="workshop-title">
+    {event.title}
     {
-      event.locationName && (
-        <>
-          <strong>{event.locationName}</strong>
-          <> |</>
-        </>
+      occurrence.cancelled && (
+        <span class="cancelled-badge">
+          {locale === "en" ? "cancelled" : "fällt aus"}
+        </span>
       )
     }
-    {address.street}
-    {address.num}, {address.quarter}
-  </div>
+  </h3>
 
-  {/* Wrap description in a container to manage the collapse states */}
+  {
+    organizers.length > 0 && (
+      <div class="workshop-organizers">
+        {organizers.map((organizer, index) => (
+          <>
+            {index > 0 && " · "}
+            {organizer.slug ? (
+              <a
+                href={`/${locale}/organizations#${organizer.slug}`}
+                class="organizer-link">
+                {organizer.name}
+              </a>
+            ) : (
+              <span>{organizer.name}</span>
+            )}
+          </>
+        ))}
+      </div>
+    )
+  }
+
+  {
+    venue && (venue.name || venue.address) && (
+      <div class="workshop-location">
+        {venue.name && <strong>{venue.name}</strong>}
+        {venue.name && venue.address && <> | </>}
+        {venue.address
+          ? `${address.street} ${address.num}, ${address.quarter || address.city}`
+          : null}
+        {venue.directionsNote && (
+          <span class="directions-note"> · {venue.directionsNote}</span>
+        )}
+      </div>
+    )
+  }
+
+  {
+    occurrence.note && <p class="occurrence-note">{occurrence.note}</p>
+  }
+
   <div class="workshop-desc-container collapsed">
     <div class="workshop-desc">
       {
         typeof event.description === "string" ? (
-          <p>{event.description}</p>
+          <p>{event.description as string}</p>
         ) : (
           <RichText content={event.description} />
         )
       }
     </div>
     <button class="toggle-desc-btn" aria-expanded="false">
-      <span>Show more</span>
+      <span>{locale === "en" ? "Show more" : "Mehr anzeigen"}</span>
     </button>
   </div>
 
   <div class="listing-tags-row">
-    {/* Grouping the tags together allows them to flex/wrap safely inside their own container */}
     <div class="workshop-tags-group">
       {
         danceTags.map((tag) => {
-          // Standardize the slug for the link
-          const slug = typeof tag === "string" ? tag : tag.shortName;
-          const href = `/${Astro.params.locale ?? "de"}/swing#${slug.replace(/\s+/g, "-").toLowerCase()}`;
-
+          const href = `/${locale}/swing#${String(tag.slug)
+            .replace(/\s+/g, "-")
+            .toLowerCase()}`;
           return (
             <a href={href} class="listing-tag">
-              {tag}
+              {tag.name}
             </a>
           );
         })
       }
     </div>
     {
-      event.price !== null && (
-        <div class="workshop-price">{event.price.toFixed(2)} €</div>
+      event.level && (
+        <div class="workshop-level">
+          {levelLabel(event.level, locale)}
+        </div>
       )
     }
   </div>
 </div>
 
 <script>
-  // Setup toggle handlers for mobile collapse
   const containers = document.querySelectorAll(".workshop-desc-container");
 
   containers.forEach((container) => {
@@ -120,14 +166,20 @@ const danceTags =
       const isCollapsed = container.classList.toggle("collapsed");
       button.setAttribute("aria-expanded", (!isCollapsed).toString());
       if (span) {
-        span.textContent = isCollapsed ? "Show more" : "Show less";
+        const isGerman = document.documentElement.lang === "de";
+        span.textContent = isCollapsed
+          ? isGerman
+            ? "Mehr anzeigen"
+            : "Show more"
+          : isGerman
+            ? "Weniger anzeigen"
+            : "Show less";
       }
     });
   });
 </script>
 
 <style>
-  /* --- Events: one row per listing, rule between rows --- */
   .workshop-item {
     display: flex;
     flex-direction: column;
@@ -135,6 +187,10 @@ const danceTags =
     padding: 0.625rem 0 1rem 0;
     border-bottom: var(--rule-width) solid var(--rule-color);
     margin: 0;
+  }
+
+  .workshop-item.is-cancelled {
+    opacity: 0.7;
   }
 
   .workshop-date {
@@ -154,6 +210,14 @@ const danceTags =
     line-height: 1.2;
   }
 
+  .workshop-time {
+    font-size: var(--fs-body);
+    font-weight: 600;
+    font-style: italic;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+  }
+
   .workshop-title {
     font-family: var(--font-display);
     font-size: var(--fs-row);
@@ -164,14 +228,53 @@ const danceTags =
     margin: 0.25rem 0 0 0;
   }
 
+  .cancelled-badge {
+    margin-left: 0.5rem;
+    font-family: var(--font-body);
+    font-size: var(--fs-body);
+    font-weight: 600;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .workshop-organizers {
+    font-size: var(--fs-body);
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  .organizer-link {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+
+  @media (hover: hover) {
+    .organizer-link:hover {
+      color: var(--accent);
+    }
+  }
+
   .workshop-location {
-    font-size: var(--fs-h3);
+    font-size: var(--fs-body);
     line-height: 1.2;
     color: var(--text-main);
   }
 
   .workshop-location strong {
     font-weight: 400;
+  }
+
+  .directions-note {
+    font-size: var(--fs-body);
+    color: var(--text-muted);
+  }
+
+  .occurrence-note {
+    margin: 0;
+    font-size: var(--fs-body);
+    color: var(--accent);
   }
 
   .workshop-desc {
@@ -200,7 +303,7 @@ const danceTags =
     flex: 1;
   }
 
-  .workshop-price {
+  .workshop-level {
     font-size: var(--fs-body);
     font-weight: 700;
     color: var(--text-main);
@@ -208,7 +311,6 @@ const danceTags =
     margin-left: auto;
   }
 
-  /* --- Mobile collapsible description --- */
   .toggle-desc-btn {
     display: none;
   }
@@ -232,11 +334,7 @@ const danceTags =
       left: 0;
       width: 100%;
       height: 2.5em;
-      background: linear-gradient(
-        to bottom,
-        transparent,
-        var(--bg-main) 90%
-      );
+      background: linear-gradient(to bottom, transparent, var(--bg-main) 90%);
       pointer-events: none;
     }
 
