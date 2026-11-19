@@ -156,27 +156,54 @@ const endLabel = formatLocalTime(occurrence.end);
 </div>
 
 <script>
-  const containers = document.querySelectorAll(".workshop-desc-container");
+  // Collapse long descriptions on every screen size and only show the toggle
+  // when the text actually overflows. Descriptions in inactive tabs report a
+  // zero height, so a ResizeObserver re-checks them when the tab is revealed.
+  const setupDescCollapse = (container: Element) => {
+    if (container.hasAttribute("data-collapse-ready")) return;
 
-  containers.forEach((container) => {
+    const desc = container.querySelector(".workshop-desc") as HTMLElement | null;
     const button = container.querySelector(".toggle-desc-btn");
     const span = button?.querySelector("span");
+    if (!desc || !button || !span) return;
 
-    button?.addEventListener("click", () => {
-      const isCollapsed = container.classList.toggle("collapsed");
-      button.setAttribute("aria-expanded", (!isCollapsed).toString());
-      if (span) {
-        const isGerman = document.documentElement.lang === "de";
-        span.textContent = isCollapsed
-          ? isGerman
-            ? "Mehr anzeigen"
-            : "Show more"
-          : isGerman
-            ? "Weniger anzeigen"
-            : "Show less";
+    container.setAttribute("data-collapse-ready", "true");
+
+    const isGerman = document.documentElement.lang.startsWith("de");
+    const moreLabel = isGerman ? "Mehr anzeigen" : "Show more";
+    const lessLabel = isGerman ? "Weniger anzeigen" : "Show less";
+
+    const sync = () => {
+      // offsetParent is null while the tab is hidden — measure later.
+      if (!desc.offsetParent) return;
+      const overflows = desc.scrollHeight - desc.clientHeight > 1;
+      container.classList.toggle("has-overflow", overflows);
+      if (!overflows) {
+        container.classList.remove("collapsed");
+        button.setAttribute("aria-expanded", "true");
       }
+    };
+
+    button.addEventListener("click", () => {
+      const isCollapsed = container.classList.toggle("collapsed");
+      button.setAttribute("aria-expanded", String(!isCollapsed));
+      span.textContent = isCollapsed ? moreLabel : lessLabel;
     });
-  });
+
+    if (typeof ResizeObserver !== "undefined") {
+      new ResizeObserver(() => {
+        if (container.classList.contains("collapsed")) sync();
+      }).observe(desc);
+    }
+
+    sync();
+  };
+
+  const initDescCollapse = () => {
+    document.querySelectorAll(".workshop-desc-container").forEach(setupDescCollapse);
+  };
+
+  initDescCollapse();
 </script>
 
 <style>
@@ -315,41 +342,42 @@ const endLabel = formatLocalTime(occurrence.end);
     display: none;
   }
 
-  @media (max-width: 768px) {
-    .workshop-desc-container {
-      position: relative;
-      margin-bottom: 0.625rem;
-    }
+  .workshop-desc-container {
+    position: relative;
+  }
 
-    .workshop-desc-container.collapsed .workshop-desc {
-      max-height: 4.5em;
-      overflow: hidden;
-      position: relative;
-    }
+  .workshop-desc-container.collapsed .workshop-desc {
+    max-height: 4.5em;
+    overflow: hidden;
+    position: relative;
+  }
 
-    .workshop-desc-container.collapsed .workshop-desc::after {
-      content: "";
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: 2.5em;
-      background: linear-gradient(to bottom, transparent, var(--bg-main) 90%);
-      pointer-events: none;
-    }
+  .workshop-desc-container.collapsed .workshop-desc::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2.5em;
+    background: linear-gradient(to bottom, transparent, var(--bg-main) 90%);
+    pointer-events: none;
+  }
 
-    .toggle-desc-btn {
-      display: block;
-      background: none;
-      border: none;
-      color: var(--accent);
-      font-family: var(--font-body);
-      font-size: var(--fs-body);
-      font-weight: 600;
-      padding: 0.25rem 0;
-      margin-top: 0.25rem;
-      cursor: pointer;
-      text-decoration: underline;
-    }
+  .workshop-desc-container.has-overflow {
+    margin-bottom: 0.625rem;
+  }
+
+  .workshop-desc-container.has-overflow .toggle-desc-btn {
+    display: block;
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-family: var(--font-body);
+    font-size: var(--fs-body);
+    font-weight: 600;
+    padding: 0.25rem 0;
+    margin-top: 0.25rem;
+    cursor: pointer;
+    text-decoration: underline;
   }
 </style>

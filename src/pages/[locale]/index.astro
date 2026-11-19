@@ -7,14 +7,18 @@ export async function getStaticPaths() {
 }
 
 import "../../styles/global.css";
+import Calendar from "../../components/calendar.astro";
 import EventC from "../../components/event.astro";
 import RichText from "../../components/richtText.astro";
 import ResponsiveList from "../../components/responsiveList.astro";
 import ResponsiveListItem from "../../components/responsiveListItem.astro";
 import Layout from "../../components/layout.astro";
+import { convertLexicalToHTML } from "@payloadcms/richtext-lexical/html";
 import {
   addDays,
+  decodeAddress,
   fetchOccurrences,
+  formatLocalTime,
   payload,
   todayInBerlin,
   type OccurrenceView,
@@ -55,10 +59,29 @@ const pollBody =
 // full quarter, ordinary events sit in between.
 const from = todayInBerlin();
 
-const [socialOccurrences, eventOccurrences, classOccurrences] = await Promise.all([
+const addMonths = (date: string, months: number): string => {
+  const [year, month] = date.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1 + months, 1))
+    .toISOString()
+    .slice(0, 10);
+};
+
+// The calendar replaces the list view. Its current month plus the next eleven
+// are expanded once so month navigation is instant, and embedded as a compact
+// dataset (no descriptions).
+const calendarFrom = `${from.slice(0, 7)}-01`;
+const calendarTo = addDays(addMonths(calendarFrom, 12), -1);
+
+const [
+  socialOccurrences,
+  eventOccurrences,
+  classOccurrences,
+  calendarOccurrences,
+] = await Promise.all([
   fetchOccurrences({ from, to: addDays(from, 14), locale, type: "social" }),
   fetchOccurrences({ from, to: addDays(from, 30), locale, type: "event" }),
   fetchOccurrences({ from, to: addDays(from, 90), locale, type: "class" }),
+  fetchOccurrences({ from: calendarFrom, to: calendarTo, locale }),
 ]);
 
 const allOccurrences = [
@@ -125,9 +148,59 @@ const tagsFor = (occurrence: OccurrenceView) =>
     .filter(Boolean)
     .join(",");
 
+// Compact dataset for the calendar widget (rendered client-side).
+const calendarEntries = calendarOccurrences.map((occurrence) => ({
+  date: occurrence.date,
+  time: formatLocalTime(occurrence.start),
+  end: formatLocalTime(occurrence.end),
+  title: occurrence.event.title,
+  type: occurrence.event.type,
+  eventId: String(occurrence.eventId),
+  tags: tagsFor(occurrence),
+  cancelled: occurrence.cancelled,
+}));
+
+// Descriptions (and the other detail fields) are stored once per event so the
+// calendar payload does not repeat them for every occurrence.
+const calendarEvents: Record<
+  string,
+  {
+    title: string;
+    type: string;
+    descriptionHtml: string;
+    organizers: string;
+    location: string;
+  }
+> = {};
+
+for (const occurrence of calendarOccurrences) {
+  const key = String(occurrence.eventId);
+  if (calendarEvents[key]) continue;
+  const event = occurrence.event;
+  const address = decodeAddress(event.location?.address);
+  calendarEvents[key] = {
+    title: event.title,
+    type: event.type,
+    descriptionHtml: event.description
+      ? convertLexicalToHTML({ data: event.description as any })
+      : "",
+    organizers: event.organizers
+      .map((organizer) => organizer.name)
+      .filter(Boolean)
+      .join(" · "),
+    location: [
+      ...new Set(
+        [event.location?.name, address.location ?? address.city].filter(
+          Boolean,
+        ),
+      ),
+    ].join(" · "),
+  };
+}
+
 // Dance-style filter tags, same behaviour as the old client-side filter panel.
 const uniqueDances = new Map<string, string>();
-for (const occurrence of allOccurrences) {
+for (const occurrence of [...allOccurrences, ...calendarOccurrences]) {
   for (const style of occurrence.event.danceStyles) {
     const key = (style.slug ?? style.shortName ?? "").toLowerCase();
     if (key) uniqueDances.set(key, style.name ?? style.shortName ?? key);
@@ -209,35 +282,66 @@ const eventPanels = [
       </button>
     </div>
 
-    {
-      danceFilters.length > 0 && (
-        <button
-          id="filter-toggle"
-          class="filter-toggle"
-          aria-label={t("Filter umschalten", "Toggle filters")}>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="33"
-            height="31"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.75"
-            stroke-linecap="round"
-            stroke-linejoin="round">
-            <line x1="4" y1="21" x2="4" y2="14" />
-            <line x1="4" y1="10" x2="4" y2="3" />
-            <line x1="12" y1="21" x2="12" y2="12" />
-            <line x1="12" y1="8" x2="12" y2="3" />
-            <line x1="20" y1="21" x2="20" y2="16" />
-            <line x1="20" y1="12" x2="20" y2="3" />
-            <line x1="1" y1="14" x2="7" y2="14" />
-            <line x1="9" y1="8" x2="15" y2="8" />
-            <line x1="17" y1="16" x2="23" y2="16" />
-          </svg>
-        </button>
-      )
-    }
+    <div class="header-controls">
+      <button
+        id="calendar-toggle"
+        class="filter-toggle calendar-toggle"
+        type="button"
+        aria-pressed="false"
+        aria-controls="calendar-view"
+        aria-label={t("Kalenderansicht umschalten", "Toggle calendar view")}>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="33"
+          height="31"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.75"
+          stroke-linecap="round"
+          stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="17" rx="2" />
+          <line x1="3" y1="9" x2="21" y2="9" />
+          <line x1="8" y1="2" x2="8" y2="6" />
+          <line x1="16" y1="2" x2="16" y2="6" />
+          <line x1="8" y1="13" x2="8" y2="13" />
+          <line x1="12" y1="13" x2="12" y2="13" />
+          <line x1="16" y1="13" x2="16" y2="13" />
+          <line x1="8" y1="17" x2="8" y2="17" />
+          <line x1="12" y1="17" x2="12" y2="17" />
+        </svg>
+      </button>
+
+      {
+        danceFilters.length > 0 && (
+          <button
+            id="filter-toggle"
+            class="filter-toggle"
+            aria-label={t("Filter umschalten", "Toggle filters")}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="33"
+              height="31"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round">
+              <line x1="4" y1="21" x2="4" y2="14" />
+              <line x1="4" y1="10" x2="4" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12" y2="3" />
+              <line x1="20" y1="21" x2="20" y2="16" />
+              <line x1="20" y1="12" x2="20" y2="3" />
+              <line x1="1" y1="14" x2="7" y2="14" />
+              <line x1="9" y1="8" x2="15" y2="8" />
+              <line x1="17" y1="16" x2="23" y2="16" />
+            </svg>
+          </button>
+        )
+      }
+    </div>
   </div>
 
   {
@@ -313,6 +417,14 @@ const eventPanels = [
         </p>
       )}
     </div>
+
+    <Calendar
+      locale={locale}
+      min={calendarFrom.slice(0, 7)}
+      max={calendarTo.slice(0, 7)}
+      entries={calendarEntries}
+      events={calendarEvents}
+    />
   </section>
 
   <script>
@@ -358,6 +470,13 @@ const eventPanels = [
           btn.classList.toggle("active", btn === tab);
           btn.classList.toggle("inactive", btn !== tab);
         });
+
+        // While the calendar is open the tabs only filter the month grid.
+        const calendar = (window as any).sipCalendar;
+        if (calendar?.isOpen()) {
+          calendar.refresh();
+          return;
+        }
 
         // Deep links swap instantly; clicks fade the old list out first.
         if (!updateHash) {
@@ -408,12 +527,6 @@ const eventPanels = [
         btn.addEventListener("click", () => switchTab(btn.dataset.tab));
       });
 
-      // Deep links: #socials / #events / #classes
-      const initialTab = window.location.hash.replace("#", "");
-      if (tabButtons.some((btn) => btn.dataset.tab === initialTab)) {
-        switchTab(initialTab, false);
-      }
-
       // Filter Toggle Logic
       const filterToggle = document.getElementById("filter-toggle");
       const filterPanel = document.getElementById("filter-panel");
@@ -425,6 +538,37 @@ const eventPanels = [
       const noMatchMessages = document.querySelectorAll("[data-no-match]");
 
       let activeFilters = new Set();
+
+      // The calendar widget owns its own rendering (see components/calendar.astro);
+      // this page only tells it when the view, the tab or the filters change.
+      const calendarToggle = document.getElementById("calendar-toggle");
+
+      calendarToggle?.addEventListener("click", () => {
+        const calendar = (window as any).sipCalendar;
+        if (!calendar) return;
+        if (!calendar.isOpen() && swapTimer) {
+          clearTimeout(swapTimer);
+          swapTimer = null;
+          pendingPanel = null;
+        }
+        calendar.toggle();
+      });
+
+      document.addEventListener("sip:calendar-close", () => {
+        const activeTab = tabButtons.find((btn) =>
+          btn.classList.contains("active"),
+        );
+        const panel = tabPanels.find(
+          (el) => el.dataset.tab === activeTab?.dataset.tab,
+        );
+        if (panel) showPanel(panel as HTMLElement);
+      });
+
+      // Deep links: #socials / #events / #classes
+      const initialTab = window.location.hash.replace("#", "");
+      if (tabButtons.some((btn) => btn.dataset.tab === initialTab)) {
+        switchTab(initialTab, false);
+      }
 
       if (filterToggle && filterPanel) {
         filterToggle.addEventListener("click", () => {
@@ -485,6 +629,8 @@ const eventPanels = [
           msg.style.display =
             activeFilters.size > 0 && !visible ? "block" : "none";
         });
+
+        (window as any).sipCalendar?.refresh();
       }
 
       filterTags.forEach((tag) => {
@@ -703,6 +849,17 @@ const eventPanels = [
     }
   }
 
+  .header-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 0 0 auto;
+  }
+
+  .calendar-toggle.active {
+    color: var(--accent);
+  }
+
   /* --- Filter panel --- */
   .filter-panel {
     display: flex;
@@ -815,15 +972,24 @@ const eventPanels = [
   }
 
   @media (max-width: 767px) {
-    /* All three tabs stay on one line with the filter button, so they run a
-       step smaller than the tablet size. */
+    /* Tabs stay on one line; the icon buttons drop to their own row so the
+       filter control is never pushed off the edge. */
     .tabs-header {
-      gap: 0.75rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
     }
 
     .page-tabs {
+      flex: 1 1 100%;
       font-size: 1.25rem; /* 20 */
       column-gap: 0.125rem;
+    }
+
+    .header-controls {
+      flex: 1 1 100%;
+      justify-content: flex-end;
+      gap: 0.25rem;
     }
 
     /* Full-bleed card on phones */
@@ -856,6 +1022,16 @@ const eventPanels = [
     .disclaimer-cta-title {
       font-size: 2.25rem; /* 36 */
     }
+
+    /* Icon buttons share the second row on phones. */
+    .filter-toggle {
+      padding: 0.125rem;
+    }
+
+    .filter-toggle svg {
+      width: 1.5rem; /* 24 */
+    }
+
   }
 
   @media (min-width: 1024px) {
