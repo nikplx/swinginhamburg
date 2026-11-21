@@ -241,7 +241,58 @@ svg {
   position: sticky;
   top: 0;
   z-index: 2000;
+  /* The wave row below stays transparent, so content scrolls behind it. */
+  background-color: transparent;
+}
+
+.header-main {
   background-color: var(--bg-main);
+  /* Restores the pre-wave-edit offset above the wave (page padding). */
+  padding-bottom: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .header-main {
+    /* Page top padding + the sidebar's former top offset. */
+    padding-bottom: 8.35rem;
+  }
+}
+
+/* The wave is the header's lower edge, so it stays with the sticky header
+   instead of scrolling underneath it. Its row has no background of its own,
+   so content scrolls visibly behind the wave. On phones and tablets the wave
+   spans the full content width. */
+.header-wave-row {
+  display: flex;
+  align-items: stretch;
+}
+
+.header-wave {
+  flex: 0 0 auto;
+  width: 100%;
+  padding-top: 0;
+  line-height: 0;
+}
+
+.header-wave-filler {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  /* On desktop the wave only frames the sidebar column; the rest of the row
+     stays opaque so only the wave itself is see-through. */
+  .header-wave {
+    width: var(--sidebar-width);
+  }
+
+  .header-wave-filler {
+    display: block;
+    flex: 1 1 auto;
+    align-self: flex-start;
+    /* Straight edge continues the wave's baseline (half the wave height). */
+    height: 6.5px;
+    background-color: var(--bg-main);
+  }
 }
 
 .header-inner {
@@ -250,7 +301,7 @@ svg {
   column-gap: var(--column-gap);
   align-items: start;
   padding-top: var(--header-pad-top);
-  padding-bottom: 1rem;
+  padding-bottom: 0.25rem;
 }
 
 .wordmark {
@@ -321,6 +372,11 @@ svg {
   width: 100%;
   height: 0.8125rem;
   color: var(--rule-color);
+}
+
+/* Filled wave: the area above the curve matches the surface it cuts off. */
+.wave-cut-fill {
+  fill: var(--bg-main);
 }
 
 /* --- Navigation --- */
@@ -526,7 +582,7 @@ svg {
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    padding-bottom: 0.75rem;
+    padding-bottom: 0.25rem;
   }
 
   .wordmark {
@@ -588,8 +644,16 @@ svg {
     background-color: var(--accent);
   }
 
-  html.menu-open .site-header {
+  html.menu-open .header-main {
     background-color: var(--accent);
+  }
+
+  html.menu-open .site-header .wave {
+    color: var(--accent-contrast);
+  }
+
+  html.menu-open .wave-cut-fill {
+    fill: var(--accent);
   }
 
   html.menu-open .wordmark,
@@ -686,14 +750,19 @@ svg {
   }
 }
 
-/* Match the design's vertical rhythm: the sidebar starts lower than the
-   content column and shares the wordmark's left edge. The column is
-   framed by a wave at the top and one at the bottom of the viewport. */
+/* Match the design's vertical rhythm: the sidebar shares the wordmark's
+   left edge and is closed by a wave at the bottom of the viewport. The top
+   wave now belongs to the header. */
 @media (min-width: 1024px) {
+  /* The sidebar stays put while the content column scrolls. Its sticky top
+     matches its initial position (header + page top padding) so it does not
+     jump up by the page padding before sticking. */
   .sidebar {
-    padding-top: 5.85rem;
-    align-self: stretch;
-    min-height: calc(100dvh - 17.25rem);
+    position: sticky;
+    top: calc(var(--site-header-height, 0px) + 2.5rem);
+    padding-top: 0;
+    align-self: start;
+    min-height: calc(100dvh - var(--site-header-height, 0px) - 7.5rem);
   }
 
   .sidebar > .wave:last-of-type {

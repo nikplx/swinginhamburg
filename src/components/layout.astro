@@ -63,9 +63,17 @@ const formattedUpdate =
   <body class:list={[{ "wide-page": wide }]}>
     <div class="page-container">
       <header class="site-header">
-        <div class="shell header-inner">
-          <a href={`/${locale}`} class="wordmark">Swing<br />in Hamburg</a>
-          <Nav locale={locale} />
+        <div class="header-main">
+          <div class="shell header-inner">
+            <a href={`/${locale}`} class="wordmark">Swing<br />in Hamburg</a>
+            <Nav locale={locale} />
+          </div>
+        </div>
+        <div class="shell header-wave-row">
+          <div class="header-wave">
+            <Wave filled />
+          </div>
+          <div class="header-wave-filler" aria-hidden="true"></div>
         </div>
       </header>
 
@@ -73,7 +81,6 @@ const formattedUpdate =
         {
           hasSidebar && (
             <aside class="sidebar">
-              <Wave />
               <slot name="sidebar" />
               <Wave />
             </aside>
@@ -84,5 +91,22 @@ const formattedUpdate =
         </main>
       </div>
     </div>
+
+    <script>
+      // Expose the sticky header height so the desktop sidebar can stick
+      // directly below it.
+      const header = document.querySelector<HTMLElement>(".site-header");
+      if (header) {
+        const syncHeaderHeight = () => {
+          document.documentElement.style.setProperty(
+            "--site-header-height",
+            `${header.getBoundingClientRect().height}px`,
+          );
+        };
+        syncHeaderHeight();
+        new ResizeObserver(syncHeaderHeight).observe(header);
+        window.addEventListener("resize", syncHeaderHeight);
+      }
+    </script>
   </body>
 </html>

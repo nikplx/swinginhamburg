@@ -208,10 +208,57 @@ for (const occurrence of [...allOccurrences, ...calendarOccurrences]) {
 }
 const danceFilters = [...uniqueDances.entries()].map(([slug, name]) => ({ slug, name }));
 
+// Socials and events share the classes layout: one collapsible per date,
+// with every occurrence of that day underneath. Dates are used as the
+// collapsible header instead of weekdays because these are one-off listings.
+const dateFormat = new Intl.DateTimeFormat(locale === "en" ? "en-GB" : "de-DE", {
+  timeZone: "Europe/Berlin",
+  weekday: "long",
+  day: "2-digit",
+  month: "long",
+});
+const dateLabel = (iso: string) => dateFormat.format(new Date(iso));
+
+const groupByDate = (items: OccurrenceView[]) => {
+  const groups = new Map<string, OccurrenceView[]>();
+  for (const item of items) {
+    const bucket = groups.get(item.date);
+    if (bucket) bucket.push(item);
+    else groups.set(item.date, [item]);
+  }
+  return [...groups.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, occurrences]) => ({
+      date,
+      label: dateLabel(`${date}T12:00:00Z`),
+      occurrences: occurrences.sort((a, b) => a.start.localeCompare(b.start)),
+      isToday: false,
+    }));
+};
+
+// The today group is always present, even without events, so visitors see
+// immediately whether anything is happening today.
+const markToday = (groups: ReturnType<typeof groupByDate>) => {
+  const hasToday = groups.some((group) => group.date === from);
+  const result = groups.map((group) => ({
+    ...group,
+    isToday: group.date === from,
+  }));
+  if (!hasToday) {
+    result.unshift({
+      date: from,
+      label: dateLabel(`${from}T12:00:00Z`),
+      occurrences: [],
+      isToday: true,
+    });
+  }
+  return result;
+};
+
 const eventPanels = [
   {
     key: "socials",
-    items: socialOccurrences,
+    dateGroups: markToday(groupByDate(socialOccurrences)),
     empty: t(
       "Keine anstehenden Socials in den nächsten 14 Tagen.",
       "No upcoming socials in the next 14 days.",
@@ -220,10 +267,14 @@ const eventPanels = [
       "Keine Socials entsprechen den ausgewählten Filtern.",
       "No socials match the selected filters.",
     ),
+    todayEmpty: t(
+      "Heute gibt es keine Veranstaltung.",
+      "There is no event today.",
+    ),
   },
   {
     key: "events",
-    items: eventOccurrences,
+    dateGroups: markToday(groupByDate(eventOccurrences)),
     empty: t(
       "Keine anstehenden Events in den nächsten 30 Tagen.",
       "No upcoming events in the next 30 days.",
@@ -231,6 +282,10 @@ const eventPanels = [
     noMatch: t(
       "Keine Events entsprechen den ausgewählten Filtern.",
       "No events match the selected filters.",
+    ),
+    todayEmpty: t(
+      "Heute gibt es keine Veranstaltung.",
+      "There is no event today.",
     ),
   },
 ];
@@ -269,7 +324,7 @@ const eventPanels = [
 
   <div class="tabs-header">
     <div class="page-tabs">
-      <button id="tab-socials" class="tab inactive" data-tab="socials">
+      <button id="tab-socials" class="tab active" data-tab="socials">
         SOCIALS
       </button>
       <span class="tab-separator">/</span>
@@ -277,7 +332,7 @@ const eventPanels = [
         EVENTS
       </button>
       <span class="tab-separator">/</span>
-      <button id="tab-classes" class="tab active" data-tab="classes">
+      <button id="tab-classes" class="tab inactive" data-tab="classes">
         {t("KURSE", "CLASSES")}
       </button>
     </div>
@@ -359,28 +414,52 @@ const eventPanels = [
   <section>
     {
       eventPanels.map((panel) => (
-        <div id={`content-${panel.key}`} class="tab-content" data-tab={panel.key}>
-          <div class="centered-list">
-            {panel.items.length > 0 ? (
-              panel.items.map((occurrence) => (
-                <div class="filter-item-wrapper workshop-item" data-tags={tagsFor(occurrence)}>
-                  <EventC occurrence={occurrence} />
+        <div
+          id={`content-${panel.key}`}
+          class:list={[
+            "tab-content",
+            { "active-content": panel.key === "socials" },
+          ]}
+          data-tab={panel.key}>
+          {panel.dateGroups.length > 0 ? (
+            <ResponsiveList maxColumns={1} exclusiveOpen={false}>
+              {panel.dateGroups.map((group) => (
+                <div class="day-group">
+                  <ResponsiveListItem
+                    title={group.label}
+                    id={`${panel.key}-${group.date}`}
+                    aside={group.isToday ? t("← HEUTE", "← TODAY") : undefined}
+                    isOpen>
+                    {group.occurrences.length > 0 ? (
+                      <div class="centered-list">
+                        {group.occurrences.map((occurrence) => (
+                          <div
+                            class="filter-item-wrapper workshop-item"
+                            data-tags={tagsFor(occurrence)}>
+                            <EventC occurrence={occurrence} hideDate />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p class="no-event-today">{panel.todayEmpty}</p>
+                    )}
+                  </ResponsiveListItem>
                 </div>
-              ))
-            ) : (
-              <p>{panel.empty}</p>
-            )}
-            {panel.items.length > 0 && (
-              <p data-no-match style="display: none; color: var(--text-muted); margin-top: 20px;">
-                {panel.noMatch}
-              </p>
-            )}
-          </div>
+              ))}
+            </ResponsiveList>
+          ) : (
+            <p>{panel.empty}</p>
+          )}
+          {panel.dateGroups.length > 0 && (
+            <p data-no-match style="display: none; color: var(--text-muted); margin-top: 20px;">
+              {panel.noMatch}
+            </p>
+          )}
         </div>
       ))
     }
 
-    <div id="content-classes" class="tab-content active-content" data-tab="classes">
+    <div id="content-classes" class="tab-content" data-tab="classes">
       {classWeekdays.length > 0 ? (
         <ResponsiveList maxColumns={1} exclusiveOpen={false}>
           {classWeekdays.map((weekday, index) => {
@@ -594,7 +673,7 @@ const eventPanels = [
 
         // Handle empty day blocks and auto-open accordions
         dayGroups.forEach((group) => {
-          const wrappers = Array.from(group.querySelectorAll(".class-item"));
+          const wrappers = Array.from(group.querySelectorAll(".filter-item-wrapper"));
           const accordionItem = group.querySelector(".responsive-item");
           const accordionHeader = group.querySelector(
             ".responsive-item-header",
@@ -911,6 +990,14 @@ const eventPanels = [
   .tab-content.active-content {
     display: block;
     opacity: 1;
+  }
+
+  .no-event-today {
+    margin: 0;
+    padding: 0.75rem 0 1rem;
+    font-size: var(--fs-body);
+    color: var(--text-muted);
+    text-align: left;
   }
 
   @media (max-width: 1023px) {
