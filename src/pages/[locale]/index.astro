@@ -40,7 +40,7 @@ const home = buildHomepage(occurrences, {
 <Layout locale={locale}>
   <Fragment slot="sidebar">
     <div class="greeter">
-      <RichText content={index?.intro} />
+      <RichText html={index?.introHtml} />
     </div>
     <SurveyBox locale={locale} content={index?.donationBox} />
   </Fragment>

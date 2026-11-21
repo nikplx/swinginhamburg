@@ -8,8 +8,7 @@ import { defineConfig } from '@playwright/test';
  *   CHROME_EXE=/usr/bin/chromium npm run test:e2e   # use a system browser
  */
 export default defineConfig({
-  // tests/e2e needs a running site; tests/unit runs in Node only.
-  testDir: './tests',
+  testDir: './tests/e2e',
   fullyParallel: true,
   reporter: 'list',
   use: {

@@ -11,13 +11,11 @@
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check",
-    "test:e2e": "playwright test tests/e2e",
-    "test:unit": "playwright test tests/unit"
+    "test:e2e": "playwright test tests/e2e"
   },
   "dependencies": {
     "@astrojs/node": "^11.1.12",
-    "@payloadcms/richtext-lexical": "3.85.0",
-    "@payloadcms/sdk": "3.85.0",
+    "@payloadcms/sdk": "3.94.1",
     "astro": "^7.4.11",
     "leaflet": "^1.9.4"
   },

@@ -1,11 +1,14 @@
 ---
-import { richTextToHtml } from "../lib/richText";
-
+/**
+ * Renders a rich-text field's `<name>Html` sibling. The CMS converts Lexical
+ * to HTML and sanitizes it (cms/src/fields/richTextHtml.ts), so it is
+ * inserted as is.
+ */
 interface Props {
-  content?: unknown;
+  html?: string | null;
 }
 
-const { content } = Astro.props;
+const { html } = Astro.props;
 ---
 
-<Fragment set:html={richTextToHtml(content)} />
+<Fragment set:html={html ?? ""} />

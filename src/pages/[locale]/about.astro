@@ -17,7 +17,7 @@ const cnt = await payload.findGlobal({
     {locale === "en" ? "About" : "Über uns"}
   </h1>
   <div class="page-content" data-sidebar-anchor>
-    <RichText content={cnt.content} />
+    <RichText html={cnt.contentHtml} />
   </div>
 </Layout>
 

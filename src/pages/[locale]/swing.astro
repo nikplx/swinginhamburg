@@ -31,7 +31,7 @@ const sortedDances = dances.sort((a, b) => {
 <Layout locale={locale}>
   <Fragment slot="sidebar">
     <div class="page-content sidebar-copy">
-      <RichText content={cnt.whatIsSwing} />
+      <RichText html={cnt.whatIsSwingHtml} />
     </div>
   </Fragment>
 
@@ -51,7 +51,7 @@ const sortedDances = dances.sort((a, b) => {
               isOpen={false}
               indicator="plus">
               <div class="dance-body">
-                <RichText content={dance.description} />
+                <RichText html={dance.descriptionHtml} />
               </div>
             </ResponsiveListItem>
           );
@@ -61,7 +61,7 @@ const sortedDances = dances.sort((a, b) => {
   }
 
   <div class="page-content faq">
-    <RichText content={cnt.faq} />
+    <RichText html={cnt.faqHtml} />
   </div>
 </Layout>
 

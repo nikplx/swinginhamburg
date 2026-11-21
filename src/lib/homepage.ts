@@ -16,7 +16,6 @@ import {
   type OccurrenceView,
   type Weekday,
 } from './occurrences';
-import { richTextToHtml } from './richText';
 import { TAB_TYPES, TABS, type Tab } from './tabs';
 import { venueLine } from './location';
 
@@ -188,7 +187,7 @@ function calendarData(occurrences: OccurrenceView[], min: string, max: string): 
     events[key] = {
       title: event.title,
       type: event.type,
-      descriptionHtml: richTextToHtml(event.description),
+      descriptionHtml: event.descriptionHtml,
       organizers: event.organizers
         .map((organizer) => organizer.name)
         .filter(Boolean)

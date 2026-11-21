@@ -128,13 +128,7 @@ const time = timeRange(occurrence);
 
   <div class="workshop-desc-container collapsed">
     <div class="workshop-desc">
-      {
-        typeof event.description === "string" ? (
-          <p>{event.description as string}</p>
-        ) : (
-          <RichText content={event.description} />
-        )
-      }
+      <RichText html={event.descriptionHtml} />
     </div>
     <button class="toggle-desc-btn" aria-expanded="false">
       <span>{locale === "en" ? "Show more" : "Mehr anzeigen"}</span>

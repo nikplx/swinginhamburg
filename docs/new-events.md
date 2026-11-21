@@ -148,7 +148,7 @@ frontend imports them directly).
       "title": "Wednesday Social",
       "type": "social",
       "level": null,
-      "description": { "root": { "...": "Lexical JSON" } },
+      "descriptionHtml": "<div class=\"payload-richtext\"><p>…</p></div>",
       "organizers": [{ "id": 3, "name": "Swing in Hamburg", "slug": "swing-in-hamburg" }],
       "danceStyles": [{ "id": 1, "name": "Lindy Hop", "shortName": "Lindy", "slug": "lindy-hop" }],
       "location": {
@@ -200,14 +200,11 @@ caches responses for 60 s, serves stale data if the CMS fails and otherwise retu
 
 ### Rendering rich text
 
-`event.description` and `organization.description` are Lexical JSON. With Astro/Payload:
-
-```ts
-import { convertLexicalToHTML } from '@payloadcms/richtext-lexical/html';
-const html = convertLexicalToHTML({ data: event.description });
-```
-
-or with the React `RichText` component from `@payloadcms/richtext-lexical/react`.
+Every rich-text field has a read-only `<name>Html` sibling (e.g. `descriptionHtml`, `introHtml`,
+`faqHtml`) rendered by the CMS on read, in the requested locale, and sanitized (text escaped,
+`javascript:`/`data:` links replaced by `#`). Insert it as is; the frontend does not depend on
+Lexical. The occurrences endpoint returns only `descriptionHtml`, not the Lexical state.
+Implementation: `cms/src/fields/richTextHtml.ts` (virtual field, no database column).
 
 ### Direct REST access (filters, detail pages)
 
@@ -302,7 +299,7 @@ neither side reads the other's old format.
 | --- | --- |
 | Data access, date/dance helpers | `src/lib/occurrences.ts` |
 | Homepage view model (panels, calendar data, filters) | `src/lib/homepage.ts`, `src/lib/tabs.ts` |
-| Rich text (memoized Lexical → HTML) | `src/lib/richText.ts`, `src/components/richtText.astro` |
+| Rich text (CMS-rendered `*Html` fields) | `src/components/richtText.astro` |
 | Homepage UI | `src/pages/[locale]/index.astro`, `src/components/home/{HomeToolbar,ListingPanels,SurveyBox}.astro`, `src/components/calendar.astro` |
 | Client state shared by those components | `src/scripts/homeState.ts` |
 | Event card | `src/components/event.astro` |

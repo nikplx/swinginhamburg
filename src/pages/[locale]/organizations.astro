@@ -29,7 +29,7 @@ const { docs: organizations } = await payload.find({
 <Layout locale={locale}>
   <Fragment slot="sidebar">
     <div class="page-content sidebar-copy">
-      <RichText content={cnt.howToLearn} />
+      <RichText html={cnt.howToLearnHtml} />
     </div>
   </Fragment>
 
@@ -47,9 +47,7 @@ const { docs: organizations } = await payload.find({
             isOpen={false}
             indicator="plus">
             <div class="organization-body">
-              {organization.description && (
-                <RichText content={organization.description} />
-              )}
+              <RichText html={organization.descriptionHtml} />
               {organization.links && organization.links.length > 0 && (
                 <p class="organization-link-row">
                   {organization.links.map((link) => (
