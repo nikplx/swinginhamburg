@@ -1,19 +1,11 @@
 ---
-import type { SerializedEditorState, SerializedLexicalNode } from 'lexical';
-import { convertLexicalToHTML } from '@payloadcms/richtext-lexical/html'
+import { richTextToHtml } from "../lib/richText";
 
-export const renderRichText = (
-  content?: SerializedEditorState<SerializedLexicalNode> | null | any
-): string => {
-  // Catch the empty state at runtime and return an empty string
-  if (!content) return ''; 
+interface Props {
+  content?: unknown;
+}
 
-  // TypeScript now knows 'content' is safely defined here
-  return convertLexicalToHTML({ data: content });
-};
-
-const {content} = Astro.props;
+const { content } = Astro.props;
 ---
 
-<Fragment set:html={renderRichText(content)} />
-
+<Fragment set:html={richTextToHtml(content)} />

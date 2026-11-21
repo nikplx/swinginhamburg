@@ -1,7 +1,6 @@
 ---
 import "../../styles/global.css";
 import type { Locale } from "../../i18n";
-import Nav from "../../components/nav.astro";
 import RichText from "../../components/richtText.astro";
 import ResponsiveList from "../../components/responsiveList.astro";
 import ResponsiveListItem from "../../components/responsiveListItem.astro";
@@ -49,7 +48,7 @@ const sortedDances = dances.sort((a, b) => {
           return (
             <ResponsiveListItem
               title={dance.name}
-              id={dance.shortName?.toLowerCase()}
+              id={dance.slug.toLowerCase() /* = danceKey(); event tags link here */}
               isOpen={false}
               indicator="plus">
               <div class="dance-body">

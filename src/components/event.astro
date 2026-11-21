@@ -1,12 +1,8 @@
 ---
 import RichText from "./richtText.astro";
-import type { OccurrenceView } from "../utils";
 import type { Locale } from "../i18n";
-import {
-  decodeAddress,
-  formatLocalDate,
-  formatLocalTime,
-} from "../utils";
+import { danceKey, timeRange, type OccurrenceView } from "../lib/occurrences";
+import { decodeAddress } from "../utils";
 
 interface Props {
   occurrence: OccurrenceView;
@@ -22,15 +18,16 @@ const address = decodeAddress(venue?.address);
 
 const organizers = event.organizers.filter((organizer) => organizer.name);
 
+// Tags link to the dance's section on the swing page, which uses the same key.
 const danceTags = event.danceStyles.length
   ? event.danceStyles.map((style) => ({
       name: style.shortName ?? style.name ?? "",
-      slug: style.slug ?? style.shortName ?? "style",
+      href: `/${locale}/swing#${danceKey(style)}`,
     }))
   : [
       {
         name: locale === "en" ? "Style not specified" : "Stil nicht angegeben",
-        slug: "none",
+        href: `/${locale}/swing`,
       },
     ];
 
@@ -45,13 +42,15 @@ function levelLabel(level: string, lang: string): string {
   return labels[level]?.[lang] ?? level;
 }
 
-const dayLabel = formatLocalDate(occurrence.start, locale, {
+// Dates stay in the German convention on both language versions. `date` is
+// the local calendar day, so format it at noon UTC to avoid zone shifts.
+const dayLabel = new Intl.DateTimeFormat("de-DE", {
+  timeZone: "UTC",
   weekday: "short",
   day: "2-digit",
   month: "2-digit",
-});
-const timeLabel = formatLocalTime(occurrence.start);
-const endLabel = formatLocalTime(occurrence.end);
+}).format(new Date(`${occurrence.date}T12:00:00Z`));
+const time = timeRange(occurrence);
 ---
 
 <div class:list={["workshop-item", { "is-cancelled": occurrence.cancelled }]}>
@@ -68,10 +67,10 @@ const endLabel = formatLocalTime(occurrence.end);
 
   {
     hideDate ? (
-      <div class="workshop-time">{timeLabel}–{endLabel}</div>
+      time && <div class="workshop-time">{time}</div>
     ) : (
       <div class="workshop-date">
-        {dayLabel} · {timeLabel}–{endLabel}
+        {time ? `${dayLabel} · ${time}` : dayLabel}
       </div>
     )
   }
@@ -147,16 +146,11 @@ const endLabel = formatLocalTime(occurrence.end);
   <div class="listing-tags-row">
     <div class="workshop-tags-group">
       {
-        danceTags.map((tag) => {
-          const href = `/${locale}/swing#${String(tag.slug)
-            .replace(/\s+/g, "-")
-            .toLowerCase()}`;
-          return (
-            <a href={href} class="listing-tag">
-              {tag.name}
-            </a>
-          );
-        })
+        danceTags.map((tag) => (
+          <a href={tag.href} class="listing-tag">
+            {tag.name}
+          </a>
+        ))
       }
     </div>
     {

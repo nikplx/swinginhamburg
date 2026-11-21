@@ -1,14 +1,16 @@
 ---
 import "../styles/global.css";
+import type { Locale } from "../i18n";
 import {
   addDays,
-  decodeAddress,
+  berlinWeekday,
+  danceFilters as collectDanceFilters,
+  danceKeys,
   fetchOccurrences,
-  formatLocalDate,
-  toJsonScript,
   todayInBerlin,
-} from "../utils";
-import type { Locale } from "../i18n";
+  type Weekday,
+} from "../lib/occurrences";
+import { decodeAddress, toJsonScript } from "../utils";
 
 interface Props {
   locale: Locale;
@@ -16,18 +18,18 @@ interface Props {
 const { locale } = Astro.props;
 
 const from = todayInBerlin();
-const occurrences = await fetchOccurrences({ from, to: addDays(from, 90), locale });
-
-const danceFilterMap = new Map<string, string>();
+const { occurrences, unavailable } = await fetchOccurrences({
+  from,
+  to: addDays(from, 90),
+  locale,
+});
 
 interface MapEvent {
   eventId: string;
   title: string;
   type: string;
   organizers: string;
-  weekday: string;
-  rawWeekday: string;
-  dances: string;
+  weekday: Weekday;
   danceTags: string[];
 }
 
@@ -38,82 +40,75 @@ interface MapLocation {
   events: MapEvent[];
 }
 
-// One marker per venue, listing every event happening there.
-const locationEntries = new Map<
-  string,
-  {
-    name: string | null;
-    coordinates: [number, number];
-    address: ReturnType<typeof decodeAddress>;
-    events: Map<string, MapEvent>;
-  }
->();
+// One marker per venue, listing every event happening there once per weekday.
+const venues = new Map<string, MapLocation & { seen: Set<string> }>();
+const mappedOccurrences = occurrences.filter(
+  ({ event }) => event.location?.lat != null && event.location?.lng != null,
+);
 
-for (const occurrence of occurrences) {
-  const location = occurrence.event.location;
-  if (location?.lat == null || location?.lng == null) continue;
+for (const occurrence of mappedOccurrences) {
+  const { event } = occurrence;
+  const { lat, lng, name, address } = event.location!;
+  const weekday = berlinWeekday(occurrence.start);
 
-  for (const style of occurrence.event.danceStyles) {
-    const key = style.slug ?? style.shortName;
-    if (key) danceFilterMap.set(key.toLowerCase(), style.name ?? style.shortName ?? key);
-  }
-
-  const weekdayRaw = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Europe/Berlin",
-    weekday: "long",
-  }).format(new Date(occurrence.start));
-
-  const locationKey = `${location.lat}|${location.lng}`;
-  let entry = locationEntries.get(locationKey);
-  if (!entry) {
-    entry = {
-      name: location.name ?? null,
-      coordinates: [location.lat, location.lng],
-      address: decodeAddress(location.address),
-      events: new Map(),
+  const venueKey = `${lat}|${lng}`;
+  let venue = venues.get(venueKey);
+  if (!venue) {
+    venue = {
+      name: name ?? null,
+      coordinates: [lat!, lng!],
+      address: decodeAddress(address),
+      events: [],
+      seen: new Set(),
     };
-    locationEntries.set(locationKey, entry);
+    venues.set(venueKey, venue);
   }
 
-  // Each event appears once per weekday at a venue.
-  const eventKey = `${occurrence.eventId}|${weekdayRaw}`;
-  if (entry.events.has(eventKey)) continue;
+  const eventKey = `${occurrence.eventId}|${weekday}`;
+  if (venue.seen.has(eventKey)) continue;
+  venue.seen.add(eventKey);
 
-  entry.events.set(eventKey, {
+  venue.events.push({
     eventId: String(occurrence.eventId),
-    title: occurrence.event.title,
-    type: occurrence.event.type,
-    organizers: occurrence.event.organizers
+    title: event.title,
+    type: event.type,
+    organizers: event.organizers
       .map((organizer) => organizer.name)
       .filter(Boolean)
       .join(", "),
-    // English weekday name keeps the existing data-day filter buttons working.
-    rawWeekday: weekdayRaw,
-    weekday: formatLocalDate(occurrence.start, locale, { weekday: "long" }),
-    dances: occurrence.event.danceStyles
-      .map((style) => style.name ?? style.shortName)
-      .filter(Boolean)
-      .join(", "),
-    danceTags: occurrence.event.danceStyles
-      .map((style) => (style.slug ?? style.shortName ?? "").toLowerCase())
-      .filter(Boolean),
+    weekday,
+    danceTags: danceKeys(event),
   });
 }
 
-const locations: MapLocation[] = [...locationEntries.values()].map(
-  (entry) => ({
-    ...entry,
-    events: [...entry.events.values()],
-  }),
-);
+const locations: MapLocation[] = [...venues.values()].map(({ seen, ...venue }) => venue);
+const danceFilters = collectDanceFilters(mappedOccurrences);
 
-const danceFilters = [...danceFilterMap.entries()].map(([slug, name]) => ({ slug, name }));
+const dayButtons: { key: Weekday; de: string; en: string }[] = [
+  { key: "monday", de: "Mo", en: "Mon" },
+  { key: "tuesday", de: "Di", en: "Tue" },
+  { key: "wednesday", de: "Mi", en: "Wed" },
+  { key: "thursday", de: "Do", en: "Thu" },
+  { key: "friday", de: "Fr", en: "Fri" },
+  { key: "saturday", de: "Sa", en: "Sat" },
+  { key: "sunday", de: "So", en: "Sun" },
+];
 ---
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
 <div class="map-wrapper" data-locale={locale}>
   <div id="map"></div>
+
+  {
+    unavailable && (
+      <p class="map-notice" role="status">
+        {locale === "de"
+          ? "Die Termine konnten gerade nicht geladen werden."
+          : "Events could not be loaded right now."}
+      </p>
+    )
+  }
 
   <button class="mobile-filter-toggle" aria-expanded="false">
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="filter-icon">
@@ -158,13 +153,9 @@ const danceFilters = [...danceFilterMap.entries()].map(([slug, name]) => ({ slug
         <button class="filter-btn active" data-day="all">
           {locale === "de" ? "Alle" : "All"}
         </button>
-        <button class="filter-btn" data-day="Monday">{locale === "de" ? "Mo" : "Mon"}</button>
-        <button class="filter-btn" data-day="Tuesday">{locale === "de" ? "Di" : "Tue"}</button>
-        <button class="filter-btn" data-day="Wednesday">{locale === "de" ? "Mi" : "Wed"}</button>
-        <button class="filter-btn" data-day="Thursday">{locale === "de" ? "Do" : "Thu"}</button>
-        <button class="filter-btn" data-day="Friday">{locale === "de" ? "Fr" : "Fri"}</button>
-        <button class="filter-btn" data-day="Saturday">{locale === "de" ? "Sa" : "Sat"}</button>
-        <button class="filter-btn" data-day="Sunday">{locale === "de" ? "So" : "Sun"}</button>
+        {dayButtons.map((day) => (
+          <button class="filter-btn" data-day={day.key}>{day[locale]}</button>
+        ))}
       </div>
     </div>
   </div>
@@ -209,7 +200,7 @@ const danceFilters = [...danceFilterMap.entries()].map(([slug, name]) => ({ slug
     function matchingEvents(location) {
       return location.events.filter((event) => {
         const dayMatch =
-          currentDayFilter === "all" || event.rawWeekday === currentDayFilter;
+          currentDayFilter === "all" || event.weekday === currentDayFilter;
         const danceMatch =
           activeDanceFilters.size === 0 ||
           event.danceTags.some((tag) => activeDanceFilters.has(tag));
@@ -399,6 +390,21 @@ const danceFilters = [...danceFilterMap.entries()].map(([slug, name]) => ({ slug
 
   .filter-section {
     margin-bottom: 1.5rem;
+  }
+
+  .map-notice {
+    position: absolute;
+    top: 1.25rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    margin: 0;
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text-main);
+    box-shadow: 0 4px 16px rgba(40, 70, 110, 0.12);
+    font-size: var(--fs-body);
   }
 
   .filter-section:last-child {

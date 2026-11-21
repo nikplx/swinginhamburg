@@ -1,9 +1,7 @@
 ---
-// src/layouts/Layout.astro
 import "../styles/global.css";
 import Nav from "../components/nav.astro";
 import Wave from "../components/wave.astro";
-import { payload } from "../utils";
 import type { Locale } from "../i18n";
 
 interface Props {
@@ -23,29 +21,6 @@ const {
 } = Astro.props;
 const hasSidebar = Astro.slots.has("sidebar");
 const showSidebar = hasSidebar || sidebarWave;
-
-// "Letztes Update" footer from the design frames.
-const meta = await payload.findGlobal({
-  slug: "index",
-  depth: 0,
-  select: { updatedAt: true },
-});
-const updatedDate = meta?.updatedAt ? new Date(meta.updatedAt) : null;
-const dateLabel = updatedDate
-  ? new Intl.DateTimeFormat(locale === "de" ? "de-DE" : "en-GB", {
-      day: "numeric",
-      month: "long",
-    }).format(updatedDate)
-  : null;
-const timeLabel = updatedDate
-  ? new Intl.DateTimeFormat("de-DE", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).format(updatedDate)
-  : null;
-const formattedUpdate =
-  dateLabel && timeLabel ? `${dateLabel}, ${timeLabel}` : null;
 ---
 
 <html lang={locale}>

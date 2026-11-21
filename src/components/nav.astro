@@ -106,8 +106,8 @@ const navItems = [
         // Only run the check if the menu is actually open
         if (navLinks.classList.contains("open")) {
           // Check if the click happened inside the menu or on the toggle button
-          const isClickInsideMenu = navLinks.contains(event.target);
-          const isClickOnToggle = menuToggle.contains(event.target);
+          const isClickInsideMenu = navLinks.contains(event.target as Node | null);
+          const isClickOnToggle = menuToggle.contains(event.target as Node | null);
 
           // If clicked completely outside both, collapse the menu
           if (!isClickInsideMenu && !isClickOnToggle) {

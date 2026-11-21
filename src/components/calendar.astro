@@ -3,8 +3,10 @@ import { toJsonScript } from "../utils";
 
 export interface CalendarEntry {
   date: string;
+  /** Start time ("20:00"), empty for events without a time. */
   time: string;
-  end: string;
+  /** "20:00–22:00" / "20:00", empty for events without a time. */
+  timeRange: string;
   title: string;
   type: string;
   eventId: string;
@@ -128,29 +130,15 @@ const data = toJsonScript({ min, max, entries, events });
 </section>
 
 <script>
+  import type { CalendarEntry, CalendarEventDetail } from "./calendar.astro";
+
   const calendarView = document.getElementById("calendar-view") as
     | HTMLElement
     | null;
 
   if (calendarView) {
-    interface Entry {
-      date: string;
-      time: string;
-      end: string;
-      title: string;
-      type: string;
-      eventId: string;
-      tags: string;
-      cancelled: boolean;
-    }
-
-    interface EventDetail {
-      title: string;
-      type: string;
-      descriptionHtml: string;
-      organizers: string;
-      location: string;
-    }
+    type Entry = CalendarEntry;
+    type EventDetail = CalendarEventDetail;
 
     const dataEl = document.getElementById("calendar-data");
     let data: {
@@ -321,9 +309,13 @@ const data = toJsonScript({ min, max, entries, events });
       }
       if (modalMeta) {
         const date = new Date(`${entry.date}T00:00:00Z`);
-        modalMeta.textContent = `${modalDateFormat.format(date)} · ${entry.time}–${entry.end}${
-          detail?.organizers ? ` · ${detail.organizers}` : ""
-        }`;
+        modalMeta.textContent = [
+          modalDateFormat.format(date),
+          entry.timeRange,
+          detail?.organizers,
+        ]
+          .filter(Boolean)
+          .join(" · ");
       }
       if (modalLocation) {
         if (detail?.location) {
@@ -414,17 +406,19 @@ const data = toJsonScript({ min, max, entries, events });
           pill.type = "button";
           pill.className = "calendar-pill";
           if (entry.cancelled) pill.classList.add("is-cancelled");
-          pill.title = `${entry.time}–${entry.end} ${entry.title}`;
+          pill.title = [entry.timeRange, entry.title].filter(Boolean).join(" ");
 
-          const time = document.createElement("span");
-          time.className = "calendar-pill__time";
-          time.textContent = entry.time;
+          if (entry.time) {
+            const time = document.createElement("span");
+            time.className = "calendar-pill__time";
+            time.textContent = entry.time;
+            pill.append(time);
+          }
 
           const title = document.createElement("span");
           title.className = "calendar-pill__title";
           title.textContent = entry.title;
-
-          pill.append(time, title);
+          pill.append(title);
           pill.addEventListener("click", () => openModal(entry));
           cell.append(pill);
         }

@@ -1,30 +1,51 @@
 ---
 import "../../styles/global.css";
 import type { Locale } from "../../i18n";
-import Calendar from "../../components/calendar.astro";
+import Calendar, {
+  type CalendarEntry,
+  type CalendarEventDetail,
+} from "../../components/calendar.astro";
 import EventC from "../../components/event.astro";
 import RichText from "../../components/richtText.astro";
 import ResponsiveList from "../../components/responsiveList.astro";
 import ResponsiveListItem from "../../components/responsiveListItem.astro";
 import Layout from "../../components/layout.astro";
-import { convertLexicalToHTML } from "@payloadcms/richtext-lexical/html";
 import {
   addDays,
-  decodeAddress,
+  addMonths,
+  berlinWeekday,
+  danceFilters as collectDanceFilters,
+  danceKeys,
   fetchOccurrences,
-  formatLocalTime,
-  payload,
+  formatTime,
+  timeRange,
   todayInBerlin,
+  WEEKDAYS,
+  type EventType,
   type OccurrenceView,
-} from "../../utils";
+  type Weekday,
+} from "../../lib/occurrences";
+import { richTextToHtml } from "../../lib/richText";
+import { decodeAddress, payload } from "../../utils";
 
 const locale = Astro.params.locale as Locale; // validated in src/middleware.ts
 const t = (de: string, en: string) => (locale === "en" ? en : de);
 
-const index = await payload.findGlobal({
-  slug: "index",
-  locale: locale,
-});
+const from = todayInBerlin();
+
+// The calendar shows the current month plus the next eleven. That range also
+// covers every list horizon below, so a single request feeds the whole page.
+const calendarFrom = `${from.slice(0, 7)}-01`;
+const calendarTo = addDays(addMonths(calendarFrom, 12), -1);
+
+const [index, { occurrences, unavailable }] = await Promise.all([
+  // A CMS outage should degrade the page, not fail it.
+  payload.findGlobal({ slug: "index", locale }).catch((error) => {
+    console.error("[index] global failed:", error);
+    return null;
+  }),
+  fetchOccurrences({ from: calendarFrom, to: calendarTo, locale }),
+]);
 
 // The survey teaser in the design is split into a display headline
 // ("Wir würden euch gerne kennenlernen!") and the body copy that follows.
@@ -37,7 +58,7 @@ const richTextToPlain = (node: any): string => {
   return (node.children ?? []).map(richTextToPlain).join("");
 };
 
-const pollCopy = richTextToPlain(index.donationBox?.root)
+const pollCopy = richTextToPlain(index?.donationBox?.root)
   .replace(/\s+/g, " ")
   .trim();
 const pollSentenceEnd = pollCopy.search(/[.!?](\s|$)/);
@@ -48,50 +69,18 @@ const pollBody =
 
 // Each tab has its own horizon: socials are short-term, classes run for a
 // full quarter, ordinary events sit in between.
-const from = todayInBerlin();
-
-const addMonths = (date: string, months: number): string => {
-  const [year, month] = date.split("-").map(Number);
-  return new Date(Date.UTC(year, month - 1 + months, 1))
-    .toISOString()
-    .slice(0, 10);
+const HORIZON_DAYS: Record<EventType, number> = { social: 14, event: 30, class: 90 };
+const upcoming = (type: EventType) => {
+  const until = addDays(from, HORIZON_DAYS[type]);
+  return occurrences.filter(
+    (o) => o.event.type === type && o.date >= from && o.date <= until,
+  );
 };
+const socialOccurrences = upcoming("social");
+const eventOccurrences = upcoming("event");
+const classOccurrences = upcoming("class");
 
-// The calendar replaces the list view. Its current month plus the next eleven
-// are expanded once so month navigation is instant, and embedded as a compact
-// dataset (no descriptions).
-const calendarFrom = `${from.slice(0, 7)}-01`;
-const calendarTo = addDays(addMonths(calendarFrom, 12), -1);
-
-const [
-  socialOccurrences,
-  eventOccurrences,
-  classOccurrences,
-  calendarOccurrences,
-] = await Promise.all([
-  fetchOccurrences({ from, to: addDays(from, 14), locale, type: "social" }),
-  fetchOccurrences({ from, to: addDays(from, 30), locale, type: "event" }),
-  fetchOccurrences({ from, to: addDays(from, 90), locale, type: "class" }),
-  fetchOccurrences({ from: calendarFrom, to: calendarTo, locale }),
-]);
-
-const allOccurrences = [
-  ...socialOccurrences,
-  ...eventOccurrences,
-  ...classOccurrences,
-];
-
-const WEEKDAY_ORDER = [
-  "monday",
-  "tuesday",
-  "wednesday",
-  "thursday",
-  "friday",
-  "saturday",
-  "sunday",
-] as const;
-
-const WEEKDAY_LABELS: Record<string, { de: string; en: string }> = {
+const WEEKDAY_LABELS: Record<Weekday, { de: string; en: string }> = {
   monday: { de: "Montag", en: "Monday" },
   tuesday: { de: "Dienstag", en: "Tuesday" },
   wednesday: { de: "Mittwoch", en: "Wednesday" },
@@ -101,49 +90,38 @@ const WEEKDAY_LABELS: Record<string, { de: string; en: string }> = {
   sunday: { de: "Sonntag", en: "Sunday" },
 };
 
-const weekdayKey = (iso: string) =>
-  new Intl.DateTimeFormat("en-US", {
-    timeZone: "Europe/Berlin",
-    weekday: "long",
-  })
-    .format(new Date(iso))
-    .toLowerCase();
-
-const currentWeekday = weekdayKey(new Date().toISOString());
+const currentWeekday = berlinWeekday(new Date().toISOString());
 
 // The classes tab is a weekly schedule, not a date calendar: one entry per
 // class and weekday, using the next upcoming occurrence. This keeps recurring
 // classes from repeating every week, like the old class list.
-const classGroups: Record<string, OccurrenceView[]> = {};
+const classGroups: Partial<Record<Weekday, OccurrenceView[]>> = {};
 const seenClassSlots = new Set<string>();
 
 for (const occurrence of classOccurrences) {
-  const weekday = weekdayKey(occurrence.start);
+  const weekday = berlinWeekday(occurrence.start);
   const slot = `${occurrence.eventId}|${weekday}`;
   if (seenClassSlots.has(slot)) continue;
   seenClassSlots.add(slot);
   (classGroups[weekday] ??= []).push(occurrence);
 }
 
-const classWeekdays = WEEKDAY_ORDER.filter((weekday) => classGroups[weekday]?.length);
+const classWeekdays = WEEKDAYS.filter((weekday) => classGroups[weekday]?.length);
 const hasTodayClasses = Boolean(classGroups[currentWeekday]);
 
-// Sorted per day by start time.
-for (const weekday of classWeekdays) {
-  classGroups[weekday].sort((a, b) => a.start.localeCompare(b.start));
-}
+// The weekly view hides dates, except when the next session differs from the
+// regular one (cancelled or annotated) — then the date is the information.
+const showClassDate = (occurrence: OccurrenceView) =>
+  occurrence.cancelled || Boolean(occurrence.note);
 
-const tagsFor = (occurrence: OccurrenceView) =>
-  occurrence.event.danceStyles
-    .map((style) => (style.slug ?? style.shortName ?? "").toLowerCase())
-    .filter(Boolean)
-    .join(",");
+const tagsFor = (occurrence: OccurrenceView) => danceKeys(occurrence.event).join(",");
 
-// Compact dataset for the calendar widget (rendered client-side).
-const calendarEntries = calendarOccurrences.map((occurrence) => ({
+// Compact dataset for the calendar widget (rendered client-side). Details are
+// stored once per event so they are not repeated for every occurrence.
+const calendarEntries: CalendarEntry[] = occurrences.map((occurrence) => ({
   date: occurrence.date,
-  time: formatLocalTime(occurrence.start),
-  end: formatLocalTime(occurrence.end),
+  time: occurrence.allDay ? "" : formatTime(occurrence.start),
+  timeRange: timeRange(occurrence) ?? "",
   title: occurrence.event.title,
   type: occurrence.event.type,
   eventId: String(occurrence.eventId),
@@ -151,53 +129,29 @@ const calendarEntries = calendarOccurrences.map((occurrence) => ({
   cancelled: occurrence.cancelled,
 }));
 
-// Descriptions (and the other detail fields) are stored once per event so the
-// calendar payload does not repeat them for every occurrence.
-const calendarEvents: Record<
-  string,
-  {
-    title: string;
-    type: string;
-    descriptionHtml: string;
-    organizers: string;
-    location: string;
-  }
-> = {};
-
-for (const occurrence of calendarOccurrences) {
-  const key = String(occurrence.eventId);
+const calendarEvents: Record<string, CalendarEventDetail> = {};
+for (const { eventId, event } of occurrences) {
+  const key = String(eventId);
   if (calendarEvents[key]) continue;
-  const event = occurrence.event;
   const address = decodeAddress(event.location?.address);
   calendarEvents[key] = {
     title: event.title,
     type: event.type,
-    descriptionHtml: event.description
-      ? convertLexicalToHTML({ data: event.description as any })
-      : "",
+    descriptionHtml: richTextToHtml(event.description),
     organizers: event.organizers
       .map((organizer) => organizer.name)
       .filter(Boolean)
       .join(" · "),
     location: [
       ...new Set(
-        [event.location?.name, address.location ?? address.city].filter(
-          Boolean,
-        ),
+        [event.location?.name, address.location ?? address.city].filter(Boolean),
       ),
     ].join(" · "),
   };
 }
 
 // Dance-style filter tags, same behaviour as the old client-side filter panel.
-const uniqueDances = new Map<string, string>();
-for (const occurrence of [...allOccurrences, ...calendarOccurrences]) {
-  for (const style of occurrence.event.danceStyles) {
-    const key = (style.slug ?? style.shortName ?? "").toLowerCase();
-    if (key) uniqueDances.set(key, style.name ?? style.shortName ?? key);
-  }
-}
-const danceFilters = [...uniqueDances.entries()].map(([slug, name]) => ({ slug, name }));
+const danceFilters = collectDanceFilters(occurrences);
 
 // Socials and events share the classes layout: one collapsible per date,
 // with every occurrence of that day underneath. Dates are used as the
@@ -301,7 +255,7 @@ const eventPanels = [
 <Layout locale={locale}>
   <Fragment slot="sidebar">
     <div class="greeter">
-      <RichText content={index.intro} />
+      <RichText content={index?.intro} />
     </div>
     <div class="disclaimer-box">
       <button
@@ -428,6 +382,17 @@ const eventPanels = [
     )
   }
 
+  {
+    unavailable && (
+      <p class="data-unavailable" role="status">
+        {t(
+          "Die Termine konnten gerade nicht geladen werden. Bitte versuche es in ein paar Minuten noch einmal.",
+          "Events could not be loaded right now. Please try again in a few minutes.",
+        )}
+      </p>
+    )
+  }
+
   <section data-sidebar-anchor>
     {
       eventPanels.map((panel) => (
@@ -481,7 +446,7 @@ const eventPanels = [
       {classWeekdays.length > 0 ? (
         <ResponsiveList maxColumns={1} exclusiveOpen={false}>
           {classWeekdays.map((weekday, index) => {
-            const dayClasses = classGroups[weekday];
+            const dayClasses = classGroups[weekday] ?? [];
             const isToday = weekday === currentWeekday;
             const shouldDefaultOpen = !hasTodayClasses && index === 0;
 
@@ -497,7 +462,10 @@ const eventPanels = [
                         class="filter-item-wrapper class-item"
                         data-event-id={String(occurrence.eventId)}
                         data-tags={tagsFor(occurrence)}>
-                        <EventC occurrence={occurrence} hideDate />
+                        <EventC
+                          occurrence={occurrence}
+                          hideDate={!showClassDate(occurrence)}
+                        />
                       </div>
                     ))}
                   </div>
@@ -1088,6 +1056,13 @@ const eventPanels = [
   .tab-content.active-content {
     display: block;
     opacity: 1;
+  }
+
+  .data-unavailable {
+    margin: 0 0 2rem;
+    padding: 0.75rem 1rem;
+    border-left: 3px solid var(--accent);
+    font-size: var(--fs-body);
   }
 
   .no-event-today {

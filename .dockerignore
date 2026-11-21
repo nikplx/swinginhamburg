@@ -3,3 +3,5 @@ node_modules
 dist
 cms/*
 !cms/src/payload-types.ts
+!cms/src/lib/occurrences/types.ts
+
