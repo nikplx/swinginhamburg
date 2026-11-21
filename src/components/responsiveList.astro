@@ -1,14 +1,12 @@
 ---
-// src/components/responsiveList.astro
 interface Props {
-  maxColumns?: number;
   /** Only one item open at a time within this list. */
   exclusiveOpen?: boolean;
   /** Marks the list as the anchor for the sidebar wave alignment. */
   anchor?: boolean;
 }
 
-const { maxColumns = 1, exclusiveOpen = true, anchor = false } = Astro.props;
+const { exclusiveOpen = true, anchor = false } = Astro.props;
 ---
 <div
   class="responsive-list"
@@ -60,7 +58,7 @@ const { maxColumns = 1, exclusiveOpen = true, anchor = false } = Astro.props;
   window.addEventListener("hashchange", openFromHash);
 </script>
 
-<style define:vars={{ maxColumns }}>
+<style>
   .responsive-list {
     width: 100%;
     margin: 0;

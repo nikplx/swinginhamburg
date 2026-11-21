@@ -8,16 +8,13 @@ interface Props {
 
 const { locale } = Astro.props;
 
-// 1. Automatically determine the current path
 const currentPath = Astro.url.pathname;
 
-// 2. Helper to check if a link is the current active page
-// We remove trailing slashes to ensure robust matching
+// Trailing slashes are ignored when matching the active page.
 const normalizePath = (path: string) => path.replace(/\/$/, "");
 const isActive = (href: string) =>
   normalizePath(currentPath) === normalizePath(href);
 
-// 3. i18n link configuration
 const otherLocale = locale === "en" ? "de" : "en";
 const otherLocaleLink = currentPath.replace(`/${locale}`, `/${otherLocale}`);
 
@@ -49,19 +46,21 @@ const navItems = [
 ];
 ---
 
-{/* Wrap the nav in a custom element for scoped Javascript */}
+{/* Plain wrapper (no custom element is defined); it is the flex item in the header row. */}
 <mobile-nav>
   <nav class="site-nav">
     <button
       class="menu-toggle"
-      aria-label="Toggle navigation menu"
+      type="button"
+      aria-label={locale === "de" ? "Menü umschalten" : "Toggle navigation menu"}
+      aria-controls="site-nav-links"
       aria-expanded="false">
       <span class="hamburger-bar"></span>
       <span class="hamburger-bar"></span>
       <span class="hamburger-bar"></span>
     </button>
 
-    <div class="nav-links">
+    <div class="nav-links" id="site-nav-links">
       {
         navItems.map((item) => (
           <a href={item.href} class={`nav-item ${isActive(item.href) ? "active" : ""}`}>
@@ -87,45 +86,33 @@ const navItems = [
 </mobile-nav>
 
 <script>
-  document.addEventListener("DOMContentLoaded", () => {
-    const menuToggle = document.querySelector(".menu-toggle");
-    const navLinks = document.querySelector(".nav-links");
+  const menuToggle = document.querySelector<HTMLButtonElement>(".menu-toggle");
+  const navLinks = document.querySelector<HTMLElement>(".nav-links");
 
-    if (menuToggle && navLinks) {
-      // 1. Handle the toggle button click
-      menuToggle.addEventListener("click", (event) => {
-        // Prevent this click from immediately triggering the document listener below
-        event.stopPropagation();
-        const isOpen = menuToggle.classList.toggle("active");
-        navLinks.classList.toggle("open");
-        document.documentElement.classList.toggle("menu-open", isOpen);
-      });
+  if (menuToggle && navLinks) {
+    const setOpen = (open: boolean) => {
+      menuToggle.classList.toggle("active", open);
+      menuToggle.setAttribute("aria-expanded", String(open));
+      navLinks.classList.toggle("open", open);
+      document.documentElement.classList.toggle("menu-open", open);
+    };
+    const isOpen = () => navLinks.classList.contains("open");
 
-      // 2. The Click-Out Behavior
-      document.addEventListener("click", (event) => {
-        // Only run the check if the menu is actually open
-        if (navLinks.classList.contains("open")) {
-          // Check if the click happened inside the menu or on the toggle button
-          const isClickInsideMenu = navLinks.contains(event.target as Node | null);
-          const isClickOnToggle = menuToggle.contains(event.target as Node | null);
+    menuToggle.addEventListener("click", (event) => {
+      // Keep this click from reaching the click-outside handler below.
+      event.stopPropagation();
+      setOpen(!isOpen());
+    });
 
-          // If clicked completely outside both, collapse the menu
-          if (!isClickInsideMenu && !isClickOnToggle) {
-            menuToggle.classList.remove("active");
-            navLinks.classList.remove("open");
-            document.documentElement.classList.remove("menu-open");
-          }
-        }
-      });
-
-      // 3. Accessibility Bonus: Close on Escape key
-      document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && navLinks.classList.contains("open")) {
-          menuToggle.classList.remove("active");
-          navLinks.classList.remove("open");
-          document.documentElement.classList.remove("menu-open");
-        }
-      });
-    }
-  });
+    // Close on clicks outside the menu and on Escape.
+    document.addEventListener("click", (event) => {
+      if (isOpen() && !navLinks.contains(event.target as Node | null)) setOpen(false);
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && isOpen()) {
+        setOpen(false);
+        menuToggle.focus();
+      }
+    });
+  }
 </script>

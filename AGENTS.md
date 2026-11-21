@@ -2,12 +2,12 @@
 
 Swing in Hamburg: bilingual (EN/DE) Astro site listing Lindy Hop classes, backed by Payload CMS.
 
-- **Frontend** (`/`): Astro 6 SSR (`output: 'server'`) with the Node adapter. Pages live under `src/pages/[locale]/`; `/` redirects to `/en`. Uses **npm**.
+- **Frontend** (`/`): Astro 7 SSR (`output: 'server'`) with the Node adapter. Pages live under `src/pages/[locale]/`; `/` redirects to `/en`. Uses **npm**.
 - **CMS** (`/cms`): Payload 3.x (git submodule `nikplx/swinginhamburg-cms`), Postgres, Next.js admin UI. Uses **npm**. See `cms/AGENTS.md` for Payload conventions and the full command list.
 
 ## Data flow
 
-`src/utils.ts` exports a `PayloadSDK` instance pointed at `PAYLOAD_URL` (default `http://localhost:3000`), typed against `cms/src/payload-types.ts`. Main collections: `events`, `organizations`, `dances`. Event dates are read through the custom `GET /api/occurrences` endpoint (`fetchOccurrences` in `src/utils.ts`; implemented in `cms/src/endpoints/occurrences.ts`). Global: `index` (homepage content, richtext rendered via the `RichText` component).
+`src/utils.ts` exports a `PayloadSDK` instance typed against `cms/src/payload-types.ts`, pointed at `PAYLOAD_URL` (the REST base **including** `/api`, default `http://localhost:3000/api`). Main collections: `events`, `organizations`, `dances`. Event dates come from the custom `GET /api/occurrences` endpoint (`cms/src/endpoints/occurrences.ts`) via `fetchOccurrences` in `src/lib/occurrences.ts`; the homepage view model is built in `src/lib/homepage.ts`. See `docs/new-events.md` for the data model and API. Unknown `[locale]` segments are rejected in `src/middleware.ts`. Global: `index` (homepage content, richtext rendered via the `RichText` component).
 
 ## Commands
 

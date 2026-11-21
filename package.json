@@ -10,16 +10,21 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "check": "astro check"
+    "check": "astro check",
+    "test:e2e": "playwright test tests/e2e",
+    "test:unit": "playwright test tests/unit"
   },
   "dependencies": {
     "@astrojs/node": "^11.1.12",
-    "@payloadcms/richtext-lexical": "^3.80.0",
-    "@payloadcms/sdk": "^3.80.0",
-    "astro": "^7.4.11"
+    "@payloadcms/richtext-lexical": "3.85.0",
+    "@payloadcms/sdk": "3.85.0",
+    "astro": "^7.4.11",
+    "leaflet": "^1.9.4"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
+    "@playwright/test": "^1.58.2",
+    "@types/leaflet": "^1.9.22",
     "typescript": "^6.0.3"
   }
 }

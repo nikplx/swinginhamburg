@@ -101,15 +101,14 @@ const data = toJsonScript({ min, max, entries, events });
     {isGerman ? "Keine Termine in diesem Monat." : "No events this month."}
   </p>
 
-  <div class="calendar-modal" data-calendar-modal hidden>
-    <div class="calendar-modal__backdrop" data-calendar-close></div>
-    <div
-      class="calendar-modal__dialog"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="calendar-modal-title"
-      tabindex="-1"
-      data-calendar-dialog>
+  {/* Native modal dialog: focus trap, Escape, focus return and top-layer
+      stacking come from the browser. Clicks on the dialog's own padding
+      (outside the panel) close it. */}
+  <dialog
+    class="calendar-modal"
+    aria-labelledby="calendar-modal-title"
+    data-calendar-modal>
+    <div class="calendar-modal__dialog">
       <button
         class="calendar-modal__close"
         type="button"
@@ -124,7 +123,7 @@ const data = toJsonScript({ min, max, entries, events });
       <p class="calendar-modal__location" data-modal-location hidden></p>
       <div class="calendar-modal__desc" data-modal-desc></div>
     </div>
-  </div>
+  </dialog>
 
   <script type="application/json" id="calendar-data" is:inline set:html={data} />
 </section>
@@ -174,11 +173,8 @@ const data = toJsonScript({ min, max, entries, events });
     const todayButton = calendarView.querySelector<HTMLButtonElement>(
       "[data-calendar-today]",
     );
-    const modal = calendarView.querySelector<HTMLElement>(
+    const modal = calendarView.querySelector<HTMLDialogElement>(
       "[data-calendar-modal]",
-    );
-    const dialog = calendarView.querySelector<HTMLElement>(
-      "[data-calendar-dialog]",
     );
     const modalKicker = calendarView.querySelector<HTMLElement>(
       "[data-modal-kicker]",
@@ -267,13 +263,19 @@ const data = toJsonScript({ min, max, entries, events });
     };
 
     const closeModal = () => {
-      if (!modal) return;
-      modal.hidden = true;
-      document.documentElement.classList.remove("calendar-modal-open");
+      if (modal?.open) modal.close();
     };
 
+    // Scroll lock while open; "close" also fires for Escape.
+    modal?.addEventListener("close", () => {
+      document.documentElement.classList.remove("calendar-modal-open");
+    });
+    modal?.addEventListener("click", (event) => {
+      if (event.target === modal) closeModal();
+    });
+
     const openModal = (entry: Entry) => {
-      if (!modal || !dialog) return;
+      if (!modal) return;
       const detail = data?.events[entry.eventId];
       const kicker =
         typeLabels[entry.type]?.[isGerman ? "de" : "en"] ?? entry.type;
@@ -313,9 +315,8 @@ const data = toJsonScript({ min, max, entries, events });
         modalDesc.hidden = !detail?.descriptionHtml;
       }
 
-      modal.hidden = false;
       document.documentElement.classList.add("calendar-modal-open");
-      dialog.focus();
+      modal.showModal();
     };
 
     const renderWeekdays = () => {
@@ -458,13 +459,7 @@ const data = toJsonScript({ min, max, entries, events });
       });
 
     document.addEventListener("keydown", (event) => {
-      if (!isOpen) return;
-      if (event.key === "Escape" && modal && !modal.hidden) {
-        event.preventDefault();
-        closeModal();
-        return;
-      }
-      if (modal && !modal.hidden) return;
+      if (!isOpen || modal?.open) return;
       const target = event.target as HTMLElement | null;
       if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
       if (event.key === "ArrowLeft") {
@@ -719,24 +714,29 @@ const data = toJsonScript({ min, max, entries, events });
   }
 
   /* --- Detail dialog --- */
-  .calendar-modal[hidden] {
-    display: none;
-  }
-
+  /* The <dialog> spans the viewport and centres the panel; the top layer puts
+     it above the sticky site header without z-index. */
   .calendar-modal {
     position: fixed;
     inset: 0;
-    /* Above the sticky site header (z-index 2000), so the whole page dims. */
-    z-index: 3000;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 1.25rem;
+    border: 0;
+    background: transparent;
+    color: inherit;
+  }
+
+  .calendar-modal[open] {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1.25rem;
   }
 
-  .calendar-modal__backdrop {
-    position: absolute;
-    inset: 0;
+  .calendar-modal::backdrop {
     background-color: rgba(20, 30, 45, 0.5);
     backdrop-filter: blur(2px);
   }

@@ -48,7 +48,7 @@ const t = (de: string, en: string) => (locale === "en" ? en : de);
       aria-labelledby={`tab-${panel.tab}`}
       data-tab={panel.tab}>
       {panel.groups.length > 0 ? (
-        <ResponsiveList maxColumns={1} exclusiveOpen={false}>
+        <ResponsiveList exclusiveOpen={false}>
           {panel.groups.map((group) => (
             <div
               class="day-group"

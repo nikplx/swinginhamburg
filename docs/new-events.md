@@ -5,9 +5,9 @@ The CMS branch replaces the old `classes` / `schools` / `teachers` model with un
 `events` / `organizations` / `dances` collections, adds a server-side occurrence expander and a
 public `/api/occurrences` endpoint, and reworks access control, admin UX and i18n.
 
-> **Branch/commit note:** the CMS submodule is on `new-events`; the frontend changes are in the
-> working tree of this repository. Migrations are the source of truth (`push: false`), so deploy
-> the CMS with `pnpm payload migrate`.
+> **Branch note:** both this repository and the CMS submodule are on `new-events`. Migrations are
+> the source of truth (`push: false`); production runs them on start, locally use
+> `npm run payload migrate`.
 
 ---
 
@@ -45,7 +45,6 @@ The public content endpoints are still plain Payload REST (`/api/...`). For cale
 | `schedule` | blocks | always an **array** (max 1 row), see §2.2 |
 | `exceptions` | json | per-date overrides, see §2.3 |
 | `firstDate` / `lastDate` | date | derived; `lastDate` is `null` for open-ended series |
-| `lastConfirmed` | date | for open-ended series, when the organizer last checked the schedule |
 | `_status` | `draft` \| `published` | drafts are enabled; public reads only see `published` |
 
 API example:
@@ -137,8 +136,26 @@ All content fields are localized.
 
 ### Response
 
+Each event is sent once in `events` (keyed by `String(id)`); occurrences reference it by
+`eventId`. Types: `OccurrencesResponse` in `cms/src/lib/occurrences/types.ts` (Payload-free, so the
+frontend imports them directly).
+
 ```json
 {
+  "events": {
+    "12": {
+      "id": 12,
+      "title": "Wednesday Social",
+      "type": "social",
+      "level": null,
+      "description": { "root": { "...": "Lexical JSON" } },
+      "organizers": [{ "id": 3, "name": "Swing in Hamburg", "slug": "swing-in-hamburg" }],
+      "danceStyles": [{ "id": 1, "name": "Lindy Hop", "shortName": "Lindy", "slug": "lindy-hop" }],
+      "location": { "name": "Café", "address": "...", "lat": 53.55, "lng": 10.0, "directionsNote": null },
+      "firstDate": "2026-11-18T00:00:00.000Z",
+      "lastDate": null
+    }
+  },
   "occurrences": [
     {
       "eventId": 12,
@@ -146,19 +163,8 @@ All content fields are localized.
       "start": "2026-11-18T19:00:00.000Z",
       "end": "2026-11-18T22:00:00.000Z",
       "cancelled": false,
-      "note": "Silvester special",
-      "event": {
-        "id": 12,
-        "title": "Wednesday Social",
-        "type": "social",
-        "level": null,
-        "description": { "root": { "...": "Lexical JSON" } },
-        "organizers": [{ "id": 3, "name": "Swing in Hamburg", "slug": "swing-in-hamburg" }],
-        "danceStyles": [{ "id": 1, "name": "Lindy Hop", "shortName": "Lindy", "slug": "lindy-hop" }],
-        "location": { "name": "Café", "address": "...", "lat": 53.55, "lng": 10.0, "directionsNote": null },
-        "firstDate": "2026-11-18T00:00:00.000Z",
-        "lastDate": null
-      }
+      "allDay": false,
+      "note": "Silvester special"
     }
   ]
 }
@@ -170,35 +176,23 @@ Semantics:
 - `date` is the **local start date** in Europe/Berlin; `start`/`end` are UTC ISO strings.
 - An end time earlier than the start time means the occurrence runs past midnight; `end` is on the
   following day while `date` stays on the start day.
+- `allDay: true` means no start time is configured; `start`/`end` are then midnight placeholders
+  and must not be displayed. `end === start` means no end time is configured.
 - `cancelled` occurrences are still returned (render them struck-through / with a badge).
 - `note`, time overrides and cancellations from `exceptions` are already applied — do not recompute
-  times from the event schedule on the client.
+  times from the event schedule on the client. A start-only override keeps the regular duration.
 - Only `published` events are included.
-- Server-side in-process cache: responses are cached per parameter set until the next midnight in
-  Europe/Berlin, and cleared whenever events/organizations/dances change. No client cache-busting
-  parameter is needed, but long-lived CDN/proxy caching is not recommended.
-- No pagination: request a bounded range (e.g. 90 days) rather than “all time”.
+- Ranges longer than 400 days return `400`; `locale` falls back to `de` unless it is `de`/`en`;
+  an unknown `danceStyle`/`organization` slug returns an empty result (not an unfiltered one).
+- Server-side in-process cache (max. 200 parameter sets) until the next midnight in Europe/Berlin,
+  cleared whenever events/organizations/dances change in that process.
 
-### Minimal frontend client
+### Frontend client
 
-```ts
-const base = process.env.PAYLOAD_URL ?? 'http://localhost:3000'; // may include /api
-
-export async function fetchOccurrences(params: {
-  from: string;
-  to: string;
-  locale: 'de' | 'en';
-  type?: string;
-  danceStyle?: string;
-  organization?: string;
-}) {
-  const url = new URL('/api/occurrences', base);
-  Object.entries(params).forEach(([k, v]) => v && url.searchParams.set(k, v));
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`occurrences: ${res.status}`);
-  return (await res.json()).occurrences as Occurrence[];
-}
-```
+`src/lib/occurrences.ts` (`fetchOccurrences`) joins events into occurrences (`OccurrenceView`),
+caches responses for 60 s, serves stale data if the CMS fails and otherwise returns
+`{ occurrences: [], unavailable: true }` so pages can show a notice instead of failing.
+`PAYLOAD_URL` is the REST base **including** `/api` (default `http://localhost:3000/api`).
 
 ### Rendering rich text
 
@@ -232,23 +226,22 @@ Notes:
 
 ## 4. Access model (affects API results)
 
-Roles: `admin`, `writer`, `school`, `guest` (`system` exists as a legacy value).
+Roles: `admin`, `writer`, `school`, `guest`.
 
 | Who | Organizations | Events | Users / Media / Dances / Globals |
 | --- | --- | --- | --- |
-| anonymous | read all (public fields) | read **published** only | media/dances public read |
-| admin | full CRUD | full CRUD | users full; globals full |
-| writer | full CRUD | full CRUD | users read-only; globals full |
-| school / guest | read **only organizations they are members of** | read/update **only events of those organizations** | hidden from admin nav |
-| linked member | may update **organization description only** | may create events for their orgs; may edit events of their orgs | – |
+| anonymous | read all (public fields) | read **published** only; no writes | media/dances/globals public read |
+| admin | full CRUD | full CRUD | users full; everything else full |
+| writer | full CRUD | full CRUD | users read-only; everything else full |
+| school / guest | read all; update **description** of their own | read/update/delete **only events of their organizations** (drafts included) | hidden from admin nav; dances read-only |
 
 Additional rules:
 
 - A user can be linked to any number of organizations via `organizations.members` (optional).
-- Only writers/admins can assign members or create/delete organizations.
-- Members cannot reassign an event to another organization.
-- Creating an event as a lower role is validated server-side: all selected organizers must be
-  organizations the user belongs to.
+- Only writers/admins can assign members, create/delete organizations or change dance styles.
+- Members cannot reassign an event to another organization, and cannot create events without an
+  organizer or for organizations they do not belong to (also enforced for drafts).
+- Co-hosted events (an organizer the member is not linked to) can only be deleted by writers.
 
 ---
 
@@ -285,51 +278,34 @@ Applied in order (CMS `src/migrations`):
    `talk` / `walk` / `festival` / `other` values become `event`, default set to `event`.
 6. `20261118_212710_remove_workshop_type` — removes `workshop` from the enum; existing
    `workshop` values become `event`.
+7. `20261121_135132_remove_system_role_last_confirmed` — removes the `system` user role (remaining
+   system users become `guest`) and the `events.lastConfirmed` field.
 
-Deploy the CMS first (and run migrations), then the frontend.
+These are meant to be squashed into one migration before the first production deploy.
+
+Deploy the CMS and the frontend **together**: the occurrences response format changed, and
+neither side reads the other's old format.
 
 ---
 
-## 7. Frontend adaptation checklist
+## 7. Frontend implementation
 
-1. **Replace collection names**: `classes` → `events`, `schools` → `organizations`; drop `teachers`.
-2. **Replace the calendar data source** with `/api/occurrences` (fetch by date range, group by
-   `occurrence.date`). Do not expand `schedule` client-side.
-3. **Update the type filter** to `social`, `event`, `class`; default filtering can use
-   `event` as the generic bucket. Unknown/removed type values are silently ignored by the endpoint,
-   so old links like `?type=festival` simply show unfiltered results.
-4. **Render descriptions as rich text** (`convertLexicalToHTML` / `RichText`); applies to event and
-   organization descriptions.
-5. **Use `location.lat` / `location.lng`** for maps, `location.address` / `name` for display,
-   `location.directionsNote` for extra hints.
-6. **Handle cancellations and notes**: `occurrence.cancelled`, `occurrence.note`; times in
-   `start`/`end` already include per-date overrides.
-7. **Support multiple organizers and dance styles** (arrays); use `slug` for links/filters.
-8. **Timezone**: format `start`/`end` with `timeZone: 'Europe/Berlin'` (or use `date` + local time).
-9. **Route rename**: `/schools` → `/organizations` (add a redirect if old URLs are shared).
-10. **Draft/publish**: the public endpoint only returns published events; direct event queries must
-    filter `_status`.
+| Area | Files |
+| --- | --- |
+| Data access, date/dance helpers | `src/lib/occurrences.ts` |
+| Homepage view model (panels, calendar data, filters) | `src/lib/homepage.ts`, `src/lib/tabs.ts` |
+| Rich text (memoized Lexical → HTML) | `src/lib/richText.ts`, `src/components/richtText.astro` |
+| Homepage UI | `src/pages/[locale]/index.astro`, `src/components/home/{HomeToolbar,ListingPanels,SurveyBox}.astro`, `src/components/calendar.astro` |
+| Client state shared by those components | `src/scripts/homeState.ts` |
+| Event card | `src/components/event.astro` |
+| Map | `src/components/map.astro` |
+| Locale validation (404 for unknown locales) | `src/middleware.ts`, `src/i18n.ts` |
+| Typed CMS client, JSON embedding | `src/utils.ts` |
 
-### Example: grouping and rendering
-
-```ts
-const occurrences = await fetchOccurrences({ from, to, locale });
-
-const byDate = new Map<string, Occurrence[]>();
-for (const occurrence of occurrences) {
-  const list = byDate.get(occurrence.date) ?? [];
-  list.push(occurrence);
-  byDate.set(occurrence.date, list);
-}
-
-const time = (iso: string) =>
-  new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'de-DE', {
-    timeZone: 'Europe/Berlin',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  }).format(new Date(iso));
-```
+The homepage makes one occurrences request (the calendar's 12 months) and derives the lists from
+it: socials 14 days, events 30 days, classes 90 days (one entry per class and weekday). Map popups
+link to `/?event=<id>`, which narrows the list to that event and includes its dates even beyond the
+tab's horizon.
 
 ---
 
@@ -346,9 +322,7 @@ const time = (iso: string) =>
 | Event hooks | `cms/src/hooks/events/prepare.ts` |
 | Migrations | `cms/src/migrations/` |
 
-Frontend files changed in this repo: `src/utils.ts`, `src/pages/[locale]/index.astro`,
-`src/pages/[locale]/organizations.astro` (new), `src/components/{event,map,nav}.astro`;
-`src/components/class.astro` and `src/pages/[locale]/schools.astro` were removed.
+Removed in the frontend: `src/components/class.astro`, `src/pages/[locale]/schools.astro`.
 
 ---
 

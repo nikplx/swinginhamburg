@@ -1,5 +1,5 @@
 ---
-import "../styles/global.css";
+import "leaflet/dist/leaflet.css";
 import FilterIcon from "./icons/FilterIcon.astro";
 import type { Locale } from "../i18n";
 import {
@@ -25,7 +25,7 @@ const { occurrences, unavailable } = await fetchOccurrences({
   locale,
 });
 
-interface MapEvent {
+export interface MapEvent {
   eventId: string;
   title: string;
   type: string;
@@ -34,7 +34,7 @@ interface MapEvent {
   danceTags: string[];
 }
 
-interface MapLocation {
+export interface MapLocation {
   name: string | null;
   coordinates: [number, number];
   address: ReturnType<typeof decodeAddress>;
@@ -96,8 +96,6 @@ const dayButtons: { key: Weekday; de: string; en: string }[] = [
 ];
 ---
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
 <div class="map-wrapper" data-locale={locale}>
   <div id="map"></div>
 
@@ -111,227 +109,218 @@ const dayButtons: { key: Weekday; de: string; en: string }[] = [
     )
   }
 
-  <button class="mobile-filter-toggle" aria-expanded="false">
+  <button
+    class="mobile-filter-toggle"
+    type="button"
+    aria-expanded="false"
+    aria-controls="map-filter-panel">
     <FilterIcon class="filter-icon" strokeWidth={1.5} width={20} height={20} />
     {locale === "de" ? "Filter" : "Filters"}
   </button>
 
-  <div class="filter-panel" id="filter-panel">
+  <div class="filter-panel" id="map-filter-panel">
     <div class="filter-header-mobile">
       <h3>{locale === "de" ? "Filter" : "Filters"}</h3>
-      <button class="close-filter-btn" aria-label="Close filters">✕</button>
+      <button
+        class="close-filter-btn"
+        type="button"
+        aria-label={locale === "de" ? "Filter schließen" : "Close filters"}>
+        ✕
+      </button>
     </div>
-    <div class="filter-section">
 
-    {danceFilters.length > 0 && (
-      <div class="filter-section">
-        <h3 class="filter-heading">
-          {locale === "de" ? "Nach Tanz" : "By Dance"}
-        </h3>
-        <div class="dance-filter-options">
-          {danceFilters.map((dance) => (
-            <button class="listing-tag filter-tag" data-filter={dance.slug}>
-              {dance.name}
-            </button>
-          ))}
+    {
+      danceFilters.length > 0 && (
+        <div class="filter-section">
+          <h3 class="filter-heading">{locale === "de" ? "Nach Tanz" : "By Dance"}</h3>
+          <div class="dance-filter-options">
+            {danceFilters.map((dance) => (
+              <button
+                class="listing-tag filter-tag"
+                type="button"
+                aria-pressed="false"
+                data-filter={dance.slug}>
+                {dance.name}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
-    )}
-      <h3 class="filter-heading">
-        {locale === "de" ? "Nach Tag" : "By Day"}
-      </h3>
+      )
+    }
+
+    <div class="filter-section">
+      <h3 class="filter-heading">{locale === "de" ? "Nach Tag" : "By Day"}</h3>
       <div class="day-filter-row">
-        <button class="filter-btn active" data-day="all">
+        <button class="filter-btn active" type="button" aria-pressed="true" data-day="all">
           {locale === "de" ? "Alle" : "All"}
         </button>
-        {dayButtons.map((day) => (
-          <button class="filter-btn" data-day={day.key}>{day[locale]}</button>
-        ))}
+        {
+          dayButtons.map((day) => (
+            <button class="filter-btn" type="button" aria-pressed="false" data-day={day.key}>
+              {day[locale]}
+            </button>
+          ))
+        }
       </div>
     </div>
   </div>
 </div>
 
-<script set:html={toJsonScript(locations)} is:inline id="event-data" type="application/json" />
-<script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script type="application/json" id="map-data" is:inline set:html={toJsonScript(locations)} />
 
-<script is:inline lang="ts">
-  document.addEventListener("DOMContentLoaded", () => {
-    // --- Map Initialization ---
-    const map = L.map("map", { fadeAnimation: false }).setView(
-      [53.5511, 9.9937],
-      11,
+<script>
+  import L from "leaflet";
+  import type { MapEvent, MapLocation } from "./map.astro";
+
+  const mapWrapper = document.querySelector<HTMLElement>(".map-wrapper");
+  const locale = mapWrapper?.dataset.locale === "en" ? "en" : "de";
+  const isGerman = locale === "de";
+  const locations: MapLocation[] = JSON.parse(
+    document.getElementById("map-data")?.textContent ?? "[]",
+  );
+
+  // --- Map --------------------------------------------------------------------
+
+  const map = L.map("map", { fadeAnimation: false }).setView([53.5511, 9.9937], 11);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "© OpenStreetMap",
+  }).addTo(map);
+
+  const markerLayer = L.layerGroup().addTo(map);
+
+  // Accent dot markers instead of the default blue pin.
+  const dotIcon = L.divIcon({
+    className: "sih-map-marker",
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
+    popupAnchor: [0, -9],
+  });
+
+  // --- Filters ----------------------------------------------------------------
+
+  let dayFilter = "all";
+  const danceFilters = new Set<string>();
+
+  const matchingEvents = (location: MapLocation) =>
+    location.events.filter(
+      (event) =>
+        (dayFilter === "all" || event.weekday === dayFilter) &&
+        (danceFilters.size === 0 || event.danceTags.some((tag) => danceFilters.has(tag))),
     );
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: "© OpenStreetMap",
-    }).addTo(map);
+  // --- Popups -------------------------------------------------------------------
 
-    const eventDataElement = document.getElementById("event-data");
-    const locations = JSON.parse(eventDataElement.textContent);
-    const markerLayer = L.layerGroup().addTo(map);
+  // Popup content comes from the CMS (titles, organizer and venue names), so it
+  // is built as DOM nodes with textContent, never as an HTML string.
+  function el<K extends keyof HTMLElementTagNameMap>(tag: K, className = "", text = "") {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text) node.textContent = text;
+    return node;
+  }
 
-    // Accent dot markers instead of the default blue pin
-    const dotIcon = L.divIcon({
-      className: "sih-map-marker",
-      iconSize: [18, 18],
-      iconAnchor: [9, 9],
-      popupAnchor: [0, -9],
-    });
+  const groupOrder: { type: string; label: string }[] = [
+    { type: "class", label: isGerman ? "Kurse" : "Classes" },
+    { type: "social", label: "Socials" },
+    { type: "event", label: "Events" },
+  ];
 
-    const mapWrapper = document.querySelector(".map-wrapper");
-    const locale = mapWrapper?.getAttribute("data-locale") || "en";
-    const isGerman = locale === "de";
+  function buildPopup(location: MapLocation, events: MapEvent[]): HTMLElement {
+    const { address } = location;
+    const place = location.name || address.quarter || address.city || (isGerman ? "Ort" : "Venue");
+    const street = [address.street, address.num].filter(Boolean).join(" ");
+    const addressLine = [street, address.quarter].filter(Boolean).join(", ");
 
-    // Filter States
-    let currentDayFilter = "all";
-    let activeDanceFilters = new Set();
+    const content = el("div", "custom-popup-content");
+    content.append(el("strong", "", place));
+    if (addressLine) content.append(el("span", "popup-address", addressLine));
 
-    function matchingEvents(location) {
-      return location.events.filter((event) => {
-        const dayMatch =
-          currentDayFilter === "all" || event.weekday === currentDayFilter;
-        const danceMatch =
-          activeDanceFilters.size === 0 ||
-          event.danceTags.some((tag) => activeDanceFilters.has(tag));
-        return dayMatch && danceMatch;
-      });
-    }
+    const groups = el("div", "popup-event-groups");
+    for (const { type, label } of groupOrder) {
+      const typeEvents = events.filter((event) => event.type === type);
+      if (typeEvents.length === 0) continue;
 
-    // Popup content comes from the CMS (titles, organizer and venue names), so
-    // it is built as DOM nodes with textContent, never as an HTML string.
-    function el(tag, className, text) {
-      const node = document.createElement(tag);
-      if (className) node.className = className;
-      if (text) node.textContent = text;
-      return node;
-    }
-
-    const groupOrder = ["class", "social", "event"];
-    const groupLabels = {
-      class: isGerman ? "Kurse" : "Classes",
-      social: "Socials",
-      event: "Events",
-    };
-
-    function buildPopup(location, events) {
-      const place =
-        location.name ||
-        location.address.quarter ||
-        location.address.city ||
-        (isGerman ? "Ort" : "Venue");
-      const street = [location.address.street, location.address.num]
-        .filter(Boolean)
-        .join(" ");
-      const addressLine = [street, location.address.quarter]
-        .filter(Boolean)
-        .join(", ");
-
-      const content = el("div", "custom-popup-content");
-      content.append(el("strong", "", place));
-      if (addressLine) content.append(el("span", "popup-address", addressLine));
-
-      const groups = el("div", "popup-event-groups");
-      for (const type of groupOrder) {
-        const typeEvents = events.filter((event) => event.type === type);
-        if (typeEvents.length === 0) continue;
-
-        const group = el("div", "popup-event-group");
-        group.append(el("div", "popup-group-label", groupLabels[type]));
-        const list = el("ul");
-        for (const event of typeEvents) {
-          const item = el("li");
-          const link = el("a", "", event.title);
-          link.href = `/${locale}/?event=${encodeURIComponent(event.eventId)}`;
-          item.append(link);
-          if (event.organizers) {
-            item.append(
-              " ",
-              el(
-                "span",
-                "popup-organizer",
-                `${isGerman ? "von" : "by"} ${event.organizers}`,
-              ),
-            );
-          }
-          list.append(item);
+      const group = el("div", "popup-event-group");
+      group.append(el("div", "popup-group-label", label));
+      const list = el("ul");
+      for (const event of typeEvents) {
+        const item = el("li");
+        const link = el("a", "", event.title);
+        link.href = `/${locale}/?event=${encodeURIComponent(event.eventId)}`;
+        item.append(link);
+        if (event.organizers) {
+          item.append(
+            " ",
+            el("span", "popup-organizer", `${isGerman ? "von" : "by"} ${event.organizers}`),
+          );
         }
-        group.append(list);
-        groups.append(group);
+        list.append(item);
       }
-      content.append(groups);
-      return content;
+      group.append(list);
+      groups.append(group);
     }
+    content.append(groups);
+    return content;
+  }
 
-    function renderMarkers() {
-      markerLayer.clearLayers();
-
-      locations.forEach((location) => {
-        const events = matchingEvents(location);
-        if (events.length === 0) return;
-
-        const marker = L.marker(location.coordinates, {
-          icon: dotIcon,
-        }).bindPopup(buildPopup(location, events), {
+  function renderMarkers() {
+    markerLayer.clearLayers();
+    for (const location of locations) {
+      const events = matchingEvents(location);
+      if (events.length === 0) continue;
+      L.marker(location.coordinates, { icon: dotIcon })
+        .bindPopup(buildPopup(location, events), {
           className: "custom-popup",
           closeButton: false,
           offset: [0, -10],
-        });
-        markerLayer.addLayer(marker);
-      });
+        })
+        .addTo(markerLayer);
     }
+  }
 
-    // Initial render
-    renderMarkers();
+  renderMarkers();
 
-    // --- Filter UI Logic ---
-    const filterPanel = document.getElementById("filter-panel");
-    const mobileToggleBtn = document.querySelector(".mobile-filter-toggle");
-    const closeBtn = document.querySelector(".close-filter-btn");
-    
-    // Day Buttons
-    const dayButtons = document.querySelectorAll(".filter-btn");
-    // Dance Buttons
-    const danceButtons = document.querySelectorAll(".filter-tag");
+  // --- Filter UI ----------------------------------------------------------------
 
-    function toggleMobileDrawer() {
-      if (window.innerWidth <= 768) {
-        filterPanel.classList.toggle("open");
+  const filterPanel = document.getElementById("map-filter-panel");
+  const drawerToggle = document.querySelector<HTMLButtonElement>(".mobile-filter-toggle");
+
+  // The panel is a bottom drawer on phones and always visible otherwise.
+  const setDrawerOpen = (open: boolean) => {
+    filterPanel?.classList.toggle("open", open);
+    drawerToggle?.setAttribute("aria-expanded", String(open));
+  };
+  drawerToggle?.addEventListener("click", () =>
+    setDrawerOpen(!filterPanel?.classList.contains("open")),
+  );
+  document
+    .querySelector(".close-filter-btn")
+    ?.addEventListener("click", () => setDrawerOpen(false));
+
+  const dayButtons = [...document.querySelectorAll<HTMLButtonElement>(".filter-btn[data-day]")];
+  for (const button of dayButtons) {
+    button.addEventListener("click", () => {
+      dayFilter = button.dataset.day ?? "all";
+      for (const other of dayButtons) {
+        const active = other === button;
+        other.classList.toggle("active", active);
+        other.setAttribute("aria-pressed", String(active));
       }
-    }
-
-    if (mobileToggleBtn) mobileToggleBtn.addEventListener("click", toggleMobileDrawer);
-    if (closeBtn) closeBtn.addEventListener("click", toggleMobileDrawer);
-
-    // Day Filter Event Listeners
-    dayButtons.forEach((button) => {
-      button.addEventListener("click", (e) => {
-        dayButtons.forEach((btn) => btn.classList.remove("active"));
-        e.target.classList.add("active");
-
-        currentDayFilter = e.target.dataset.day;
-        renderMarkers();
-      });
+      renderMarkers();
     });
+  }
 
-    // Dance Filter Event Listeners
-    danceButtons.forEach((button) => {
-      button.addEventListener("click", (e) => {
-        const target = e.target;
-        const filterValue = target.dataset.filter;
-
-        if (activeDanceFilters.has(filterValue)) {
-          activeDanceFilters.delete(filterValue);
-          target.classList.remove("selected");
-        } else {
-          activeDanceFilters.add(filterValue);
-          target.classList.add("selected");
-        }
-        renderMarkers();
-      });
+  for (const button of document.querySelectorAll<HTMLButtonElement>(".filter-tag[data-filter]")) {
+    button.addEventListener("click", () => {
+      const key = button.dataset.filter ?? "";
+      const selected = !danceFilters.delete(key);
+      if (selected) danceFilters.add(key);
+      button.classList.toggle("selected", selected);
+      button.setAttribute("aria-pressed", String(selected));
+      renderMarkers();
     });
-  });
+  }
 </script>
 
 <style>
@@ -347,18 +336,6 @@ const dayButtons: { key: Weekday; de: string; en: string }[] = [
     width: 100%;
     height: 100%; 
     z-index: 1;
-  }
-
-  .main-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 0;
-  }
-
-  #map-container {
-    flex: 1;
-    width: 100%;
   }
 
   /* --- Filter Panel Base --- */
@@ -410,12 +387,6 @@ const dayButtons: { key: Weekday; de: string; en: string }[] = [
     font-weight: 700;
     line-height: 1.1;
     color: var(--text-main);
-  }
-
-  .filter-options {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
   }
 
   .dance-filter-options {
@@ -490,38 +461,6 @@ const dayButtons: { key: Weekday; de: string; en: string }[] = [
   .mobile-filter-toggle,
   .filter-header-mobile {
     display: none;
-  }
-
-  .filter-toggle {
-    position: absolute;
-    right: 0;
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--text-main);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px;
-    width: 40px;  /* Ensures a perfect circle */
-    height: 40px; 
-    border-radius: 50%; /* Prepares the circular hover background */
-    transition: 
-      background-color 0.2s ease, 
-      transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  @media (hover: hover) {
-    .filter-toggle:hover {
-      background-color: var(--accent-soft); /* Soft highlight */
-      transform: scale(1.1);     /* Slight pop forward */
-      opacity: 1;                /* Overrides your old opacity drop */
-    }
-  }
-
-  .filter-toggle:active {
-    transform: scale(0.95);    /* Satisfying squish when clicked */
-    background-color: var(--accent-soft);
   }
 
   .close-filter-btn {
@@ -724,18 +663,6 @@ const dayButtons: { key: Weekday; de: string; en: string }[] = [
   .custom-popup-content span {
     font-size: var(--fs-body);
     color: var(--text-main);
-  }
-
-  .popup-date-time {
-    font-size: var(--fs-body);
-    font-style: italic;
-    margin-top: 6px;
-  }
-
-  .popup-title {
-    font-size: var(--fs-body);
-    font-weight: 500;
-    margin-top: 2px;
   }
 
   .popup-address {
