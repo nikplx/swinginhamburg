@@ -131,6 +131,8 @@ const data = toJsonScript({ min, max, entries, events });
 
 <script>
   import type { CalendarEntry, CalendarEventDetail } from "./calendar.astro";
+  import { TAB_TYPES } from "../lib/tabs";
+  import { getState, matchesFilters, subscribe } from "../scripts/homeState";
 
   const calendarView = document.getElementById("calendar-view") as
     | HTMLElement
@@ -191,7 +193,6 @@ const data = toJsonScript({ min, max, entries, events });
     const modalDesc = calendarView.querySelector<HTMLElement>(
       "[data-modal-desc]",
     );
-    const toggleButton = document.getElementById("calendar-toggle");
 
     const isGerman = calendarView.dataset.locale === "de";
     const localeCode = isGerman ? "de-DE" : "en-GB";
@@ -216,11 +217,6 @@ const data = toJsonScript({ min, max, entries, events });
       social: { de: "Social", en: "Social" },
       event: { de: "Event", en: "Event" },
       class: { de: "Kurs", en: "Class" },
-    };
-    const tabTypes: Record<string, string> = {
-      socials: "social",
-      events: "event",
-      classes: "class",
     };
 
     const todayKey = new Intl.DateTimeFormat("en-CA", {
@@ -254,31 +250,15 @@ const data = toJsonScript({ min, max, entries, events });
     const minKey = `${minYear}-${pad(minMonth)}`;
     const maxKey = `${maxYear}-${pad(maxMonth)}`;
 
-    const activeTabType = () => {
-      const active = document.querySelector(
-        ".page-tabs .tab.active",
-      ) as HTMLElement | null;
-      return tabTypes[active?.dataset.tab ?? "classes"];
-    };
-
-    const selectedFilters = () =>
-      Array.from(
-        document.querySelectorAll<HTMLElement>(".filter-panel .filter-tag.selected"),
-      )
-        .map((tag) => tag.dataset.filter ?? "")
-        .filter(Boolean);
-
+    // The calendar shows the active tab's type with the active dance filters.
     const entriesForDate = (dateKey: string): Entry[] => {
-      const type = activeTabType();
-      const filters = selectedFilters();
-      return (entriesByDate.get(dateKey) ?? []).filter((entry) => {
-        if (entry.type !== type) return false;
-        if (filters.length === 0) return true;
-        return entry.tags
-          .split(",")
-          .map((tag) => tag.trim())
-          .some((tag) => filters.includes(tag));
-      });
+      const { tab, filters } = getState();
+      const type = TAB_TYPES[tab];
+      return (entriesByDate.get(dateKey) ?? []).filter(
+        (entry) =>
+          entry.type === type &&
+          matchesFilters(entry.tags.split(",").filter(Boolean), filters),
+      );
     };
 
     const canShowMonth = (year: number, monthIndex: number) => {
@@ -442,25 +422,23 @@ const data = toJsonScript({ min, max, entries, events });
       renderCalendar();
     };
 
-    const setOpen = (open: boolean) => {
-      isOpen = open;
-      calendarView.hidden = !open;
-      toggleButton?.classList.toggle("active", open);
-      toggleButton?.setAttribute("aria-pressed", String(open));
-
-      if (open) {
-        document.querySelectorAll<HTMLElement>(".tab-content").forEach((panel) => {
-          panel.style.display = "none";
-          panel.style.opacity = "0";
-          panel.classList.remove("active-content");
-        });
+    subscribe((state, previous) => {
+      const open = state.view === "calendar";
+      if (open !== isOpen) {
+        isOpen = open;
+        calendarView.hidden = !open;
         closeModal();
-        renderCalendar();
-      } else {
-        closeModal();
-        document.dispatchEvent(new CustomEvent("sip:calendar-close"));
       }
-    };
+      if (
+        open &&
+        (previous.view !== "calendar" ||
+          state.tab !== previous.tab ||
+          state.filters !== previous.filters ||
+          !grid?.childElementCount)
+      ) {
+        renderCalendar();
+      }
+    });
 
     prevButton?.addEventListener("click", () => shiftMonth(-1));
     nextButton?.addEventListener("click", () => shiftMonth(1));
@@ -498,15 +476,6 @@ const data = toJsonScript({ min, max, entries, events });
       }
     });
 
-    (window as any).sipCalendar = {
-      isOpen: () => isOpen,
-      open: () => setOpen(true),
-      close: () => setOpen(false),
-      toggle: () => setOpen(!isOpen),
-      refresh: () => {
-        if (isOpen) renderCalendar();
-      },
-    };
   }
 </script>
 

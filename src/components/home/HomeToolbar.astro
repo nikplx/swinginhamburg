@@ -1,0 +1,300 @@
+---
+/**
+ * Tab switcher, calendar toggle and dance-style filter panel of the homepage.
+ * Writes to the shared homepage state; never touches the panels directly.
+ */
+import CalendarIcon from "../icons/CalendarIcon.astro";
+import FilterIcon from "../icons/FilterIcon.astro";
+import type { Locale } from "../../i18n";
+import type { Tab } from "../../lib/tabs";
+
+interface Props {
+  locale: Locale;
+  danceFilters: { slug: string; name: string }[];
+}
+
+const { locale, danceFilters } = Astro.props;
+const t = (de: string, en: string) => (locale === "en" ? en : de);
+
+const tabs: { key: Tab; label: string }[] = [
+  { key: "socials", label: "SOCIALS" },
+  { key: "events", label: "EVENTS" },
+  { key: "classes", label: t("KURSE", "CLASSES") },
+];
+---
+
+<div class="tabs-header">
+  <div class="page-tabs" role="tablist">
+    {
+      tabs.map((tab, index) => (
+        <>
+          {index > 0 && <span class="tab-separator" aria-hidden="true">/</span>}
+          <button
+            id={`tab-${tab.key}`}
+            class:list={["tab", { active: index === 0 }]}
+            type="button"
+            role="tab"
+            aria-selected={index === 0 ? "true" : "false"}
+            aria-controls={`content-${tab.key}`}
+            data-tab={tab.key}>
+            {tab.label}
+          </button>
+        </>
+      ))
+    }
+  </div>
+
+  <div class="header-controls">
+    <button
+      class="filter-toggle calendar-toggle"
+      type="button"
+      aria-pressed="false"
+      aria-controls="calendar-view"
+      aria-label={t("Kalenderansicht umschalten", "Toggle calendar view")}
+      data-calendar-toggle>
+      <CalendarIcon />
+    </button>
+
+    {
+      danceFilters.length > 0 && (
+        <button
+          class="filter-toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="filter-panel"
+          aria-label={t("Filter umschalten", "Toggle filters")}
+          data-filter-toggle>
+          <FilterIcon />
+        </button>
+      )
+    }
+  </div>
+</div>
+
+{
+  danceFilters.length > 0 && (
+    <div id="filter-panel" class="filter-panel">
+      {danceFilters.map((dance) => (
+        <button
+          class="listing-tag filter-tag"
+          type="button"
+          aria-pressed="false"
+          data-filter={dance.slug}>
+          {dance.name}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+<script>
+  import { getState, setState, subscribe, toggleFilter } from "../../scripts/homeState";
+  import { isTab } from "../../lib/tabs";
+
+  const tabButtons = [...document.querySelectorAll<HTMLButtonElement>(".page-tabs [data-tab]")];
+  const filterTags = [...document.querySelectorAll<HTMLButtonElement>(".filter-panel [data-filter]")];
+  const calendarToggle = document.querySelector<HTMLButtonElement>("[data-calendar-toggle]");
+  const filterToggle = document.querySelector<HTMLButtonElement>("[data-filter-toggle]");
+  const filterPanel = document.getElementById("filter-panel");
+
+  for (const button of tabButtons) {
+    button.addEventListener("click", () => {
+      const tab = button.dataset.tab;
+      if (!isTab(tab) || tab === getState().tab) return;
+      history.replaceState(null, "", `#${tab}`);
+      setState({ tab });
+    });
+  }
+
+  for (const tag of filterTags) {
+    tag.addEventListener("click", () => toggleFilter(tag.dataset.filter ?? ""));
+  }
+
+  calendarToggle?.addEventListener("click", () => {
+    setState({ view: getState().view === "calendar" ? "list" : "calendar" });
+  });
+
+  filterToggle?.addEventListener("click", () => {
+    const open = filterPanel?.classList.toggle("open") ?? false;
+    filterToggle.setAttribute("aria-expanded", String(open));
+  });
+
+  subscribe((state) => {
+    for (const button of tabButtons) {
+      const active = button.dataset.tab === state.tab;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-selected", String(active));
+    }
+    for (const tag of filterTags) {
+      const selected = state.filters.has(tag.dataset.filter ?? "");
+      tag.classList.toggle("selected", selected);
+      tag.setAttribute("aria-pressed", String(selected));
+    }
+    const calendarOpen = state.view === "calendar";
+    calendarToggle?.classList.toggle("active", calendarOpen);
+    calendarToggle?.setAttribute("aria-pressed", String(calendarOpen));
+  });
+</script>
+
+<style>
+  .tabs-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-bottom: 3.5rem;
+  }
+
+  .page-tabs {
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+    font-family: var(--font-body);
+    font-size: var(--fs-h1);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+
+  button.tab {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: color 0.2s ease;
+  }
+
+  button.tab.active {
+    color: var(--text-main);
+  }
+
+  @media (hover: hover) {
+    button.tab:hover {
+      color: var(--accent);
+    }
+  }
+
+  .tab-separator {
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+
+  .filter-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem;
+    flex: 0 0 auto;
+    transition: color 0.15s ease;
+  }
+
+  .filter-toggle :global(svg) {
+    width: 1.75rem;
+    height: auto;
+  }
+
+  @media (hover: hover) {
+    .filter-toggle:hover {
+      color: var(--accent);
+    }
+  }
+
+  .header-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 0 0 auto;
+  }
+
+  .calendar-toggle.active {
+    color: var(--accent);
+  }
+
+  /* --- Filter panel --- */
+  .filter-panel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    max-height: 0;
+    margin-bottom: 0;
+    opacity: 0;
+    overflow: hidden;
+    pointer-events: none;
+    transition:
+      max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+      opacity 0.3s ease-in-out,
+      margin-bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .filter-panel.open {
+    max-height: 20rem;
+    margin-bottom: 2.5rem;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .filter-panel .listing-tag {
+    background-color: transparent;
+    color: var(--text-main);
+    box-shadow: inset 0 0 0 1px var(--accent);
+  }
+
+  .filter-panel .listing-tag.selected {
+    background-color: var(--accent);
+    color: var(--accent-contrast);
+  }
+
+  @media (hover: hover) {
+    .filter-panel .listing-tag:hover {
+      background-color: var(--accent);
+      color: var(--accent-contrast);
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .tabs-header {
+      margin-bottom: 2rem;
+    }
+
+    .page-tabs {
+      font-size: var(--fs-h2);
+    }
+  }
+
+  @media (max-width: 767px) {
+    /* Tabs stay on one line; the icon buttons drop to their own row so the
+       filter control is never pushed off the edge. */
+    .tabs-header {
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .page-tabs {
+      flex: 1 1 100%;
+      font-size: 1.375rem; /* 22 */
+      column-gap: 0.125rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .header-controls {
+      flex: 1 1 100%;
+      justify-content: flex-end;
+      gap: 0.25rem;
+    }
+
+    .filter-toggle {
+      padding: 0.125rem;
+    }
+
+    .filter-toggle :global(svg) {
+      width: 1.5rem; /* 24 */
+    }
+  }
+</style>
