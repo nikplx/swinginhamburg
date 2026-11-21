@@ -1,39 +1,11 @@
 ---
-export async function getStaticPaths() {
-  const locales = ["en", "de"];
-
-  return locales.map((locale) => ({
-    params: { locale },
-  }));
-}
-
-import "../../styles/global.css";
-import Nav from "../../components/nav.astro";
 import MapC from "../../components/map.astro";
 import Layout from "../../components/layout.astro";
-interface Params {
-  locale: "en" | "de";
-}
-const { locale } = Astro.params as Params;
+import type { Locale } from "../../i18n";
+
+const locale = Astro.params.locale as Locale; // validated in src/middleware.ts
 ---
+
 <Layout locale={locale} wide>
-  <MapC locale={locale}></MapC>
+  <MapC locale={locale} />
 </Layout>
-
-<style>
-  .map-title {
-    font-family: var(--font-body);
-    font-size: var(--fs-h1);
-    font-weight: 700;
-    line-height: 1.2;
-    letter-spacing: -0.01em;
-    margin: 0 0 1.5rem 0;
-  }
-
-  @media (max-width: 1023px) {
-    .map-title {
-      font-size: var(--fs-h2);
-      margin-bottom: 1rem;
-    }
-  }
-</style>

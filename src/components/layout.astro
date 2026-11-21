@@ -1,42 +1,26 @@
 ---
-// src/layouts/Layout.astro
 import "../styles/global.css";
 import Nav from "../components/nav.astro";
 import Wave from "../components/wave.astro";
-import { payload } from "../utils";
+import type { Locale } from "../i18n";
 
 interface Props {
-  locale: "en" | "de";
+  locale: Locale;
   title?: string;
   /** Full-width content column (used by the map page) */
   wide?: boolean;
+  /** Render the decorative sidebar wave even when the page has no sidebar copy. */
+  sidebarWave?: boolean;
 }
 
-const { locale, title = "Swing in Hamburg", wide = false } = Astro.props;
+const {
+  locale,
+  title = "Swing in Hamburg",
+  wide = false,
+  sidebarWave = false,
+} = Astro.props;
 const hasSidebar = Astro.slots.has("sidebar");
-
-// "Letztes Update" footer from the design frames.
-const meta = await payload.findGlobal({
-  slug: "index",
-  depth: 0,
-  select: { updatedAt: true },
-});
-const updatedDate = meta?.updatedAt ? new Date(meta.updatedAt) : null;
-const dateLabel = updatedDate
-  ? new Intl.DateTimeFormat(locale === "de" ? "de-DE" : "en-GB", {
-      day: "numeric",
-      month: "long",
-    }).format(updatedDate)
-  : null;
-const timeLabel = updatedDate
-  ? new Intl.DateTimeFormat("de-DE", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).format(updatedDate)
-  : null;
-const formattedUpdate =
-  dateLabel && timeLabel ? `${dateLabel}, ${timeLabel}` : null;
+const showSidebar = hasSidebar || sidebarWave;
 ---
 
 <html lang={locale}>
@@ -60,20 +44,32 @@ const formattedUpdate =
       crossorigin
     />
   </head>
-  <body class:list={[{ "wide-page": wide }]}>
+  <body
+    class:list={[
+      { "wide-page": wide, "has-sidebar-page": showSidebar },
+    ]}>
     <div class="page-container">
       <header class="site-header">
-        <div class="shell header-inner">
-          <a href={`/${locale}`} class="wordmark">Swing<br />in Hamburg</a>
-          <Nav locale={locale} />
+        <div class="header-main">
+          <div class="shell header-inner">
+            <a href={`/${locale}`} class="wordmark">Swing<br />in Hamburg</a>
+            <Nav locale={locale} />
+          </div>
+        </div>
+        <div class="shell header-wave-row">
+          <div class="header-wave">
+            <Wave filled />
+          </div>
+          <div class="header-wave-filler" aria-hidden="true"></div>
         </div>
       </header>
 
-      <div class:list={["shell", "page-body", { "has-sidebar": hasSidebar }]}>
+      <div class:list={["shell", "page-body", { "has-sidebar": showSidebar }]}>
         {
-          hasSidebar && (
-            <aside class="sidebar">
-              <Wave />
+          showSidebar && (
+            <aside
+              class:list={["sidebar", { "sidebar--empty": !hasSidebar }]}>
+              <Wave class="sidebar-wave-top" />
               <slot name="sidebar" />
               <Wave />
             </aside>
@@ -84,5 +80,54 @@ const formattedUpdate =
         </main>
       </div>
     </div>
+
+    <script>
+      const header = document.querySelector<HTMLElement>(".site-header");
+      const sidebar = document.querySelector<HTMLElement>(".sidebar");
+      const anchor = document.querySelector<HTMLElement>(
+        "[data-sidebar-anchor]",
+      );
+      const pageBody = document.querySelector<HTMLElement>(".page-body");
+      const desktop = window.matchMedia("(min-width: 1024px)");
+
+      // Expose the sticky header height so the desktop sidebar can stick
+      // directly below it.
+      const syncHeaderHeight = () => {
+        if (!header) return;
+        document.documentElement.style.setProperty(
+          "--site-header-height",
+          `${header.getBoundingClientRect().height}px`,
+        );
+      };
+
+      // Align the sidebar wave with the first content separator (list top,
+      // or the content block below a section title) on desktop.
+      const syncSidebarAnchor = () => {
+        if (!sidebar) return;
+        if (!desktop.matches || !anchor || !pageBody) {
+          sidebar.style.removeProperty("--sidebar-anchor-offset");
+          return;
+        }
+        const padTop = parseFloat(getComputedStyle(pageBody).paddingTop) || 0;
+        const pageTop = pageBody.getBoundingClientRect().top + padTop;
+        const wave = sidebar.querySelector<HTMLElement>(".sidebar-wave-top");
+        const waveHeight = wave?.getBoundingClientRect().height || 13;
+        const offset = Math.max(
+          0,
+          anchor.getBoundingClientRect().top - pageTop - waveHeight / 2,
+        );
+        sidebar.style.setProperty("--sidebar-anchor-offset", `${offset}px`);
+      };
+
+      const syncLayout = () => {
+        syncHeaderHeight();
+        syncSidebarAnchor();
+      };
+
+      syncLayout();
+      document.fonts?.ready.then(syncLayout);
+      window.addEventListener("resize", syncLayout);
+      if (header) new ResizeObserver(syncLayout).observe(header);
+    </script>
   </body>
 </html>

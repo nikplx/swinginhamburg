@@ -1,0 +1,127 @@
+---
+import type { Locale } from "../../i18n";
+import RichText from "../../components/richtText.astro";
+import ResponsiveList from "../../components/responsiveList.astro";
+import ResponsiveListItem from "../../components/responsiveListItem.astro";
+import { payload } from "../../utils";
+import Layout from "../../components/layout.astro";
+
+const locale = Astro.params.locale as Locale; // validated in src/middleware.ts
+const t = (de: string, en: string) => (locale === "en" ? en : de);
+
+const cnt = await payload.findGlobal({
+  slug: "schools-global",
+  locale,
+});
+
+const { docs: organizations } = await payload.find({
+  collection: "organizations",
+  locale,
+  limit: 200,
+  sort: "name",
+  depth: 0,
+  where: {
+    kind: { equals: "school" },
+  },
+});
+---
+
+<Layout locale={locale}>
+  <Fragment slot="sidebar">
+    <div class="page-content sidebar-copy">
+      <RichText html={cnt.howToLearnHtml} />
+    </div>
+  </Fragment>
+
+  <h1 class="section-title">
+    {t("Tanzschulen", "Dancing Schools")}
+  </h1>
+
+  {
+    organizations.length > 0 ? (
+      <ResponsiveList anchor>
+        {organizations.map((organization) => (
+          <ResponsiveListItem
+            title={organization.name}
+            id={organization.slug}
+            isOpen={false}
+            indicator="plus">
+            <div class="organization-body">
+              <RichText html={organization.descriptionHtml} />
+              {organization.links && organization.links.length > 0 && (
+                <p class="organization-link-row">
+                  {organization.links.map((link) => (
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer">
+                      {link.label}
+                    </a>
+                  ))}
+                </p>
+              )}
+              {organization.defaultLocation?.address && (
+                <p class="organization-location">
+                  {organization.defaultLocation.name}
+                  {organization.defaultLocation.name && " | "}
+                  {organization.defaultLocation.address}
+                </p>
+              )}
+            </div>
+          </ResponsiveListItem>
+        ))}
+      </ResponsiveList>
+    ) : (
+      <p>{t("Noch keine Organisationen eingetragen.", "No organizations yet.")}</p>
+    )
+  }
+</Layout>
+
+<style>
+  .section-title {
+    font-family: var(--font-body);
+    font-size: var(--fs-h1);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    margin: 0 0 3.5rem 0;
+  }
+
+  .sidebar-copy :global(p) {
+    font-size: var(--fs-body);
+    line-height: 1.33;
+    margin: 0 0 1.1em 0;
+  }
+
+  .sidebar-copy :global(p:last-child) {
+    margin-bottom: 0;
+  }
+
+  .organization-body {
+    font-size: var(--fs-body);
+    line-height: 1.33;
+  }
+
+  .organization-link-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin: 0.75rem 0 0 0;
+  }
+
+  .organization-link-row a {
+    color: var(--accent);
+  }
+
+  .organization-location {
+    margin: 0.75rem 0 0 0;
+    color: var(--text-muted);
+  }
+
+  @media (max-width: 1023px) {
+    .section-title {
+      font-size: var(--fs-h2);
+      margin-bottom: 2rem;
+    }
+  }
+</style>
