@@ -20,7 +20,7 @@ public `/api/occurrences` endpoint, and reworks access control, admin UX and i18
 | `teachers` collection | removed |
 | `event.type`: `class, social, workshop, talk, walk, festival, other` | **`social, event, class`** (default `event`; workshops are events) |
 | `organizations.description`: plain string (textarea) | **Lexical rich-text JSON** |
-| `school.address`, point `location` tuple | `event.location` group with `address`, `name`, `lat`, `lng`, `directionsNote` |
+| `school.address`, point `location` tuple | `event.location` group with `name`, address parts, `address`, `lat`, `lng`, `directionsNote` |
 | `/schools` page | `/organizations` page |
 | Weekly class rows with `weekday` + times | `schedule` blocks + expanded occurrences (see §2) |
 
@@ -41,7 +41,7 @@ The public content endpoints are still plain Payload REST (`/api/...`). For cale
 | `organizers` | relationship → `organizations` | required, `hasMany` (co-hosted events) |
 | `danceStyles` | relationship → `dances` | `hasMany`; required for `class` |
 | `level` | select | `all` \| `beginner` \| `intermediate` \| `advanced` \| `open`; only shown for classes |
-| `location` | group | `address`, `name`, `lat`, `lng`, `directionsNote`; `address` is read-only in the admin and always has coordinates |
+| `location` | group | `name`, `street`, `houseNumber`, `postcode`, `district` (Stadtteil), `city`, `lat`, `lng`, `directionsNote`, plus `address` (one line, derived on save from the parts: "Schulterblatt 73, 20357 Hamburg"). Filled by the address search; parts stay editable. Any address requires coordinates |
 | `schedule` | blocks | always an **array** (max 1 row), see §2.2 |
 | `exceptions` | json | per-date overrides, see §2.3 |
 | `firstDate` / `lastDate` | date | derived; `lastDate` is `null` for open-ended series |
@@ -151,7 +151,11 @@ frontend imports them directly).
       "description": { "root": { "...": "Lexical JSON" } },
       "organizers": [{ "id": 3, "name": "Swing in Hamburg", "slug": "swing-in-hamburg" }],
       "danceStyles": [{ "id": 1, "name": "Lindy Hop", "shortName": "Lindy", "slug": "lindy-hop" }],
-      "location": { "name": "Café", "address": "...", "lat": 53.55, "lng": 10.0, "directionsNote": null },
+      "location": {
+        "name": "Haus73", "street": "Schulterblatt", "houseNumber": "73", "postcode": "20357",
+        "district": "Sternschanze", "city": "Hamburg", "address": "Schulterblatt 73, 20357 Hamburg",
+        "lat": 53.56, "lng": 9.96, "directionsNote": null
+      },
       "firstDate": "2026-11-18T00:00:00.000Z",
       "lastDate": null
     }
@@ -252,7 +256,11 @@ Additional rules:
 - **Preview table**: cancel a single occurrence, add a note, or override its start/end time.
   Pausing a date range marks all occurrences in it as cancelled.
 - **Address search** (events and organizations): type an address, press Enter, pick a result.
-  Coordinates are written automatically; an address without coordinates is rejected on save.
+  Street, house number, postcode, district, city and coordinates are filled automatically (and the
+  venue name, if empty and the result is a named place). The parts can be corrected by hand; the
+  one-line address is rebuilt on save. An address without coordinates is rejected on save.
+- **Existing addresses** saved before the parts existed are converted with
+  `npm run backfill:addresses` in `cms/` (`--dry-run` first); see the script header.
 - **Organization members**: Organizations → “Zugeordnete Benutzer”. Linked users see only their
   organizations/events and can edit the organization description.
 - **Event types** limited to Social / Event / Class, default **Event** (workshops are entered as events).

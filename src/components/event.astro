@@ -2,7 +2,7 @@
 import RichText from "./richtText.astro";
 import type { Locale } from "../i18n";
 import { danceKey, timeRange, type OccurrenceView } from "../lib/occurrences";
-import { decodeAddress } from "../utils";
+import { shortAddress } from "../lib/location";
 
 interface Props {
   occurrence: OccurrenceView;
@@ -14,7 +14,7 @@ const locale = Astro.params.locale as Locale; // validated in src/middleware.ts
 
 const event = occurrence.event;
 const venue = event.location ?? null;
-const address = decodeAddress(venue?.address);
+const venueAddress = shortAddress(venue);
 
 const organizers = event.organizers.filter((organizer) => organizer.name);
 
@@ -108,13 +108,11 @@ const time = timeRange(occurrence);
   }
 
   {
-    venue && (venue.name || venue.address) && (
+    venue && (venue.name || venueAddress) && (
       <div class="workshop-location">
         {venue.name && <strong>{venue.name}</strong>}
-        {venue.name && venue.address && <> | </>}
-        {venue.address
-          ? `${address.street} ${address.num}, ${address.quarter || address.city}`
-          : null}
+        {venue.name && venueAddress && <> | </>}
+        {venueAddress}
         {venue.directionsNote && (
           <span class="directions-note"> · {venue.directionsNote}</span>
         )}

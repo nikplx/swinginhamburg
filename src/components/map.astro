@@ -11,7 +11,8 @@ import {
   todayInBerlin,
   type Weekday,
 } from "../lib/occurrences";
-import { decodeAddress, toJsonScript } from "../utils";
+import { areaLabel, shortAddress } from "../lib/location";
+import { toJsonScript } from "../utils";
 
 interface Props {
   locale: Locale;
@@ -35,9 +36,11 @@ export interface MapEvent {
 }
 
 export interface MapLocation {
-  name: string | null;
+  /** Popup heading: venue name, else the area. */
+  place: string | null;
+  /** "Schulterblatt 73, Sternschanze" */
+  addressLine: string | null;
   coordinates: [number, number];
-  address: ReturnType<typeof decodeAddress>;
   events: MapEvent[];
 }
 
@@ -49,16 +52,17 @@ const mappedOccurrences = occurrences.filter(
 
 for (const occurrence of mappedOccurrences) {
   const { event } = occurrence;
-  const { lat, lng, name, address } = event.location!;
+  const location = event.location!;
+  const { lat, lng } = location;
   const weekday = berlinWeekday(occurrence.start);
 
   const venueKey = `${lat}|${lng}`;
   let venue = venues.get(venueKey);
   if (!venue) {
     venue = {
-      name: name ?? null,
+      place: location.name || areaLabel(location),
+      addressLine: shortAddress(location),
       coordinates: [lat!, lng!],
-      address: decodeAddress(address),
       events: [],
       seen: new Set(),
     };
@@ -227,14 +231,9 @@ const dayButtons: { key: Weekday; de: string; en: string }[] = [
   ];
 
   function buildPopup(location: MapLocation, events: MapEvent[]): HTMLElement {
-    const { address } = location;
-    const place = location.name || address.quarter || address.city || (isGerman ? "Ort" : "Venue");
-    const street = [address.street, address.num].filter(Boolean).join(" ");
-    const addressLine = [street, address.quarter].filter(Boolean).join(", ");
-
     const content = el("div", "custom-popup-content");
-    content.append(el("strong", "", place));
-    if (addressLine) content.append(el("span", "popup-address", addressLine));
+    content.append(el("strong", "", location.place || (isGerman ? "Ort" : "Venue")));
+    if (location.addressLine) content.append(el("span", "popup-address", location.addressLine));
 
     const groups = el("div", "popup-event-groups");
     for (const { type, label } of groupOrder) {

@@ -18,7 +18,7 @@ import {
 } from './occurrences';
 import { richTextToHtml } from './richText';
 import { TAB_TYPES, TABS, type Tab } from './tabs';
-import { decodeAddress } from '../utils';
+import { venueLine } from './location';
 
 export interface ListEntry {
   occurrence: OccurrenceView;
@@ -185,7 +185,6 @@ function calendarData(occurrences: OccurrenceView[], min: string, max: string): 
   for (const { eventId, event } of occurrences) {
     const key = String(eventId);
     if (events[key]) continue;
-    const address = decodeAddress(event.location?.address);
     events[key] = {
       title: event.title,
       type: event.type,
@@ -194,9 +193,7 @@ function calendarData(occurrences: OccurrenceView[], min: string, max: string): 
         .map((organizer) => organizer.name)
         .filter(Boolean)
         .join(' · '),
-      location: [
-        ...new Set([event.location?.name, address.location ?? address.city].filter(Boolean)),
-      ].join(' · '),
+      location: venueLine(event.location),
     };
   }
 

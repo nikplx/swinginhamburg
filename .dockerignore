@@ -4,4 +4,4 @@ dist
 cms/*
 !cms/src/payload-types.ts
 !cms/src/lib/occurrences/types.ts
-
+!cms/src/lib/location.ts

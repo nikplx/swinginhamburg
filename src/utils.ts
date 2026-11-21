@@ -26,28 +26,3 @@ export function toJsonScript(value: unknown): string {
     .replace(/\u2028/g, '\\u2028')
     .replace(/\u2029/g, '\\u2029');
 }
-
-export interface DecodedAddress {
-  location: string | null;
-  num: string;
-  street: string;
-  quarter: string;
-  city: string;
-  postal: string;
-  country: string;
-  rest: string[];
-}
-
-export const decodeAddress = (addressStr: string | null | undefined): DecodedAddress => {
-  const parts = (addressStr ?? '').split(',').map((p) => p.trim());
-
-  // If the first part doesn't start with a number, assume it's a location
-  const hasLocation = parts.length > 0 && parts[0] !== '' && !/^\d/.test(parts[0]);
-
-  const location = hasLocation ? parts[0] : null;
-  const fields = hasLocation ? parts.slice(1) : parts;
-  const [num = '', street = '', quarter = '', city = '', postal = '', country = '', ...rest] =
-    fields;
-
-  return { location, num, street, quarter, city, postal, country, rest };
-};
