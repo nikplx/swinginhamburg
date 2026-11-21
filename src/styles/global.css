@@ -241,7 +241,92 @@ svg {
   position: sticky;
   top: 0;
   z-index: 2000;
+  /* The wave row below stays transparent, so content scrolls behind it. */
+  background-color: transparent;
+}
+
+.header-main {
   background-color: var(--bg-main);
+  /* Restores the pre-wave-edit offset above the wave (page padding). */
+  padding-bottom: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .header-main {
+    /* Page top padding + half of the sidebar's former top offset. */
+    padding-bottom: 4.175rem;
+  }
+}
+
+/* The wave is the header's lower edge, so it stays with the sticky header
+   instead of scrolling underneath it. Its row has no background of its own,
+   so content scrolls visibly behind the wave. On phones and tablets the wave
+   spans the full content width. */
+.header-wave-row {
+  display: flex;
+  align-items: stretch;
+}
+
+.header-wave {
+  flex: 0 0 auto;
+  width: 100%;
+  padding-top: 0;
+  line-height: 0;
+}
+
+.header-wave-filler {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  /* On desktop the wave only frames the sidebar column; the rest of the row
+     stays opaque so only the wave itself is see-through. */
+  .header-wave {
+    width: var(--sidebar-width);
+  }
+
+  .header-wave-filler {
+    display: block;
+    flex: 1 1 auto;
+    align-self: flex-start;
+    /* Straight edge continues the wave's baseline (half the wave height). */
+    height: 6.5px;
+    background-color: var(--bg-main);
+  }
+
+  /* Pages with a sidebar draw their wave inside the sidebar column, aligned
+     with the first content separator. */
+  .has-sidebar-page .header-wave-row {
+    display: none;
+  }
+}
+
+/* Keep the wavy cut-out while scrolling. Only the open mobile menu makes the
+   wave row opaque, so page content/map cannot show through behind it. */
+@media (max-width: 1023px) {
+  /* In the open menu the wave always matches the regular content width, even
+     on the full-bleed map page. */
+  html.menu-open .header-wave-row {
+    background-color: var(--accent);
+    max-width: var(--shell-max);
+    padding-inline: var(--shell-pad);
+  }
+}
+
+/* Full-width pages (map) keep the full-width wave, edge to edge. */
+.wide-page .header-wave-row {
+  max-width: none;
+  padding-inline: 0;
+}
+
+@media (min-width: 1024px) {
+  .wide-page .header-wave {
+    width: 100%;
+  }
+
+  .wide-page .header-wave-filler {
+    display: none;
+  }
 }
 
 .header-inner {
@@ -250,7 +335,7 @@ svg {
   column-gap: var(--column-gap);
   align-items: start;
   padding-top: var(--header-pad-top);
-  padding-bottom: 1rem;
+  padding-bottom: 0.25rem;
 }
 
 .wordmark {
@@ -291,6 +376,10 @@ svg {
   gap: 1.75rem;
 }
 
+.sidebar .sidebar-wave-top {
+  display: none;
+}
+
 .main-content {
   min-width: 0;
 }
@@ -318,9 +407,15 @@ svg {
 /* --- Wave divider --- */
 .wave {
   display: block;
+  flex-shrink: 0;
   width: 100%;
   height: 0.8125rem;
   color: var(--rule-color);
+}
+
+/* Filled wave: the area above the curve matches the surface it cuts off. */
+.wave-cut-fill {
+  fill: var(--bg-main);
 }
 
 /* --- Navigation --- */
@@ -526,7 +621,7 @@ svg {
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    padding-bottom: 0.75rem;
+    padding-bottom: 0.25rem;
   }
 
   .wordmark {
@@ -588,8 +683,16 @@ svg {
     background-color: var(--accent);
   }
 
-  html.menu-open .site-header {
+  html.menu-open .header-main {
     background-color: var(--accent);
+  }
+
+  html.menu-open .site-header .wave {
+    color: var(--accent-contrast);
+  }
+
+  html.menu-open .wave-cut-fill {
+    fill: var(--accent);
   }
 
   html.menu-open .wordmark,
@@ -650,10 +753,6 @@ svg {
     border-bottom: var(--rule-width) solid var(--accent-contrast);
   }
 
-  .nav-links a:first-child {
-    border-top: var(--rule-width) solid var(--accent-contrast);
-  }
-
   /* The wave closes the list, so the last item needs no rule of its own */
   .nav-links a:last-of-type {
     border-bottom: 0;
@@ -675,6 +774,11 @@ svg {
     padding-top: 0;
   }
 
+  /* A wave-only sidebar would just add a stray divider on phones. */
+  .sidebar--empty {
+    display: none;
+  }
+
   /* The poll card sits directly below the intro on tablet/mobile, so the
      rule between the two blocks is dropped there. */
   .sidebar > .rule {
@@ -686,18 +790,45 @@ svg {
   }
 }
 
-/* Match the design's vertical rhythm: the sidebar starts lower than the
-   content column and shares the wordmark's left edge. The column is
-   framed by a wave at the top and one at the bottom of the viewport. */
+/* Match the design's vertical rhythm: the sidebar shares the wordmark's
+   left edge, opens with a wave aligned to the first content separator and is
+   closed by a wave at the bottom of the viewport. */
 @media (min-width: 1024px) {
+  /* The wave moves into the sidebar and lines up with the first content
+     separator. The whole sidebar sticks so it stays put on scroll. */
+  .sidebar .sidebar-wave-top {
+    display: block;
+  }
+
   .sidebar {
-    padding-top: 5.85rem;
-    align-self: stretch;
-    min-height: calc(100dvh - 17.25rem);
+    position: sticky;
+    top: calc(
+      var(--site-header-height, 0px) + 2.5rem +
+        var(--sidebar-anchor-offset, 0px)
+    );
+    margin-top: var(--sidebar-anchor-offset, 0px);
+    padding-top: 0;
+    align-self: start;
+    min-height: calc(
+      100dvh - var(--site-header-height, 0px) - 7.5rem -
+        var(--sidebar-anchor-offset, 0px)
+    );
+    /* If the sidebar copy is taller than the viewport it can still be
+       reached, without the sidebar moving with the page. */
+    max-height: calc(
+      100dvh - var(--site-header-height, 0px) - 2.5rem -
+        var(--sidebar-anchor-offset, 0px) - 1rem
+    );
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+
+  .sidebar::-webkit-scrollbar {
+    display: none;
   }
 
   .sidebar > .wave:last-of-type {
-    margin-top: auto;
+    margin-top: 0;
   }
 }
 

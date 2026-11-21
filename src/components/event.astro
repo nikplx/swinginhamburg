@@ -1,133 +1,212 @@
 ---
 import RichText from "./richtText.astro";
-import type { Event } from "../../cms/src/payload-types.ts";
-import { decodeAddress } from "../utils";
+import type { Locale } from "../i18n";
+import { danceKey, timeRange, type OccurrenceView } from "../lib/occurrences";
+import { shortAddress } from "../lib/location";
 
 interface Props {
-  event: Event;
+  occurrence: OccurrenceView;
+  /** Classes are grouped by weekday, so the date chip is redundant there. */
+  hideDate?: boolean;
 }
-const { event } = Astro.props;
+const { occurrence, hideDate = false } = Astro.props;
+const locale = Astro.params.locale as Locale; // validated in src/middleware.ts
 
-// Helper formats date as DD.MM (No trailing dot)
-const formatDate = (dateStr: string) => {
-  const d = new Date(dateStr);
-  return `${d.getUTCDate().toString().padStart(2, "0")}.${(d.getUTCMonth() + 1).toString().padStart(2, "0")}.`;
-};
+const event = occurrence.event;
+const venue = event.location ?? null;
+const venueAddress = shortAddress(venue);
 
-const getFormattedDate = () => {
-  const startD = formatDate(event.startDate);
-  const endD = event.endDate ? formatDate(event.endDate) : null;
+const organizers = event.organizers.filter((organizer) => organizer.name);
 
-  let datePart = startD;
+// Tags link to the dance's section on the swing page, which uses the same key.
+const danceTags = event.danceStyles.length
+  ? event.danceStyles.map((style) => ({
+      name: style.shortName ?? style.name ?? "",
+      href: `/${locale}/swing#${danceKey(style)}`,
+    }))
+  : [
+      {
+        name: locale === "en" ? "Style not specified" : "Stil nicht angegeben",
+        href: `/${locale}/swing`,
+      },
+    ];
 
-  if (endD && startD !== endD) {
-    const startParts = startD.split("."); // Expects [DD, MM, ""]
-    const endParts = endD.split("."); // Expects [DD, MM, ""]
+function levelLabel(level: string, lang: string): string {
+  const labels: Record<string, Record<string, string>> = {
+    all: { de: "Alle Niveaus", en: "All levels" },
+    beginner: { de: "Anfänger", en: "Beginner" },
+    intermediate: { de: "Mittelstufe", en: "Intermediate" },
+    advanced: { de: "Fortgeschritten", en: "Advanced" },
+    open: { de: "Offen", en: "Open" },
+  };
+  return labels[level]?.[lang] ?? level;
+}
 
-    // If months match: e.g., "17.-19.06."
-    if (startParts[1] === endParts[1]) {
-      datePart = `${startParts[0]}.-${endParts[0]}.${startParts[1]}.`;
-    } else {
-      // If months differ: e.g., "30.06.-02.07."
-      datePart = `${startD}-${endD}.`;
-    }
-  }
-
-  return datePart;
-};
-
-
-const address = decodeAddress(event.address);
-
-const danceTags =
-  event.dances && event.dances.length > 0
-    ? event.dances.map((dance) =>
-        typeof dance === "string" ? dance : dance.shortName,
-      )
-    : [event.title];
+// Dates stay in the German convention on both language versions. `date` is
+// the local calendar day, so format it at noon UTC to avoid zone shifts.
+const dayLabel = new Intl.DateTimeFormat("de-DE", {
+  timeZone: "UTC",
+  weekday: "short",
+  day: "2-digit",
+  month: "2-digit",
+}).format(new Date(`${occurrence.date}T12:00:00Z`));
+const time = timeRange(occurrence);
 ---
 
-<div class="workshop-item">
-  <div class="workshop-date">
-    {getFormattedDate()}
-  </div>
+<div class:list={["workshop-item", { "is-cancelled": occurrence.cancelled }]}>
+  {
+    occurrence.cancelled && occurrence.note && (
+      <p class="occurrence-note occurrence-note--cancelled">
+        <span class="occurrence-note__icon" aria-hidden="true">
+          ⚠
+        </span>
+        {occurrence.note}
+      </p>
+    )
+  }
 
-  <h3 class="workshop-title">{event.title}</h3>
+  {
+    hideDate ? (
+      time && <div class="workshop-time">{time}</div>
+    ) : (
+      <div class="workshop-date">
+        {time ? `${dayLabel} · ${time}` : dayLabel}
+      </div>
+    )
+  }
 
-  <div class="workshop-location">
+  <h3 class="workshop-title">
+    {event.title}
     {
-      event.locationName && (
-        <>
-          <strong>{event.locationName}</strong>
-          <> |</>
-        </>
+      occurrence.cancelled && (
+        <span class="cancelled-badge">
+          {locale === "en" ? "cancelled" : "fällt aus"}
+        </span>
       )
     }
-    {address.street}
-    {address.num}, {address.quarter}
-  </div>
+  </h3>
 
-  {/* Wrap description in a container to manage the collapse states */}
+  {
+    organizers.length > 0 && (
+      <div class="workshop-organizers">
+        {organizers.map((organizer, index) => (
+          <>
+            {index > 0 && " · "}
+            {organizer.slug ? (
+              <a
+                href={`/${locale}/organizations#${organizer.slug}`}
+                class="organizer-link">
+                {organizer.name}
+              </a>
+            ) : (
+              <span>{organizer.name}</span>
+            )}
+          </>
+        ))}
+      </div>
+    )
+  }
+
+  {
+    venue && (venue.name || venueAddress) && (
+      <div class="workshop-location">
+        {venue.name && <strong>{venue.name}</strong>}
+        {venue.name && venueAddress && <> | </>}
+        {venueAddress}
+        {venue.directionsNote && (
+          <span class="directions-note"> · {venue.directionsNote}</span>
+        )}
+      </div>
+    )
+  }
+
+  {
+    occurrence.note && !occurrence.cancelled && (
+      <p class="occurrence-note">{occurrence.note}</p>
+    )
+  }
+
   <div class="workshop-desc-container collapsed">
     <div class="workshop-desc">
-      {
-        typeof event.description === "string" ? (
-          <p>{event.description}</p>
-        ) : (
-          <RichText content={event.description} />
-        )
-      }
+      <RichText html={event.descriptionHtml} />
     </div>
     <button class="toggle-desc-btn" aria-expanded="false">
-      <span>Show more</span>
+      <span>{locale === "en" ? "Show more" : "Mehr anzeigen"}</span>
     </button>
   </div>
 
   <div class="listing-tags-row">
-    {/* Grouping the tags together allows them to flex/wrap safely inside their own container */}
     <div class="workshop-tags-group">
       {
-        danceTags.map((tag) => {
-          // Standardize the slug for the link
-          const slug = typeof tag === "string" ? tag : tag.shortName;
-          const href = `/${Astro.params.locale ?? "de"}/swing#${slug.replace(/\s+/g, "-").toLowerCase()}`;
-
-          return (
-            <a href={href} class="listing-tag">
-              {tag}
-            </a>
-          );
-        })
+        danceTags.map((tag) => (
+          <a href={tag.href} class="listing-tag">
+            {tag.name}
+          </a>
+        ))
       }
     </div>
     {
-      event.price !== null && (
-        <div class="workshop-price">{event.price.toFixed(2)} €</div>
+      event.level && (
+        <div class="workshop-level">
+          {levelLabel(event.level, locale)}
+        </div>
       )
     }
   </div>
 </div>
 
 <script>
-  // Setup toggle handlers for mobile collapse
-  const containers = document.querySelectorAll(".workshop-desc-container");
+  // Collapse long descriptions on every screen size and only show the toggle
+  // when the text actually overflows. Descriptions in inactive tabs report a
+  // zero height, so a ResizeObserver re-checks them when the tab is revealed.
+  const setupDescCollapse = (container: Element) => {
+    if (container.hasAttribute("data-collapse-ready")) return;
 
-  containers.forEach((container) => {
+    const desc = container.querySelector(".workshop-desc") as HTMLElement | null;
     const button = container.querySelector(".toggle-desc-btn");
     const span = button?.querySelector("span");
+    if (!desc || !button || !span) return;
 
-    button?.addEventListener("click", () => {
-      const isCollapsed = container.classList.toggle("collapsed");
-      button.setAttribute("aria-expanded", (!isCollapsed).toString());
-      if (span) {
-        span.textContent = isCollapsed ? "Show more" : "Show less";
+    container.setAttribute("data-collapse-ready", "true");
+
+    const isGerman = document.documentElement.lang.startsWith("de");
+    const moreLabel = isGerman ? "Mehr anzeigen" : "Show more";
+    const lessLabel = isGerman ? "Weniger anzeigen" : "Show less";
+
+    const sync = () => {
+      // offsetParent is null while the tab is hidden — measure later.
+      if (!desc.offsetParent) return;
+      const overflows = desc.scrollHeight - desc.clientHeight > 1;
+      container.classList.toggle("has-overflow", overflows);
+      if (!overflows) {
+        container.classList.remove("collapsed");
+        button.setAttribute("aria-expanded", "true");
       }
+    };
+
+    button.addEventListener("click", () => {
+      const isCollapsed = container.classList.toggle("collapsed");
+      button.setAttribute("aria-expanded", String(!isCollapsed));
+      span.textContent = isCollapsed ? moreLabel : lessLabel;
     });
-  });
+
+    if (typeof ResizeObserver !== "undefined") {
+      new ResizeObserver(() => {
+        if (container.classList.contains("collapsed")) sync();
+      }).observe(desc);
+    }
+
+    sync();
+  };
+
+  const initDescCollapse = () => {
+    document.querySelectorAll(".workshop-desc-container").forEach(setupDescCollapse);
+  };
+
+  initDescCollapse();
 </script>
 
 <style>
-  /* --- Events: one row per listing, rule between rows --- */
   .workshop-item {
     display: flex;
     flex-direction: column;
@@ -135,6 +214,34 @@ const danceTags =
     padding: 0.625rem 0 1rem 0;
     border-bottom: var(--rule-width) solid var(--rule-color);
     margin: 0;
+  }
+
+  .workshop-item.is-cancelled > * {
+    opacity: 0.7;
+  }
+
+  /* The notice stays fully visible so the cancellation reason is readable. */
+  .workshop-item.is-cancelled > .occurrence-note {
+    opacity: 1;
+  }
+
+  .workshop-item.is-cancelled
+    :is(
+      .workshop-date,
+      .workshop-time,
+      .workshop-title,
+      .workshop-organizers,
+      .workshop-location,
+      .workshop-desc,
+      .listing-tag,
+      .workshop-level
+    ) {
+    text-decoration: line-through;
+  }
+
+  .workshop-item.is-cancelled .cancelled-badge {
+    display: inline-block;
+    text-decoration: none;
   }
 
   .workshop-date {
@@ -154,6 +261,14 @@ const danceTags =
     line-height: 1.2;
   }
 
+  .workshop-time {
+    font-size: var(--fs-body);
+    font-weight: 600;
+    font-style: italic;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+  }
+
   .workshop-title {
     font-family: var(--font-display);
     font-size: var(--fs-row);
@@ -164,14 +279,61 @@ const danceTags =
     margin: 0.25rem 0 0 0;
   }
 
+  .cancelled-badge {
+    margin-left: 0.5rem;
+    font-family: var(--font-body);
+    font-size: var(--fs-body);
+    font-weight: 600;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .workshop-organizers {
+    font-size: var(--fs-body);
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  .organizer-link {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+
+  @media (hover: hover) {
+    .organizer-link:hover {
+      color: var(--accent);
+    }
+  }
+
   .workshop-location {
-    font-size: var(--fs-h3);
+    font-size: var(--fs-body);
     line-height: 1.2;
     color: var(--text-main);
   }
 
   .workshop-location strong {
     font-weight: 400;
+  }
+
+  .directions-note {
+    font-size: var(--fs-body);
+    color: var(--text-muted);
+  }
+
+  .occurrence-note {
+    margin: 0;
+    font-size: var(--fs-body);
+    color: var(--accent);
+  }
+
+  .occurrence-note--cancelled {
+    font-weight: 600;
+  }
+
+  .occurrence-note__icon {
+    margin-right: 0.25rem;
   }
 
   .workshop-desc {
@@ -200,7 +362,7 @@ const danceTags =
     flex: 1;
   }
 
-  .workshop-price {
+  .workshop-level {
     font-size: var(--fs-body);
     font-weight: 700;
     color: var(--text-main);
@@ -208,50 +370,46 @@ const danceTags =
     margin-left: auto;
   }
 
-  /* --- Mobile collapsible description --- */
   .toggle-desc-btn {
     display: none;
   }
 
-  @media (max-width: 768px) {
-    .workshop-desc-container {
-      position: relative;
-      margin-bottom: 0.625rem;
-    }
+  .workshop-desc-container {
+    position: relative;
+  }
 
-    .workshop-desc-container.collapsed .workshop-desc {
-      max-height: 4.5em;
-      overflow: hidden;
-      position: relative;
-    }
+  .workshop-desc-container.collapsed .workshop-desc {
+    max-height: 4.5em;
+    overflow: hidden;
+    position: relative;
+  }
 
-    .workshop-desc-container.collapsed .workshop-desc::after {
-      content: "";
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: 2.5em;
-      background: linear-gradient(
-        to bottom,
-        transparent,
-        var(--bg-main) 90%
-      );
-      pointer-events: none;
-    }
+  .workshop-desc-container.collapsed .workshop-desc::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2.5em;
+    background: linear-gradient(to bottom, transparent, var(--bg-main) 90%);
+    pointer-events: none;
+  }
 
-    .toggle-desc-btn {
-      display: block;
-      background: none;
-      border: none;
-      color: var(--accent);
-      font-family: var(--font-body);
-      font-size: var(--fs-body);
-      font-weight: 600;
-      padding: 0.25rem 0;
-      margin-top: 0.25rem;
-      cursor: pointer;
-      text-decoration: underline;
-    }
+  .workshop-desc-container.has-overflow {
+    margin-bottom: 0.625rem;
+  }
+
+  .workshop-desc-container.has-overflow .toggle-desc-btn {
+    display: block;
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-family: var(--font-body);
+    font-size: var(--fs-body);
+    font-weight: 600;
+    padding: 0.25rem 0;
+    margin-top: 0.25rem;
+    cursor: pointer;
+    text-decoration: underline;
   }
 </style>

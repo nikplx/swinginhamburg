@@ -1,22 +1,10 @@
 ---
-export async function getStaticPaths() {
-  const locales = ["en", "de"];
-
-  return locales.map((locale) => ({
-    params: { locale },
-  }));
-}
-
-import "../../styles/global.css";
-import Nav from "../../components/nav.astro";
+import type { Locale } from "../../i18n";
 import RichText from "../../components/richtText.astro";
 import Layout from "../../components/layout.astro";
 import { payload } from "../../utils";
 
-interface Params {
-  locale: "en" | "de";
-}
-const { locale } = Astro.params as Params;
+const locale = Astro.params.locale as Locale; // validated in src/middleware.ts
 
 const cnt = await payload.findGlobal({
   slug: "about",
@@ -24,13 +12,32 @@ const cnt = await payload.findGlobal({
 });
 ---
 
-<Layout locale={locale}>
-  <div class="page-content">
-    <RichText content={cnt.content} />
+<Layout locale={locale} sidebarWave>
+  <h1 class="section-title">
+    {locale === "en" ? "About" : "Über uns"}
+  </h1>
+  <div class="page-content" data-sidebar-anchor>
+    <RichText html={cnt.contentHtml} />
   </div>
 </Layout>
 
 <style>
+  .section-title {
+    font-family: var(--font-body);
+    font-size: var(--fs-h1);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    margin: 0 0 3.5rem 0;
+  }
+
+  @media (max-width: 1023px) {
+    .section-title {
+      font-size: var(--fs-h2);
+      margin-bottom: 2rem;
+    }
+  }
+
   /* Use :global() to target elements rendered inside the RichText component */
 
   /* Container or table target */

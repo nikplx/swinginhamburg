@@ -1,231 +1,325 @@
 ---
-import "../styles/global.css";
-import { decodeAddress, payload, translateWeekday } from "../utils";
-import type { School, Class } from "../../cms/src/payload-types";
+import "leaflet/dist/leaflet.css";
+import FilterIcon from "./icons/FilterIcon.astro";
+import type { Locale } from "../i18n";
+import {
+  addDays,
+  berlinWeekday,
+  danceFilters as collectDanceFilters,
+  danceKeys,
+  fetchOccurrences,
+  todayInBerlin,
+  type Weekday,
+} from "../lib/occurrences";
+import { areaLabel, shortAddress } from "../lib/location";
+import { toJsonScript } from "../utils";
 
-interface Params {
-  locale: "en" | "de";
+interface Props {
+  locale: Locale;
 }
-const { locale } = Astro.props as Params;
+const { locale } = Astro.props;
 
-const { docs: classes } = await payload.find({
-  collection: "classes",
-  locale: locale,
-  depth: 1, // Ensures relations like 'dances' are populated
-  pagination: false,
+const from = todayInBerlin();
+const { occurrences, unavailable } = await fetchOccurrences({
+  from,
+  to: addDays(from, 90),
+  locale,
 });
 
-// Extract unique dances for the filter UI
-const uniqueDancesMap = new Map();
-classes.forEach(c => {
-  if (c.dances && Array.isArray(c.dances)) {
-    c.dances.forEach(dance => {
-      if (dance && dance.shortName) {
-        uniqueDancesMap.set(dance.shortName, dance);
-      }
-    });
+export interface MapEvent {
+  eventId: string;
+  title: string;
+  type: string;
+  organizers: string;
+  weekday: Weekday;
+  danceTags: string[];
+}
+
+export interface MapLocation {
+  /** Popup heading: venue name, else the area. */
+  place: string | null;
+  /** "Schulterblatt 73, Sternschanze" */
+  addressLine: string | null;
+  coordinates: [number, number];
+  events: MapEvent[];
+}
+
+// One marker per venue, listing every event happening there once per weekday.
+const venues = new Map<string, MapLocation & { seen: Set<string> }>();
+const mappedOccurrences = occurrences.filter(
+  ({ event }) => event.location?.lat != null && event.location?.lng != null,
+);
+
+for (const occurrence of mappedOccurrences) {
+  const { event } = occurrence;
+  const location = event.location!;
+  const { lat, lng } = location;
+  const weekday = berlinWeekday(occurrence.start);
+
+  const venueKey = `${lat}|${lng}`;
+  let venue = venues.get(venueKey);
+  if (!venue) {
+    venue = {
+      place: location.name || areaLabel(location),
+      addressLine: shortAddress(location),
+      coordinates: [lat!, lng!],
+      events: [],
+      seen: new Set(),
+    };
+    venues.set(venueKey, venue);
   }
-});
-const danceFilters = Array.from(uniqueDancesMap.values());
 
-const events = classes.map((clazz) => {
-  const school = clazz.school as School;
-  const address = decodeAddress(clazz.address);
+  const eventKey = `${occurrence.eventId}|${weekday}`;
+  if (venue.seen.has(eventKey)) continue;
+  venue.seen.add(eventKey);
 
-  return {
-    title: clazz.title,
-    // Store original weekday string for display, but also the translated one
-    weekday: translateWeekday(clazz.weekday, locale),
-    rawWeekday: clazz.weekday, // Better for stable filtering logic
-    address: address, 
-    school: school.name,
-    coordinates: [clazz.location[1], clazz.location[0]],
-    dances: clazz.dances?.map((d: any) => d.name || d.shortName).join(", "),
-    // Array of lowercase shortNames strictly for JS filtering
-    danceTags: clazz.dances?.map((d: any) => d.shortName.toLowerCase()) || [],
-  };
-});
+  venue.events.push({
+    eventId: String(occurrence.eventId),
+    title: event.title,
+    type: event.type,
+    organizers: event.organizers
+      .map((organizer) => organizer.name)
+      .filter(Boolean)
+      .join(", "),
+    weekday,
+    danceTags: danceKeys(event),
+  });
+}
+
+const locations: MapLocation[] = [...venues.values()].map(({ seen, ...venue }) => venue);
+const danceFilters = collectDanceFilters(mappedOccurrences);
+
+const dayButtons: { key: Weekday; de: string; en: string }[] = [
+  { key: "monday", de: "Mo", en: "Mon" },
+  { key: "tuesday", de: "Di", en: "Tue" },
+  { key: "wednesday", de: "Mi", en: "Wed" },
+  { key: "thursday", de: "Do", en: "Thu" },
+  { key: "friday", de: "Fr", en: "Fri" },
+  { key: "saturday", de: "Sa", en: "Sat" },
+  { key: "sunday", de: "So", en: "Sun" },
+];
 ---
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
-<div class="map-wrapper">
+<div class="map-wrapper" data-locale={locale}>
   <div id="map"></div>
 
-  <button class="mobile-filter-toggle" aria-expanded="false">
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="filter-icon">
-      <line x1="4" y1="21" x2="4" y2="14"></line>
-      <line x1="4" y1="10" x2="4" y2="3"></line>
-      <line x1="12" y1="21" x2="12" y2="12"></line>
-      <line x1="12" y1="8" x2="12" y2="3"></line>
-      <line x1="20" y1="21" x2="20" y2="16"></line>
-      <line x1="20" y1="12" x2="20" y2="3"></line>
-      <line x1="1" y1="14" x2="7" y2="14"></line>
-      <line x1="9" y1="8" x2="15" y2="8"></line>
-      <line x1="17" y1="16" x2="23" y2="16"></line>
-    </svg>
+  {
+    unavailable && (
+      <p class="map-notice" role="status">
+        {locale === "de"
+          ? "Die Termine konnten gerade nicht geladen werden."
+          : "Events could not be loaded right now."}
+      </p>
+    )
+  }
+
+  <button
+    class="mobile-filter-toggle"
+    type="button"
+    aria-expanded="false"
+    aria-controls="map-filter-panel">
+    <FilterIcon class="filter-icon" strokeWidth={1.5} width={20} height={20} />
     {locale === "de" ? "Filter" : "Filters"}
   </button>
 
-  <div class="filter-panel" id="filter-panel">
+  <div class="filter-panel" id="map-filter-panel">
     <div class="filter-header-mobile">
       <h3>{locale === "de" ? "Filter" : "Filters"}</h3>
-      <button class="close-filter-btn" aria-label="Close filters">✕</button>
+      <button
+        class="close-filter-btn"
+        type="button"
+        aria-label={locale === "de" ? "Filter schließen" : "Close filters"}>
+        ✕
+      </button>
     </div>
-    <div class="filter-section">
 
-    {danceFilters.length > 0 && (
-      <div class="filter-section">
-        <h3 class="filter-heading">
-          {locale === "de" ? "Nach Tanz" : "By Dance"}
-        </h3>
-        <div class="dance-filter-options">
-          {danceFilters.map((dance) => (
-            <button class="listing-tag filter-tag" data-filter={dance.shortName.toLowerCase()}>
-              {dance.name || dance.shortName}
-            </button>
-          ))}
+    {
+      danceFilters.length > 0 && (
+        <div class="filter-section">
+          <h3 class="filter-heading">{locale === "de" ? "Nach Tanz" : "By Dance"}</h3>
+          <div class="dance-filter-options">
+            {danceFilters.map((dance) => (
+              <button
+                class="listing-tag filter-tag"
+                type="button"
+                aria-pressed="false"
+                data-filter={dance.slug}>
+                {dance.name}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
-    )}
-      <h3 class="filter-heading">
-        {locale === "de" ? "Nach Tag" : "By Day"}
-      </h3>
+      )
+    }
+
+    <div class="filter-section">
+      <h3 class="filter-heading">{locale === "de" ? "Nach Tag" : "By Day"}</h3>
       <div class="day-filter-row">
-        <button class="filter-btn active" data-day="all">
+        <button class="filter-btn active" type="button" aria-pressed="true" data-day="all">
           {locale === "de" ? "Alle" : "All"}
         </button>
-        <button class="filter-btn" data-day="Monday">{locale === "de" ? "Mo" : "Mon"}</button>
-        <button class="filter-btn" data-day="Tuesday">{locale === "de" ? "Di" : "Tue"}</button>
-        <button class="filter-btn" data-day="Wednesday">{locale === "de" ? "Mi" : "Wed"}</button>
-        <button class="filter-btn" data-day="Thursday">{locale === "de" ? "Do" : "Thu"}</button>
-        <button class="filter-btn" data-day="Friday">{locale === "de" ? "Fr" : "Fri"}</button>
-        <button class="filter-btn" data-day="Saturday">{locale === "de" ? "Sa" : "Sat"}</button>
-        <button class="filter-btn" data-day="Sunday">{locale === "de" ? "So" : "Sun"}</button>
+        {
+          dayButtons.map((day) => (
+            <button class="filter-btn" type="button" aria-pressed="false" data-day={day.key}>
+              {day[locale]}
+            </button>
+          ))
+        }
       </div>
     </div>
   </div>
 </div>
 
-<script set:html={JSON.stringify(events)} is:inline id="event-data" type="application/json" />
-<script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script type="application/json" id="map-data" is:inline set:html={toJsonScript(locations)} />
 
-<script is:inline lang="ts">
-  document.addEventListener("DOMContentLoaded", () => {
-    // --- Map Initialization ---
-    const map = L.map("map", { fadeAnimation: false }).setView(
-      [53.5511, 9.9937],
-      11,
+<script>
+  import L from "leaflet";
+  import type { MapEvent, MapLocation } from "./map.astro";
+
+  const mapWrapper = document.querySelector<HTMLElement>(".map-wrapper");
+  const locale = mapWrapper?.dataset.locale === "en" ? "en" : "de";
+  const isGerman = locale === "de";
+  const locations: MapLocation[] = JSON.parse(
+    document.getElementById("map-data")?.textContent ?? "[]",
+  );
+
+  // --- Map --------------------------------------------------------------------
+
+  const map = L.map("map", { fadeAnimation: false }).setView([53.5511, 9.9937], 11);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "© OpenStreetMap",
+  }).addTo(map);
+
+  const markerLayer = L.layerGroup().addTo(map);
+
+  // Accent dot markers instead of the default blue pin.
+  const dotIcon = L.divIcon({
+    className: "sih-map-marker",
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
+    popupAnchor: [0, -9],
+  });
+
+  // --- Filters ----------------------------------------------------------------
+
+  let dayFilter = "all";
+  const danceFilters = new Set<string>();
+
+  const matchingEvents = (location: MapLocation) =>
+    location.events.filter(
+      (event) =>
+        (dayFilter === "all" || event.weekday === dayFilter) &&
+        (danceFilters.size === 0 || event.danceTags.some((tag) => danceFilters.has(tag))),
     );
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: "© OpenStreetMap",
-    }).addTo(map);
+  // --- Popups -------------------------------------------------------------------
 
-    const eventDataElement = document.getElementById("event-data");
-    const events = JSON.parse(eventDataElement.textContent);
-    const markerLayer = L.layerGroup().addTo(map);
+  // Popup content comes from the CMS (titles, organizer and venue names), so it
+  // is built as DOM nodes with textContent, never as an HTML string.
+  function el<K extends keyof HTMLElementTagNameMap>(tag: K, className = "", text = "") {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text) node.textContent = text;
+    return node;
+  }
 
-    // Accent dot markers instead of the default blue pin
-    const dotIcon = L.divIcon({
-      className: "sih-map-marker",
-      iconSize: [18, 18],
-      iconAnchor: [9, 9],
-      popupAnchor: [0, -9],
-    });
+  const groupOrder: { type: string; label: string }[] = [
+    { type: "class", label: isGerman ? "Kurse" : "Classes" },
+    { type: "social", label: "Socials" },
+    { type: "event", label: "Events" },
+  ];
 
-    // Filter States
-    let currentDayFilter = "all";
-    let activeDanceFilters = new Set();
+  function buildPopup(location: MapLocation, events: MapEvent[]): HTMLElement {
+    const content = el("div", "custom-popup-content");
+    content.append(el("strong", "", location.place || (isGerman ? "Ort" : "Venue")));
+    if (location.addressLine) content.append(el("span", "popup-address", location.addressLine));
 
-    function renderMarkers() {
-      markerLayer.clearLayers();
+    const groups = el("div", "popup-event-groups");
+    for (const { type, label } of groupOrder) {
+      const typeEvents = events.filter((event) => event.type === type);
+      if (typeEvents.length === 0) continue;
 
-      events.forEach((event) => {
-        // 1. Check Day Condition
-        const dayMatch = currentDayFilter === "all" || event.rawWeekday === currentDayFilter;
-
-        // 2. Check Dance Condition
-        let danceMatch = true;
-        if (activeDanceFilters.size > 0) {
-          danceMatch = event.danceTags.some(tag => activeDanceFilters.has(tag));
-        }
-
-        // 3. Render if both match
-        if (dayMatch && danceMatch) {
-          const marker = L.marker(event.coordinates, { icon: dotIcon }).bindPopup(
-            `
-            <div class="custom-popup-content">
-              <strong>${event.school}</strong><br/>
-              <span>${event.address.street} ${event.address.num}, ${event.address.quarter}</span><br/>
-              <div class="popup-date-time">
-                ${event.weekday}
-              </div>
-              <div class="popup-title">${event.dances}</div>
-            </div>
-          `,
-            {
-              className: "custom-popup",
-              closeButton: false,
-              offset: [0, -10],
-            }
+      const group = el("div", "popup-event-group");
+      group.append(el("div", "popup-group-label", label));
+      const list = el("ul");
+      for (const event of typeEvents) {
+        const item = el("li");
+        const link = el("a", "", event.title);
+        link.href = `/${locale}/?event=${encodeURIComponent(event.eventId)}`;
+        item.append(link);
+        if (event.organizers) {
+          item.append(
+            " ",
+            el("span", "popup-organizer", `${isGerman ? "von" : "by"} ${event.organizers}`),
           );
-          markerLayer.addLayer(marker);
         }
-      });
-    }
-
-    // Initial render
-    renderMarkers();
-
-    // --- Filter UI Logic ---
-    const filterPanel = document.getElementById("filter-panel");
-    const mobileToggleBtn = document.querySelector(".mobile-filter-toggle");
-    const closeBtn = document.querySelector(".close-filter-btn");
-    
-    // Day Buttons
-    const dayButtons = document.querySelectorAll(".filter-btn");
-    // Dance Buttons
-    const danceButtons = document.querySelectorAll(".filter-tag");
-
-    function toggleMobileDrawer() {
-      if (window.innerWidth <= 768) {
-        filterPanel.classList.toggle("open");
+        list.append(item);
       }
+      group.append(list);
+      groups.append(group);
     }
+    content.append(groups);
+    return content;
+  }
 
-    if (mobileToggleBtn) mobileToggleBtn.addEventListener("click", toggleMobileDrawer);
-    if (closeBtn) closeBtn.addEventListener("click", toggleMobileDrawer);
+  function renderMarkers() {
+    markerLayer.clearLayers();
+    for (const location of locations) {
+      const events = matchingEvents(location);
+      if (events.length === 0) continue;
+      L.marker(location.coordinates, { icon: dotIcon })
+        .bindPopup(buildPopup(location, events), {
+          className: "custom-popup",
+          closeButton: false,
+          offset: [0, -10],
+        })
+        .addTo(markerLayer);
+    }
+  }
 
-    // Day Filter Event Listeners
-    dayButtons.forEach((button) => {
-      button.addEventListener("click", (e) => {
-        dayButtons.forEach((btn) => btn.classList.remove("active"));
-        e.target.classList.add("active");
+  renderMarkers();
 
-        currentDayFilter = e.target.dataset.day;
-        renderMarkers();
-      });
+  // --- Filter UI ----------------------------------------------------------------
+
+  const filterPanel = document.getElementById("map-filter-panel");
+  const drawerToggle = document.querySelector<HTMLButtonElement>(".mobile-filter-toggle");
+
+  // The panel is a bottom drawer on phones and always visible otherwise.
+  const setDrawerOpen = (open: boolean) => {
+    filterPanel?.classList.toggle("open", open);
+    drawerToggle?.setAttribute("aria-expanded", String(open));
+  };
+  drawerToggle?.addEventListener("click", () =>
+    setDrawerOpen(!filterPanel?.classList.contains("open")),
+  );
+  document
+    .querySelector(".close-filter-btn")
+    ?.addEventListener("click", () => setDrawerOpen(false));
+
+  const dayButtons = [...document.querySelectorAll<HTMLButtonElement>(".filter-btn[data-day]")];
+  for (const button of dayButtons) {
+    button.addEventListener("click", () => {
+      dayFilter = button.dataset.day ?? "all";
+      for (const other of dayButtons) {
+        const active = other === button;
+        other.classList.toggle("active", active);
+        other.setAttribute("aria-pressed", String(active));
+      }
+      renderMarkers();
     });
+  }
 
-    // Dance Filter Event Listeners
-    danceButtons.forEach((button) => {
-      button.addEventListener("click", (e) => {
-        const target = e.target;
-        const filterValue = target.dataset.filter;
-
-        if (activeDanceFilters.has(filterValue)) {
-          activeDanceFilters.delete(filterValue);
-          target.classList.remove("selected");
-        } else {
-          activeDanceFilters.add(filterValue);
-          target.classList.add("selected");
-        }
-        renderMarkers();
-      });
+  for (const button of document.querySelectorAll<HTMLButtonElement>(".filter-tag[data-filter]")) {
+    button.addEventListener("click", () => {
+      const key = button.dataset.filter ?? "";
+      const selected = !danceFilters.delete(key);
+      if (selected) danceFilters.add(key);
+      button.classList.toggle("selected", selected);
+      button.setAttribute("aria-pressed", String(selected));
+      renderMarkers();
     });
-  });
+  }
 </script>
 
 <style>
@@ -241,18 +335,6 @@ const events = classes.map((clazz) => {
     width: 100%;
     height: 100%; 
     z-index: 1;
-  }
-
-  .main-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 0;
-  }
-
-  #map-container {
-    flex: 1;
-    width: 100%;
   }
 
   /* --- Filter Panel Base --- */
@@ -277,6 +359,21 @@ const events = classes.map((clazz) => {
     margin-bottom: 1.5rem;
   }
 
+  .map-notice {
+    position: absolute;
+    top: 1.25rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    margin: 0;
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text-main);
+    box-shadow: 0 4px 16px rgba(40, 70, 110, 0.12);
+    font-size: var(--fs-body);
+  }
+
   .filter-section:last-child {
     margin-bottom: 0;
   }
@@ -289,12 +386,6 @@ const events = classes.map((clazz) => {
     font-weight: 700;
     line-height: 1.1;
     color: var(--text-main);
-  }
-
-  .filter-options {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
   }
 
   .dance-filter-options {
@@ -369,38 +460,6 @@ const events = classes.map((clazz) => {
   .mobile-filter-toggle,
   .filter-header-mobile {
     display: none;
-  }
-
-  .filter-toggle {
-    position: absolute;
-    right: 0;
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--text-main);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px;
-    width: 40px;  /* Ensures a perfect circle */
-    height: 40px; 
-    border-radius: 50%; /* Prepares the circular hover background */
-    transition: 
-      background-color 0.2s ease, 
-      transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  @media (hover: hover) {
-    .filter-toggle:hover {
-      background-color: var(--accent-soft); /* Soft highlight */
-      transform: scale(1.1);     /* Slight pop forward */
-      opacity: 1;                /* Overrides your old opacity drop */
-    }
-  }
-
-  .filter-toggle:active {
-    transform: scale(0.95);    /* Satisfying squish when clicked */
-    background-color: var(--accent-soft);
   }
 
   .close-filter-btn {
@@ -517,30 +576,35 @@ const events = classes.map((clazz) => {
 </style>
 
 <style is:global>
-  /* Phones: the map was fullscreen on the old site, so let it fill the
-     viewport below the sticky header again and keep the page from scrolling. */
-  @media (max-width: 768px) {
-    body.wide-page,
-    body.wide-page .page-container {
-      overflow: hidden;
-    }
+  /* The map fills the whole viewport below the sticky header. It is pulled
+     up under the wavy header edge so the wave cuts into the map. */
+  body.wide-page,
+  body.wide-page .page-container {
+    overflow: hidden;
+  }
 
-    body.wide-page .page-container {
-      height: 100dvh;
-      min-height: 0;
-    }
+  body.wide-page .page-container {
+    height: 100dvh;
+    min-height: 0;
+  }
 
-    body.wide-page .page-body {
-      flex: 1;
-      display: block;
-      min-height: 0;
-      padding: 0;
-    }
+  body.wide-page .page-body {
+    flex: 1;
+    display: block;
+    min-height: 0;
+    max-width: none;
+    padding: 0;
+    margin-top: -0.8125rem;
+  }
 
-    body.wide-page .main-content,
-    body.wide-page .map-wrapper {
-      height: 100%;
-    }
+  body.wide-page .main-content,
+  body.wide-page .map-wrapper {
+    height: 100%;
+  }
+
+  /* Keep the zoom controls clear of the wavy header edge. */
+  body.wide-page .leaflet-top {
+    top: 0.8125rem;
   }
 
   /* Accent dot markers (created at runtime, so they live in global CSS) */
@@ -572,7 +636,7 @@ const events = classes.map((clazz) => {
     border-radius: 0.75rem;
     box-shadow: 0 4px 16px rgba(40, 70, 110, 0.15);
     padding: 2px;
-    width: 200px;
+    width: 240px;
   }
 
   .custom-popup .leaflet-popup-tip {
@@ -600,15 +664,48 @@ const events = classes.map((clazz) => {
     color: var(--text-main);
   }
 
-  .popup-date-time {
-    font-size: var(--fs-body);
-    font-style: italic;
-    margin-top: 6px;
+  .popup-address {
+    display: block;
+    margin-top: 0.15rem;
   }
 
-  .popup-title {
-    font-size: var(--fs-body);
-    font-weight: 500;
-    margin-top: 2px;
+  .popup-event-groups {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--rule-color);
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    max-height: 14rem;
+    overflow-y: auto;
+  }
+
+  .popup-group-label {
+    font-weight: 700;
+    margin-bottom: 0.15rem;
+  }
+
+  .popup-event-group ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .popup-event-group li a {
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .popup-event-group li a:hover {
+    text-decoration: underline;
+  }
+
+  .popup-organizer {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
   }
 </style>

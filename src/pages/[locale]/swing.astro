@@ -1,23 +1,12 @@
 ---
-export async function getStaticPaths() {
-  const locales = ["en", "de"];
-  return locales.map((locale) => ({
-    params: { locale },
-  }));
-}
-
-import "../../styles/global.css";
-import Nav from "../../components/nav.astro";
+import type { Locale } from "../../i18n";
 import RichText from "../../components/richtText.astro";
 import ResponsiveList from "../../components/responsiveList.astro";
 import ResponsiveListItem from "../../components/responsiveListItem.astro";
 import { payload } from "../../utils";
 import Layout from "../../components/layout.astro";
 
-interface Params {
-  locale: "en" | "de";
-}
-const { locale } = Astro.params as Params;
+const locale = Astro.params.locale as Locale; // validated in src/middleware.ts
 
 // Fetch Global Swing Data
 const cnt = await payload.findGlobal({
@@ -42,7 +31,7 @@ const sortedDances = dances.sort((a, b) => {
 <Layout locale={locale}>
   <Fragment slot="sidebar">
     <div class="page-content sidebar-copy">
-      <RichText content={cnt.whatIsSwing} />
+      <RichText html={cnt.whatIsSwingHtml} />
     </div>
   </Fragment>
 
@@ -53,16 +42,16 @@ const sortedDances = dances.sort((a, b) => {
   {/* --- RESPONSIVE LIST 1: DANCES --- */}
   {
     sortedDances.length > 0 && (
-      <ResponsiveList>
+      <ResponsiveList anchor>
         {sortedDances.map((dance) => {
           return (
             <ResponsiveListItem
               title={dance.name}
-              id={dance.shortName?.toLowerCase()}
+              id={dance.slug.toLowerCase() /* = danceKey(); event tags link here */}
               isOpen={false}
               indicator="plus">
               <div class="dance-body">
-                <RichText content={dance.description} />
+                <RichText html={dance.descriptionHtml} />
               </div>
             </ResponsiveListItem>
           );
@@ -72,7 +61,7 @@ const sortedDances = dances.sort((a, b) => {
   }
 
   <div class="page-content faq">
-    <RichText content={cnt.faq} />
+    <RichText html={cnt.faqHtml} />
   </div>
 </Layout>
 

@@ -1,531 +1,101 @@
 ---
-export async function getStaticPaths() {
-  const locales = ["en", "de"];
-  return locales.map((locale) => ({
-    params: { locale },
-  }));
-}
-
-import "../../styles/global.css";
-import Nav from "../../components/nav.astro";
-import MapC from "../../components/map.astro";
-import ClassC from "../../components/class.astro";
-import EventC from "../../components/event.astro";
-import type { Class } from "../../../cms/src/payload-types.ts";
-import { collect, payload, sortWeekdays, translateWeekday } from "../../utils";
-import RichText from "../../components/richtText.astro";
-import ResponsiveList from "../../components/responsiveList.astro";
+import Calendar from "../../components/calendar.astro";
+import HomeToolbar from "../../components/home/HomeToolbar.astro";
+import ListingPanels from "../../components/home/ListingPanels.astro";
+import SurveyBox from "../../components/home/SurveyBox.astro";
 import Layout from "../../components/layout.astro";
-import ResponsiveListItem from "../../components/responsiveListItem.astro";
+import RichText from "../../components/richtText.astro";
+import type { Locale } from "../../i18n";
+import { buildHomepage } from "../../lib/homepage";
+import { addDays, addMonths, fetchOccurrences, todayInBerlin } from "../../lib/occurrences";
+import { payload } from "../../utils";
 
-interface Params {
-  locale: "en" | "de";
-}
-const { locale } = Astro.params as Params;
+const locale = Astro.params.locale as Locale; // validated in src/middleware.ts
+const t = (de: string, en: string) => (locale === "en" ? en : de);
 
-const { docs: classes } = await payload.find({
-  pagination: false,
-  collection: "classes",
-  locale: locale,
-  depth: 1, // Ensures relations like 'dances' are populated with their data, not just IDs
+const today = todayInBerlin();
+// The calendar covers this month and the next eleven. That range includes
+// every list horizon, so one request feeds the whole page.
+const calendarFrom = `${today.slice(0, 7)}-01`;
+const calendarTo = addDays(addMonths(calendarFrom, 12), -1);
+
+const [index, { occurrences, unavailable }] = await Promise.all([
+  // A CMS outage should degrade the page, not fail it.
+  payload.findGlobal({ slug: "index", locale }).catch((error) => {
+    console.error("[index] global failed:", error);
+    return null;
+  }),
+  fetchOccurrences({ from: calendarFrom, to: calendarTo, locale }),
+]);
+
+const home = buildHomepage(occurrences, {
+  locale,
+  today,
+  calendarFrom,
+  calendarTo,
+  focusEventId: Astro.url.searchParams.get("event"),
 });
-
-const today = new Date();
-const startOfToday = new Date(
-  Date.UTC(
-    today.getUTCFullYear(),
-    today.getUTCMonth(),
-    today.getUTCDate(),
-    0,
-    0,
-    0,
-    0,
-  ),
-);
-const endOf60Days = new Date(
-  Date.UTC(
-    today.getUTCFullYear(),
-    today.getUTCMonth(),
-    today.getUTCDate() + 60,
-    23,
-    59,
-    59,
-    999,
-  ),
-);
-
-const currentWeekday = new Intl.DateTimeFormat("en-US", { weekday: "long" })
-  .format(today)
-  .toLowerCase();
-
-const index = await payload.findGlobal({
-  slug: "index",
-  locale: locale,
-});
-
-// The survey teaser in the design is split into a display headline
-// ("Wir würden euch gerne kennenlernen!") and the body copy that follows.
-// The CMS stores it as a single richtext block, so split on the first
-// sentence boundary and fall back to a single block if none is found.
-const richTextToPlain = (node: any): string => {
-  if (!node) return "";
-  if (node.type === "text") return node.text ?? "";
-  if (node.type === "linebreak") return " ";
-  return (node.children ?? []).map(richTextToPlain).join("");
-};
-
-const pollCopy = richTextToPlain(index.donationBox?.root)
-  .replace(/\s+/g, " ")
-  .trim();
-const pollSentenceEnd = pollCopy.search(/[.!?](\s|$)/);
-const pollHeadline =
-  pollSentenceEnd === -1 ? pollCopy : pollCopy.slice(0, pollSentenceEnd + 1);
-const pollBody =
-  pollSentenceEnd === -1 ? "" : pollCopy.slice(pollSentenceEnd + 1).trim();
-
-const { docs: upcomingEvents } = await payload.find({
-  collection: "events",
-  sort: "startDate",
-  depth: 1, // ADDED: Ensure events also populate their dance relations
-  where: {
-    and: [
-      { startDate: { greater_than_equal: startOfToday.toISOString() } },
-      { startDate: { less_than_equal: endOf60Days.toISOString() } },
-    ],
-  },
-  pagination: false,
-  locale: locale,
-});
-
-// Split the feed the same way the tabs do: `type: "Social"` is the socials
-// list, everything else (workshops etc.) is the events list.
-const isSocialEvent = (event: any) =>
-  String(event.type ?? "").toLowerCase() === "social";
-
-const socialEvents = upcomingEvents.filter(isSocialEvent);
-const otherEvents = upcomingEvents.filter((event) => !isSocialEvent(event));
-
-const eventPanels = [
-  {
-    key: "socials",
-    items: socialEvents,
-    empty:
-      locale === "en"
-        ? "No upcoming socials in the next 2 months."
-        : "Keine anstehenden Socials in den nächsten 2 Monaten.",
-    noMatch:
-      locale === "en"
-        ? "No socials match the selected filters."
-        : "Keine Socials entsprechen den ausgewählten Filtern.",
-  },
-  {
-    key: "events",
-    items: otherEvents,
-    empty:
-      locale === "en"
-        ? "No upcoming events in the next 2 months."
-        : "Keine anstehenden Events in den nächsten 2 Monaten.",
-    noMatch:
-      locale === "en"
-        ? "No events match the selected filters."
-        : "Keine Events entsprechen den ausgewählten Filtern.",
-  },
-];
-
-const groupedClasses = classes.sort(sortWeekdays).reduce(
-  collect((c) => c.weekday.toLowerCase()),
-  {},
-);
-
-// --- SIMPLIFIED DANCE EXTRACTION (Classes + Events) ---
-const uniqueDancesMap = new Map();
-
-// Helper function to extract dances from an array of docs
-const extractDances = (docs: any[]) => {
-  docs.forEach((doc) => {
-    if (doc.dances && Array.isArray(doc.dances)) {
-      doc.dances.forEach((dance: any) => {
-        if (dance && dance.shortName) {
-          uniqueDancesMap.set(dance.shortName, dance);
-        }
-      });
-    }
-  });
-};
-
-// Extract from both collections so the filter list is complete
-extractDances(classes);
-extractDances(upcomingEvents);
-
-const danceFilters = Array.from(uniqueDancesMap.values());
 ---
 
 <Layout locale={locale}>
   <Fragment slot="sidebar">
     <div class="greeter">
-      <RichText content={index.intro} />
+      <RichText html={index?.introHtml} />
     </div>
-    <div class="disclaimer-box">
-      <button
-        class="disclaimer-toggle"
-        type="button"
-        aria-controls="disclaimer-panel"
-        aria-label={locale === "en" ? "Hide survey" : "Umfrage ausblenden"}>
-      </button>
-      <div class="disclaimer-panel" id="disclaimer-panel">
-        <div class="disclaimer">
-          <p class="disclaimer-headline">{pollHeadline}</p>
-          {pollBody && <p class="disclaimer-body">{pollBody}</p>}
-        </div>
-        <div class="disclaimer-button">
-          <a href="">
-            <span class="disclaimer-cta-kicker">
-              {locale === "en" ? "Take the" : "Direkt zur"}
-            </span>
-            <span class="disclaimer-cta-title">
-              {locale === "en" ? "Survey" : "Umfrage"}
-            </span>
-          </a>
-        </div>
-      </div>
-    </div>
+    <SurveyBox locale={locale} content={index?.donationBox} />
   </Fragment>
 
-  <div class="tabs-header">
-    <div class="page-tabs">
-      <button id="tab-socials" class="tab inactive" data-tab="socials">
-        {locale === "en" ? "SOCIALS" : "SOCIALS"}
-      </button>
-      <span class="tab-separator">/</span>
-      <button id="tab-events" class="tab inactive" data-tab="events">
-        {locale === "en" ? "EVENTS" : "EVENTS"}
-      </button>
-      <span class="tab-separator">/</span>
-      <button id="tab-classes" class="tab active" data-tab="classes">
-        {locale === "en" ? "CLASSES" : "KURSE"}
-      </button>
-    </div>
-
-    {
-      danceFilters.length > 0 && (
-        <button
-          id="filter-toggle"
-          class="filter-toggle"
-          aria-label="Toggle Filters">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="33"
-            height="31"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.75"
-            stroke-linecap="round"
-            stroke-linejoin="round">
-            <line x1="4" y1="21" x2="4" y2="14" />
-            <line x1="4" y1="10" x2="4" y2="3" />
-            <line x1="12" y1="21" x2="12" y2="12" />
-            <line x1="12" y1="8" x2="12" y2="3" />
-            <line x1="20" y1="21" x2="20" y2="16" />
-            <line x1="20" y1="12" x2="20" y2="3" />
-            <line x1="1" y1="14" x2="7" y2="14" />
-            <line x1="9" y1="8" x2="15" y2="8" />
-            <line x1="17" y1="16" x2="23" y2="16" />
-          </svg>
-        </button>
-      )
-    }
-  </div>
+  <HomeToolbar locale={locale} danceFilters={home.danceFilters} />
 
   {
-    danceFilters.length > 0 && (
-      <div id="filter-panel" class="filter-panel">
-        {danceFilters.map((dance) => (
-          <button
-            class="listing-tag filter-tag"
-            data-filter={dance.shortName.toLowerCase()}>
-            {dance.name || dance.shortName}
-          </button>
-        ))}
-      </div>
+    unavailable && (
+      <p class="data-unavailable" role="status">
+        {t(
+          "Die Termine konnten gerade nicht geladen werden. Bitte versuche es in ein paar Minuten noch einmal.",
+          "Events could not be loaded right now. Please try again in a few minutes.",
+        )}
+      </p>
     )
   }
 
-  <section>
-    {
-      eventPanels.map((panel) => (
-        <div
-          id={`content-${panel.key}`}
-          class="tab-content"
-          data-tab={panel.key}>
-          <div class="centered-list">
-            {panel.items.length > 0 ? (
-              panel.items.map((event: any) => {
-                // Extract tags for events just like classes
-                const tags = event.dances
-                  ? event.dances
-                      .map((d: any) => d.shortName?.toLowerCase())
-                      .filter(Boolean)
-                      .join(",")
-                  : "";
-
-                return (
-                  <div
-                    class="filter-item-wrapper workshop-item"
-                    data-tags={tags}>
-                    <EventC event={event} />
-                  </div>
-                );
-              })
-            ) : (
-              <p>{panel.empty}</p>
-            )}
-            {panel.items.length > 0 && (
-              <p
-                data-no-match
-                style="display: none; color: var(--text-muted); margin-top: 20px;">
-                {panel.noMatch}
-              </p>
-            )}
-          </div>
-        </div>
-      ))
-    }
-    <div id="content-classes" class="tab-content active-content" data-tab="classes">
-      <ResponsiveList maxColumns={1} exclusiveOpen={false}>
-        {
-          Object.entries(groupedClasses).map(([weekday, dayClasses], index) => {
-            // ... remainder of your map function stays the same
-            const isToday = weekday === currentWeekday;
-            const hasTodayClasses =
-              Object.keys(groupedClasses).includes(currentWeekday);
-            const shouldDefaultOpen = !hasTodayClasses && index === 0;
-
-            return (
-              <div class="day-group">
-                <ResponsiveListItem
-                  title={translateWeekday(weekday, locale)}
-                  id={weekday.toLowerCase()}
-                  isOpen={isToday || shouldDefaultOpen}>
-                  <div class="centered-list">
-                    {dayClasses.map((data: any) => {
-                      const tags = data.dances
-                        ? data.dances
-                            .map((d: any) => d.shortName.toLowerCase())
-                            .join(",")
-                        : "";
-
-                      return (
-                        <div
-                          class="filter-item-wrapper class-item"
-                          data-tags={tags}>
-                          <ClassC classs={data} />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </ResponsiveListItem>
-              </div>
-            );
-          })
-        }
-      </ResponsiveList>
-    </div>
+  <section data-sidebar-anchor>
+    <ListingPanels locale={locale} panels={home.panels} focusMissing={home.focusMissing} />
+    <Calendar locale={locale} {...home.calendar} />
   </section>
-
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      // Tab Switching Logic
-      const tabButtons = Array.from(
-        document.querySelectorAll(".page-tabs .tab"),
-      );
-      const tabPanels = Array.from(
-        document.querySelectorAll(".tab-content"),
-      );
-
-      let activePanel =
-        tabPanels.find((el) => el.classList.contains("active-content")) ??
-        null;
-      let swapTimer: ReturnType<typeof setTimeout> | null = null;
-      let pendingPanel: HTMLElement | null = null;
-
-      function showPanel(panel: HTMLElement) {
-        tabPanels.forEach((el) => {
-          const isTarget = el === panel;
-          el.classList.toggle("active-content", isTarget);
-          el.style.display = isTarget ? "block" : "none";
-          el.style.opacity = isTarget ? "1" : "0";
-        });
-        activePanel = panel;
-        pendingPanel = null;
-      }
-
-      function switchTab(name, updateHash = true) {
-        const tab = tabButtons.find((btn) => btn.dataset.tab === name);
-        const panel = tabPanels.find((el) => el.dataset.tab === name);
-        if (!tab || !panel) return;
-
-        // Clicking the tab that is already showing does nothing.
-        if (tab.classList.contains("active") && panel === activePanel) return;
-
-        if (updateHash && window.location.hash !== `#${name}`) {
-          history.replaceState(null, "", `#${name}`);
-        }
-
-        tabButtons.forEach((btn) => {
-          btn.classList.toggle("active", btn === tab);
-          btn.classList.toggle("inactive", btn !== tab);
-        });
-
-        // Deep links swap instantly; clicks fade the old list out first.
-        if (!updateHash) {
-          if (swapTimer) clearTimeout(swapTimer);
-          swapTimer = null;
-          showPanel(panel);
-          return;
-        }
-
-        // Repeated click on the pending target: let the running fade finish.
-        if (swapTimer && pendingPanel === panel) return;
-
-        if (swapTimer) {
-          clearTimeout(swapTimer);
-          swapTimer = null;
-        }
-
-        // Clicked back onto the panel that is still fading out: keep it.
-        if (panel === activePanel) {
-          panel.style.display = "block";
-          panel.classList.add("active-content");
-          panel.style.opacity = "1";
-          pendingPanel = null;
-          return;
-        }
-
-        const outgoing = activePanel;
-        if (outgoing) outgoing.style.opacity = "0";
-        pendingPanel = panel;
-
-        swapTimer = setTimeout(() => {
-          swapTimer = null;
-          if (outgoing) {
-            outgoing.style.display = "none";
-            outgoing.classList.remove("active-content");
-          }
-          // Flush the display change so the opacity transition runs.
-          panel.style.display = "block";
-          void panel.offsetWidth;
-          panel.classList.add("active-content");
-          panel.style.opacity = "1";
-          activePanel = panel;
-          pendingPanel = null;
-        }, 300);
-      }
-
-      tabButtons.forEach((btn) => {
-        btn.addEventListener("click", () => switchTab(btn.dataset.tab));
-      });
-
-      // Deep links: #socials / #events / #classes
-      const initialTab = window.location.hash.replace("#", "");
-      if (tabButtons.some((btn) => btn.dataset.tab === initialTab)) {
-        switchTab(initialTab, false);
-      }
-
-      // Filter Toggle Logic
-      const filterToggle = document.getElementById("filter-toggle");
-      const filterPanel = document.getElementById("filter-panel");
-      const filterTags = document.querySelectorAll(".filter-tag");
-
-      // Updated: Select ALL wrapppers (both classes and events)
-      const allItemWrappers = document.querySelectorAll(".filter-item-wrapper");
-      const dayGroups = document.querySelectorAll(".day-group");
-      const noMatchMessages = document.querySelectorAll("[data-no-match]");
-
-      let activeFilters = new Set();
-
-      if (filterToggle && filterPanel) {
-        filterToggle.addEventListener("click", () => {
-          filterPanel.classList.toggle("open");
-        });
-      }
-
-      function applyFilters() {
-        allItemWrappers.forEach((wrapper) => {
-          const itemTags = wrapper.dataset.tags
-            ? wrapper.dataset.tags.split(",")
-            : [];
-
-          if (activeFilters.size === 0) {
-            wrapper.style.display = ""; // Show all
-          } else {
-            const hasMatch = itemTags.some((tag) =>
-              activeFilters.has(tag.trim()),
-            );
-            wrapper.style.display = hasMatch ? "" : "none";
-          }
-        });
-
-        // Handle empty day blocks and auto-open accordions
-        dayGroups.forEach((group) => {
-          const wrappers = Array.from(group.querySelectorAll(".class-item"));
-          const accordionItem = group.querySelector(".responsive-item");
-          const accordionHeader = group.querySelector(
-            ".responsive-item-header",
-          );
-
-          if (wrappers.length > 0) {
-            const hasVisible = wrappers.some(
-              (w) => w.style.display !== "none",
-            );
-            group.style.display = hasVisible ? "" : "none";
-
-            // Auto-open logic: If filters are active and this group has visible items, force it open
-            if (
-              activeFilters.size > 0 &&
-              hasVisible &&
-              accordionItem &&
-              accordionHeader
-            ) {
-              accordionItem.classList.add("open");
-              accordionHeader.setAttribute("aria-expanded", "true");
-            }
-          }
-        });
-
-        // Show the "nothing matches" note per event panel
-        noMatchMessages.forEach((msg) => {
-          const panel = msg.closest(".tab-content");
-          if (!panel) return;
-          const visible = Array.from(
-            panel.querySelectorAll(".filter-item-wrapper"),
-          ).some((wrapper) => wrapper.style.display !== "none");
-          msg.style.display =
-            activeFilters.size > 0 && !visible ? "block" : "none";
-        });
-      }
-
-      filterTags.forEach((tag) => {
-        tag.addEventListener("click", (e) => {
-          const target = e.target as HTMLElement;
-          const filterValue = target.dataset.filter;
-
-          if (activeFilters.has(filterValue)) {
-            activeFilters.delete(filterValue);
-            target.classList.remove("selected");
-          } else {
-            activeFilters.add(filterValue);
-            target.classList.add("selected");
-          }
-          applyFilters();
-        });
-      });
-    });
-  </script>
 </Layout>
 
+<script>
+  // Initial state from the URL: #socials / #events / #classes picks a tab;
+  // ?event=<id> (from map popups) narrows the list to that event and opens
+  // the tab that contains it.
+  import { isTab } from "../../lib/tabs";
+  import { setState } from "../../scripts/homeState";
+
+  const hashTab = window.location.hash.slice(1);
+  const eventId = new URLSearchParams(window.location.search).get("event");
+
+  let tab = isTab(hashTab) ? hashTab : undefined;
+  let focusedEvent: string | null = null;
+  if (eventId) {
+    // Unknown or past events are ignored rather than hiding every entry.
+    const entry = document.querySelector(`[data-entry][data-event-id="${CSS.escape(eventId)}"]`);
+    const panelTab = entry?.closest<HTMLElement>("[data-tab]")?.dataset.tab;
+    if (isTab(panelTab)) {
+      tab = panelTab;
+      focusedEvent = eventId;
+    }
+  }
+
+  setState({ ...(tab && { tab }), eventId: focusedEvent }, { animate: false });
+
+  // Back/forward between #socials / #events / #classes.
+  window.addEventListener("hashchange", () => {
+    const next = window.location.hash.slice(1);
+    if (isTab(next)) setState({ tab: next });
+  });
+</script>
+
 <style>
-  /* --- Sidebar: intro copy --- */
   .greeter :global(p) {
     font-size: var(--fs-body);
     line-height: 1.33;
@@ -540,378 +110,10 @@ const danceFilters = Array.from(uniqueDancesMap.values());
     color: inherit;
   }
 
-  /* --- Sidebar: survey teaser --- */
-  .disclaimer-box {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0;
-    text-align: center;
-    margin-top: 0.5rem;
-    position: relative;
-  }
-
-  /* Collapse control is only shown on the accent card (tablet/mobile) */
-  .disclaimer-toggle {
-    display: none;
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    z-index: 1;
-    width: 2.125rem;
-    height: 2.125rem;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    background: none;
-    border: var(--rule-width) solid var(--accent-contrast);
-    border-radius: 50%;
-    color: var(--accent-contrast);
-    cursor: pointer;
-  }
-
-  /* Close cross */
-  .disclaimer-toggle::before,
-  .disclaimer-toggle::after {
-    content: "";
-    position: absolute;
-    width: 0.875rem;
-    height: 2px;
-    background-color: currentColor;
-    border-radius: 1px;
-  }
-
-  .disclaimer-toggle::before {
-    transform: rotate(45deg);
-  }
-
-  .disclaimer-toggle::after {
-    transform: rotate(-45deg);
-  }
-
-  /* Dismissed in a previous visit (stored in localStorage) */
-  .disclaimer-box.is-dismissed {
-    display: none;
-  }
-
-  .disclaimer {
-    text-align: center;
-    color: var(--text-main);
-  }
-
-  .disclaimer p {
-    margin: 0;
-  }
-
-  .disclaimer-headline {
-    font-family: var(--font-display);
-    font-size: var(--fs-h1); /* 34 */
-    font-weight: 700;
-    line-height: 1.058; /* 36/34 */
-    letter-spacing: 0;
-    color: var(--text-main);
-  }
-
-  .disclaimer-body {
-    margin-top: 0.25rem;
-    font-family: var(--font-body);
-    font-size: var(--fs-h3); /* 24 */
-    font-weight: 400;
-    line-height: 1.21; /* 29/24 */
-    color: var(--text-main);
-  }
-
-  .disclaimer-button {
-    margin-top: 1.4375rem; /* 23px between body and CTA */
-  }
-
-  .disclaimer-button a {
-    display: inline-block;
-    font-family: var(--font-display);
-    font-size: var(--fs-h1); /* 34 */
-    font-weight: 700;
-    line-height: 1.2;
-    text-align: center;
-    text-decoration: none;
-  }
-
-  .disclaimer-cta-kicker {
-    display: block;
-    color: var(--text-main);
-  }
-
-  .disclaimer-cta-title {
-    display: block;
-    font-size: 3.75rem; /* 60 */
-    line-height: 1.2; /* 72/60 */
-    letter-spacing: 0.04em; /* 2.4px at 60 */
-    text-transform: uppercase;
-    color: var(--accent);
-  }
-
-  .disclaimer-button a:hover .disclaimer-cta-title {
-    color: var(--text-main);
-  }
-
-  /* --- Content column: title row --- */
-  .tabs-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1.5rem;
-    margin-bottom: 3.5rem;
-  }
-
-  .page-tabs {
-    display: flex;
-    align-items: baseline;
-    gap: 0.25rem;
-    font-family: var(--font-body);
-    font-size: var(--fs-h1);
-    font-weight: 700;
-    line-height: 1.2;
-    letter-spacing: -0.01em;
-  }
-
-  button.tab {
-    background: none;
-    border: none;
-    padding: 0;
-    font: inherit;
-    cursor: pointer;
-    color: var(--text-muted);
-    transition: color 0.2s ease;
-  }
-
-  button.tab.active {
-    color: var(--text-main);
-  }
-
-  @media (hover: hover) {
-    button.tab:hover {
-      color: var(--accent);
-    }
-  }
-
-  .tab-separator {
-    color: var(--text-muted);
-    font-weight: 400;
-  }
-
-  .filter-toggle {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--text-main);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.25rem;
-    flex: 0 0 auto;
-    transition: color 0.15s ease;
-  }
-
-  .filter-toggle svg {
-    width: 1.75rem; /* 28, was 33 */
-    height: auto;
-  }
-
-  @media (hover: hover) {
-    .filter-toggle:hover {
-      color: var(--accent);
-    }
-  }
-
-  /* --- Filter panel --- */
-  .filter-panel {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    max-height: 0;
-    margin-bottom: 0;
-    opacity: 0;
-    overflow: hidden;
-    pointer-events: none;
-    transition:
-      max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-      opacity 0.3s ease-in-out,
-      margin-bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .filter-panel.open {
-    max-height: 20rem;
-    margin-bottom: 2.5rem;
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  .filter-panel .listing-tag {
-    background-color: transparent;
-    color: var(--text-main);
-    box-shadow: inset 0 0 0 1px var(--accent);
-  }
-
-  .filter-panel .listing-tag.selected {
-    background-color: var(--accent);
-    color: var(--accent-contrast);
-  }
-
-  @media (hover: hover) {
-    .filter-panel .listing-tag:hover {
-      background-color: var(--accent);
-      color: var(--accent-contrast);
-    }
-  }
-
-  /* --- Tab panels --- */
-  .tab-content {
-    display: none;
-    opacity: 0;
-    transition: opacity 0.3s ease-in-out;
-  }
-
-  .tab-content.active-content {
-    display: block;
-    opacity: 1;
-  }
-
-  @media (max-width: 1023px) {
-    .tabs-header {
-      margin-bottom: 2rem;
-    }
-
-    .page-tabs {
-      font-size: var(--fs-h2);
-    }
-
-    /* Survey teaser becomes the accent card from the mobile frames */
-    .disclaimer-box {
-      padding: 3rem 1.5rem 2rem;
-      background-color: var(--accent);
-      color: var(--accent-contrast);
-      border-radius: 0.5rem;
-      margin-top: 0;
-      margin-bottom: 1rem;
-    }
-
-    .disclaimer-toggle {
-      display: flex;
-    }
-
-    .disclaimer,
-    .disclaimer p,
-    .disclaimer-cta-kicker,
-    .disclaimer-cta-title,
-    .disclaimer-button a {
-      color: var(--accent-contrast);
-    }
-
-    .disclaimer-button a:hover .disclaimer-cta-title {
-      color: var(--accent-contrast);
-      opacity: 0.8;
-    }
-
-    .disclaimer-headline {
-      font-size: 1.625rem; /* 26 */
-      line-height: 1.077; /* 28/26 */
-    }
-
-    .disclaimer-body {
-      font-size: 1.25rem; /* 20 */
-      line-height: 1.21; /* 24.2/20 */
-    }
-
-    .disclaimer-button a {
-      font-size: 1.5rem; /* 24 */
-      line-height: 1.2;
-    }
-
-    .disclaimer-cta-title {
-      font-size: 3rem; /* 48 */
-      line-height: 1.2; /* 57.6/48 */
-      letter-spacing: 0.04em;
-    }
-  }
-
-  @media (max-width: 767px) {
-    /* All three tabs stay on one line with the filter button, so they run a
-       step smaller than the tablet size. */
-    .tabs-header {
-      gap: 0.75rem;
-    }
-
-    .page-tabs {
-      font-size: 1.25rem; /* 20 */
-      column-gap: 0.125rem;
-    }
-
-    /* Full-bleed card on phones */
-    .disclaimer-box {
-      margin-inline: calc(var(--shell-pad) * -1);
-      padding: 3rem var(--shell-pad) 2rem;
-      border-radius: 0;
-      margin-bottom: 0;
-    }
-
-    .disclaimer-toggle {
-      right: var(--shell-pad);
-    }
-
-    /* Phone sizes: slightly smaller than the tablet card */
-    .disclaimer-headline {
-      font-size: 1.375rem; /* 22 */
-      line-height: 1.09;
-    }
-
-    .disclaimer-body {
-      font-size: 1.0625rem; /* 17 */
-      line-height: 1.25;
-    }
-
-    .disclaimer-button a {
-      font-size: 1.25rem; /* 20 */
-    }
-
-    .disclaimer-cta-title {
-      font-size: 2.25rem; /* 36 */
-    }
-  }
-
-  @media (min-width: 1024px) {
-    /* The poll block is closed with a straight rule inside the framed column */
-    .disclaimer-box {
-      padding-bottom: 1.75rem;
-      padding-top: 1.75rem;
-      border-top: var(--rule-width) solid var(--rule-color);
-      border-bottom: var(--rule-width) solid var(--rule-color);
-    }
+  .data-unavailable {
+    margin: 0 0 2rem;
+    padding: 0.75rem 1rem;
+    border-left: 3px solid var(--accent);
+    font-size: var(--fs-body);
   }
 </style>
-
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-    const DISMISS_KEY = "sih:survey-dismissed";
-    const box = document.querySelector(".disclaimer-box");
-    const toggle = document.querySelector(".disclaimer-toggle");
-
-    if (box) {
-      let dismissed = false;
-      try {
-        dismissed = localStorage.getItem(DISMISS_KEY) === "1";
-      } catch {
-        /* storage may be unavailable (private mode) */
-      }
-
-      if (dismissed) box.classList.add("is-dismissed");
-
-      toggle?.addEventListener("click", () => {
-        box.classList.add("is-dismissed");
-        try {
-          localStorage.setItem(DISMISS_KEY, "1");
-        } catch {
-          /* ignore */
-        }
-      });
-    }
-  });
-</script>

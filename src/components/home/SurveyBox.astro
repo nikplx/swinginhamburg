@@ -1,0 +1,355 @@
+---
+/**
+ * Survey teaser in the homepage sidebar (CMS field `index.donationBox`).
+ * Visitors can collapse it; the choice is remembered in localStorage.
+ */
+import type { Locale } from "../../i18n";
+
+interface Props {
+  locale: Locale;
+  /** Lexical state of the teaser text. */
+  content: unknown;
+}
+
+const { locale, content } = Astro.props;
+const t = (de: string, en: string) => (locale === "en" ? en : de);
+
+// The design splits the teaser into a display headline ("Wir würden euch gerne
+// kennenlernen!") and the body copy that follows. The CMS stores one rich text
+// block, so split on the first sentence boundary.
+const toPlain = (node: any): string => {
+  if (!node) return "";
+  if (node.type === "text") return node.text ?? "";
+  if (node.type === "linebreak") return " ";
+  return (node.children ?? []).map(toPlain).join("");
+};
+
+const copy = toPlain((content as any)?.root).replace(/\s+/g, " ").trim();
+const sentenceEnd = copy.search(/[.!?](\s|$)/);
+const headline = sentenceEnd === -1 ? copy : copy.slice(0, sentenceEnd + 1);
+const body = sentenceEnd === -1 ? "" : copy.slice(sentenceEnd + 1).trim();
+---
+
+{
+  headline && (
+    <div class="survey-box">
+      <button
+        class="survey-collapse"
+        type="button"
+        aria-controls="survey-panel"
+        aria-expanded="true"
+        aria-label={t("Umfrage ausblenden", "Hide survey")}
+      />
+      <button
+        class="survey-expand"
+        type="button"
+        aria-controls="survey-panel"
+        aria-expanded="false"
+        aria-label={t("Umfrage anzeigen", "Show survey")}>
+        <span class="survey-expand-label">{t("Umfrage", "Survey")}</span>
+        <span class="survey-expand-icon" aria-hidden="true">+</span>
+      </button>
+      <div class="survey-panel" id="survey-panel">
+        <div class="survey-copy">
+          <p class="survey-headline">{headline}</p>
+          {body && <p class="survey-body">{body}</p>}
+        </div>
+        {/* TODO: survey link is not configured yet (was href=""). */}
+        <div class="survey-cta">
+          <a href="#survey-panel">
+            <span class="survey-cta-kicker">{t("Direkt zur", "Take the")}</span>
+            <span class="survey-cta-title">{t("Umfrage", "Survey")}</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+<script>
+  const DISMISS_KEY = "sih:survey-dismissed";
+  const box = document.querySelector<HTMLElement>(".survey-box");
+  const collapse = box?.querySelector(".survey-collapse");
+  const expand = box?.querySelector(".survey-expand");
+
+  const setCollapsed = (collapsed: boolean, remember = true) => {
+    box?.classList.toggle("is-collapsed", collapsed);
+    collapse?.setAttribute("aria-expanded", String(!collapsed));
+    expand?.setAttribute("aria-expanded", String(!collapsed));
+    if (!remember) return;
+    try {
+      if (collapsed) localStorage.setItem(DISMISS_KEY, "1");
+      else localStorage.removeItem(DISMISS_KEY);
+    } catch {
+      /* storage may be unavailable (private mode) */
+    }
+  };
+
+  if (box) {
+    try {
+      if (localStorage.getItem(DISMISS_KEY) === "1") setCollapsed(true, false);
+    } catch {
+      /* ignore */
+    }
+    collapse?.addEventListener("click", () => setCollapsed(true));
+    expand?.addEventListener("click", () => setCollapsed(false));
+  }
+</script>
+
+<style>
+  .survey-box {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    text-align: center;
+    margin-top: 0.5rem;
+    position: relative;
+  }
+
+  /* Collapse control is only shown on the accent card (tablet/mobile) */
+  .survey-collapse {
+    display: none;
+    position: absolute;
+    top: 0.5rem;
+    right: 1rem;
+    z-index: 1;
+    width: 2.125rem;
+    height: 2.125rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: none;
+    border: 0;
+    border-radius: 0;
+    color: var(--accent-contrast);
+    cursor: pointer;
+  }
+
+  /* Collapse control (minus) */
+  .survey-collapse::before {
+    content: "";
+    position: absolute;
+    width: 0.875rem;
+    height: 2px;
+    background-color: currentColor;
+    border-radius: 1px;
+  }
+
+  /* Collapsed in a previous visit. It keeps the open card's surface and only
+     shrinks down to a compact band. */
+  .survey-box.is-collapsed {
+    display: block;
+    padding: 0.25rem 0;
+    text-align: left;
+  }
+
+  .survey-box.is-collapsed .survey-panel,
+  .survey-box.is-collapsed .survey-collapse {
+    display: none;
+  }
+
+  .survey-expand {
+    display: none;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 0;
+    background: none;
+    border: 0;
+    color: var(--text-main);
+    font-family: var(--font-body);
+    font-size: var(--fs-body);
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .survey-box.is-collapsed .survey-expand {
+    display: flex;
+  }
+
+  .survey-expand-label {
+    padding-bottom: 0.25rem;
+    border-bottom: var(--rule-width) solid var(--rule-color);
+  }
+
+  .survey-expand-icon {
+    font-size: 1.5rem;
+    font-weight: 400;
+    line-height: 1;
+  }
+
+  @media (hover: hover) {
+    .survey-expand:hover .survey-expand-label {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+  }
+
+  .survey-copy {
+    text-align: center;
+    color: var(--text-main);
+  }
+
+  .survey-copy p {
+    margin: 0;
+  }
+
+  .survey-headline {
+    font-family: var(--font-display);
+    font-size: var(--fs-h1); /* 34 */
+    font-weight: 700;
+    line-height: 1.058; /* 36/34 */
+    letter-spacing: 0;
+    color: var(--text-main);
+  }
+
+  .survey-body {
+    margin-top: 0.25rem;
+    font-family: var(--font-body);
+    font-size: var(--fs-h3); /* 24 */
+    font-weight: 400;
+    line-height: 1.21; /* 29/24 */
+    color: var(--text-main);
+  }
+
+  .survey-cta {
+    margin-top: 1.4375rem; /* 23px between body and CTA */
+  }
+
+  .survey-cta a {
+    display: inline-block;
+    font-family: var(--font-display);
+    font-size: var(--fs-h1); /* 34 */
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: center;
+    text-decoration: none;
+  }
+
+  .survey-cta-kicker {
+    display: block;
+    color: var(--text-main);
+  }
+
+  .survey-cta-title {
+    display: block;
+    font-size: 3.75rem; /* 60 */
+    line-height: 1.2; /* 72/60 */
+    letter-spacing: 0.04em; /* 2.4px at 60 */
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .survey-cta a:hover .survey-cta-title {
+    color: var(--text-main);
+  }
+
+  @media (max-width: 1023px) {
+    /* Survey teaser becomes the accent card from the mobile frames */
+    .survey-box {
+      padding: 3rem 1.5rem 2rem;
+      background-color: var(--accent);
+      color: var(--accent-contrast);
+      border-radius: 0.5rem;
+      margin-top: 0;
+      margin-bottom: 1rem;
+    }
+
+    .survey-collapse {
+      display: flex;
+    }
+
+    .survey-copy,
+    .survey-copy p,
+    .survey-cta-kicker,
+    .survey-cta-title,
+    .survey-cta a {
+      color: var(--accent-contrast);
+    }
+
+    .survey-cta a:hover .survey-cta-title {
+      color: var(--accent-contrast);
+      opacity: 0.8;
+    }
+
+    .survey-headline {
+      font-size: 1.625rem; /* 26 */
+      line-height: 1.077; /* 28/26 */
+    }
+
+    .survey-body {
+      font-size: 1.25rem; /* 20 */
+      line-height: 1.21; /* 24.2/20 */
+    }
+
+    .survey-cta a {
+      font-size: 1.5rem; /* 24 */
+      line-height: 1.2;
+    }
+
+    .survey-cta-title {
+      font-size: 3rem; /* 48 */
+      line-height: 1.2; /* 57.6/48 */
+      letter-spacing: 0.04em;
+    }
+
+    /* The collapsed band keeps the accent card styling on tablet/phone. */
+    .survey-box.is-collapsed {
+      padding: 0.5rem 1.5rem;
+    }
+
+    .survey-expand {
+      color: var(--accent-contrast);
+    }
+
+    .survey-expand-label {
+      border-bottom-color: var(--accent-contrast);
+    }
+  }
+
+  @media (max-width: 1023px) and (hover: hover) {
+    .survey-expand:hover .survey-expand-label {
+      color: var(--accent-contrast);
+      border-color: var(--accent-contrast);
+      opacity: 0.8;
+    }
+  }
+
+  @media (max-width: 767px) {
+    /* Slightly shorter card on phones */
+    .survey-box {
+      padding: 2rem 1.5rem 1.5rem;
+    }
+
+    .survey-headline {
+      font-size: 1.375rem; /* 22 */
+      line-height: 1.09;
+    }
+
+    .survey-body {
+      font-size: 1.0625rem; /* 17 */
+      line-height: 1.25;
+    }
+
+    .survey-cta a {
+      font-size: 1.25rem; /* 20 */
+    }
+
+    .survey-cta-title {
+      font-size: 2.25rem; /* 36 */
+    }
+  }
+
+  @media (min-width: 1024px) {
+    /* The poll block is closed with a straight rule inside the framed column */
+    .survey-box {
+      padding-bottom: 1.75rem;
+      padding-top: 1.75rem;
+      border-top: var(--rule-width) solid var(--rule-color);
+      border-bottom: var(--rule-width) solid var(--rule-color);
+    }
+  }
+</style>

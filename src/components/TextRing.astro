@@ -1,8 +1,12 @@
 ---
-// Destructure 'size' from props, defaulting to '1rem'
+interface Props {
+  text?: string;
+  size?: string;
+}
+
 const { text = "", size = "1rem" } = Astro.props;
 
-const CHARS = text.split('');
+const CHARS: string[] = text.split('');
 const count = CHARS.length;
 const INNER_ANGLE = 360 / count;
 const radius = 1 / Math.sin(INNER_ANGLE / (180 / Math.PI));

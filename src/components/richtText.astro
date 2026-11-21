@@ -1,19 +1,14 @@
 ---
-import type { SerializedEditorState, SerializedLexicalNode } from 'lexical';
-import { convertLexicalToHTML } from '@payloadcms/richtext-lexical/html'
+/**
+ * Renders a rich-text field's `<name>Html` sibling. The CMS converts Lexical
+ * to HTML and sanitizes it (cms/src/fields/richTextHtml.ts), so it is
+ * inserted as is.
+ */
+interface Props {
+  html?: string | null;
+}
 
-export const renderRichText = (
-  content?: SerializedEditorState<SerializedLexicalNode> | null | any
-): string => {
-  // Catch the empty state at runtime and return an empty string
-  if (!content) return ''; 
-
-  // TypeScript now knows 'content' is safely defined here
-  return convertLexicalToHTML({ data: content });
-};
-
-const {content} = Astro.props;
+const { html } = Astro.props;
 ---
 
-<Fragment set:html={renderRichText(content)} />
-
+<Fragment set:html={html ?? ""} />
