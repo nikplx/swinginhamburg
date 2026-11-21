@@ -211,13 +211,23 @@ const danceFilters = [...uniqueDances.entries()].map(([slug, name]) => ({ slug, 
 // Socials and events share the classes layout: one collapsible per date,
 // with every occurrence of that day underneath. Dates are used as the
 // collapsible header instead of weekdays because these are one-off listings.
-const dateFormat = new Intl.DateTimeFormat(locale === "en" ? "en-GB" : "de-DE", {
+// Dates stay in the German convention on both language versions.
+const weekdayFormat = new Intl.DateTimeFormat("de-DE", {
   timeZone: "Europe/Berlin",
   weekday: "long",
-  day: "2-digit",
-  month: "long",
 });
-const dateLabel = (iso: string) => dateFormat.format(new Date(iso));
+const dateFormat = new Intl.DateTimeFormat("de-DE", {
+  timeZone: "Europe/Berlin",
+  day: "2-digit",
+  month: "2-digit",
+});
+const formatGroupDate = (date: string) => {
+  const value = new Date(`${date}T12:00:00Z`);
+  return {
+    weekday: weekdayFormat.format(value),
+    dateLabel: dateFormat.format(value),
+  };
+};
 
 const groupByDate = (items: OccurrenceView[]) => {
   const groups = new Map<string, OccurrenceView[]>();
@@ -228,12 +238,17 @@ const groupByDate = (items: OccurrenceView[]) => {
   }
   return [...groups.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, occurrences]) => ({
-      date,
-      label: dateLabel(`${date}T12:00:00Z`),
-      occurrences: occurrences.sort((a, b) => a.start.localeCompare(b.start)),
-      isToday: false,
-    }));
+    .map(([date, occurrences]) => {
+      const { weekday, dateLabel } = formatGroupDate(date);
+      return {
+        date,
+        label: `${dateLabel} ${weekday}`,
+        occurrences: occurrences.sort((a, b) =>
+          a.start.localeCompare(b.start),
+        ),
+        isToday: false,
+      };
+    });
 };
 
 // The today group is always present, even without events, so visitors see
@@ -245,9 +260,10 @@ const markToday = (groups: ReturnType<typeof groupByDate>) => {
     isToday: group.date === from,
   }));
   if (!hasToday) {
+    const { weekday, dateLabel } = formatGroupDate(from);
     result.unshift({
       date: from,
-      label: dateLabel(`${from}T12:00:00Z`),
+      label: `${dateLabel} ${weekday}`,
       occurrences: [],
       isToday: true,
     });
@@ -301,7 +317,17 @@ const eventPanels = [
         class="disclaimer-toggle"
         type="button"
         aria-controls="disclaimer-panel"
+        aria-expanded="true"
         aria-label={t("Umfrage ausblenden", "Hide survey")}>
+      </button>
+      <button
+        class="disclaimer-expand"
+        type="button"
+        aria-controls="disclaimer-panel"
+        aria-expanded="false"
+        aria-label={t("Umfrage anzeigen", "Show survey")}>
+        <span class="disclaimer-expand-label">{t("Umfrage", "Survey")}</span>
+        <span class="disclaimer-expand-icon" aria-hidden="true">+</span>
       </button>
       <div class="disclaimer-panel" id="disclaimer-panel">
         <div class="disclaimer">
@@ -411,7 +437,7 @@ const eventPanels = [
     )
   }
 
-  <section>
+  <section data-sidebar-anchor>
     {
       eventPanels.map((panel) => (
         <div
@@ -435,6 +461,7 @@ const eventPanels = [
                         {group.occurrences.map((occurrence) => (
                           <div
                             class="filter-item-wrapper workshop-item"
+                            data-event-id={String(occurrence.eventId)}
                             data-tags={tagsFor(occurrence)}>
                             <EventC occurrence={occurrence} hideDate />
                           </div>
@@ -477,6 +504,7 @@ const eventPanels = [
                     {dayClasses.map((occurrence) => (
                       <div
                         class="filter-item-wrapper class-item"
+                        data-event-id={String(occurrence.eventId)}
                         data-tags={tagsFor(occurrence)}>
                         <EventC occurrence={occurrence} hideDate />
                       </div>
@@ -649,6 +677,47 @@ const eventPanels = [
         switchTab(initialTab, false);
       }
 
+      // Map popups link back with ?event=<id> to narrow the list to that event.
+      const eventParam = new URLSearchParams(window.location.search).get(
+        "event",
+      );
+      if (eventParam) {
+        const wrappers = Array.from(
+          document.querySelectorAll<HTMLElement>(".filter-item-wrapper"),
+        );
+        const matches = wrappers.filter(
+          (wrapper) => wrapper.dataset.eventId === eventParam,
+        );
+
+        if (matches.length > 0) {
+          const panel = matches[0].closest<HTMLElement>(".tab-content");
+          if (panel?.dataset.tab) switchTab(panel.dataset.tab, false);
+
+          wrappers.forEach((wrapper) => {
+            wrapper.style.display = matches.includes(wrapper) ? "" : "none";
+          });
+
+          dayGroups.forEach((group) => {
+            const groupWrappers = Array.from(
+              group.querySelectorAll<HTMLElement>(".filter-item-wrapper"),
+            );
+            const hasMatch = groupWrappers.some(
+              (wrapper) => wrapper.style.display !== "none",
+            );
+            (group as HTMLElement).style.display = hasMatch ? "" : "none";
+
+            const item = group.querySelector<HTMLElement>(".responsive-item");
+            const header = group.querySelector<HTMLElement>(
+              ".responsive-item-header",
+            );
+            if (hasMatch && item && header) {
+              item.classList.add("open");
+              header.setAttribute("aria-expanded", "true");
+            }
+          });
+        }
+      }
+
       if (filterToggle && filterPanel) {
         filterToggle.addEventListener("click", () => {
           filterPanel.classList.toggle("open");
@@ -761,7 +830,7 @@ const eventPanels = [
   .disclaimer-toggle {
     display: none;
     position: absolute;
-    top: 1rem;
+    top: 0.5rem;
     right: 1rem;
     z-index: 1;
     width: 2.125rem;
@@ -770,15 +839,14 @@ const eventPanels = [
     justify-content: center;
     padding: 0;
     background: none;
-    border: var(--rule-width) solid var(--accent-contrast);
-    border-radius: 50%;
+    border: 0;
+    border-radius: 0;
     color: var(--accent-contrast);
     cursor: pointer;
   }
 
-  /* Close cross */
-  .disclaimer-toggle::before,
-  .disclaimer-toggle::after {
+  /* Collapse control (minus) */
+  .disclaimer-toggle::before {
     content: "";
     position: absolute;
     width: 0.875rem;
@@ -787,17 +855,56 @@ const eventPanels = [
     border-radius: 1px;
   }
 
-  .disclaimer-toggle::before {
-    transform: rotate(45deg);
+  /* Collapsed in a previous visit (stored in localStorage). It keeps the
+     open card's surface and only shrinks down to a compact band. */
+  .disclaimer-box.is-collapsed {
+    display: block;
+    padding: 0.25rem 0;
+    text-align: left;
   }
 
-  .disclaimer-toggle::after {
-    transform: rotate(-45deg);
-  }
-
-  /* Dismissed in a previous visit (stored in localStorage) */
-  .disclaimer-box.is-dismissed {
+  .disclaimer-box.is-collapsed .disclaimer-panel,
+  .disclaimer-box.is-collapsed .disclaimer-toggle {
     display: none;
+  }
+
+  .disclaimer-expand {
+    display: none;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 0;
+    background: none;
+    border: 0;
+    color: var(--text-main);
+    font-family: var(--font-body);
+    font-size: var(--fs-body);
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .disclaimer-box.is-collapsed .disclaimer-expand {
+    display: flex;
+  }
+
+  .disclaimer-expand-label {
+    padding-bottom: 0.25rem;
+    border-bottom: var(--rule-width) solid var(--rule-color);
+  }
+
+  .disclaimer-expand-icon {
+    font-size: 1.5rem;
+    font-weight: 400;
+    line-height: 1;
+  }
+
+  @media (hover: hover) {
+    .disclaimer-expand:hover .disclaimer-expand-label {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
   }
 
   .disclaimer {
@@ -1069,8 +1176,9 @@ const eventPanels = [
 
     .page-tabs {
       flex: 1 1 100%;
-      font-size: 1.25rem; /* 20 */
+      font-size: 1.375rem; /* 22 */
       column-gap: 0.125rem;
+      margin-bottom: 0.5rem;
     }
 
     .header-controls {
@@ -1079,16 +1187,9 @@ const eventPanels = [
       gap: 0.25rem;
     }
 
-    /* Full-bleed card on phones */
+    /* Slightly shorter card on phones */
     .disclaimer-box {
-      margin-inline: calc(var(--shell-pad) * -1);
-      padding: 3rem var(--shell-pad) 2rem;
-      border-radius: 0;
-      margin-bottom: 0;
-    }
-
-    .disclaimer-toggle {
-      right: var(--shell-pad);
+      padding: 2rem 1.5rem 1.5rem;
     }
 
     /* Phone sizes: slightly smaller than the tablet card */
@@ -1130,6 +1231,29 @@ const eventPanels = [
       border-bottom: var(--rule-width) solid var(--rule-color);
     }
   }
+
+  /* The collapsed band keeps the accent card styling on tablet/phone. */
+  @media (max-width: 1023px) {
+    .disclaimer-box.is-collapsed {
+      padding: 0.5rem 1.5rem;
+    }
+
+    .disclaimer-expand {
+      color: var(--accent-contrast);
+    }
+
+    .disclaimer-expand-label {
+      border-bottom-color: var(--accent-contrast);
+    }
+  }
+
+  @media (max-width: 1023px) and (hover: hover) {
+    .disclaimer-expand:hover .disclaimer-expand-label {
+      color: var(--accent-contrast);
+      border-color: var(--accent-contrast);
+      opacity: 0.8;
+    }
+  }
 </style>
 
 <script>
@@ -1137,25 +1261,32 @@ const eventPanels = [
     const DISMISS_KEY = "sih:survey-dismissed";
     const box = document.querySelector(".disclaimer-box");
     const toggle = document.querySelector(".disclaimer-toggle");
+    const expand = document.querySelector(".disclaimer-expand");
 
     if (box) {
-      let dismissed = false;
+      let collapsed = false;
       try {
-        dismissed = localStorage.getItem(DISMISS_KEY) === "1";
+        collapsed = localStorage.getItem(DISMISS_KEY) === "1";
       } catch {
         /* storage may be unavailable (private mode) */
       }
 
-      if (dismissed) box.classList.add("is-dismissed");
-
-      toggle?.addEventListener("click", () => {
-        box.classList.add("is-dismissed");
+      const setCollapsed = (value: boolean) => {
+        box.classList.toggle("is-collapsed", value);
+        toggle?.setAttribute("aria-expanded", String(!value));
+        expand?.setAttribute("aria-expanded", String(!value));
         try {
-          localStorage.setItem(DISMISS_KEY, "1");
+          if (value) localStorage.setItem(DISMISS_KEY, "1");
+          else localStorage.removeItem(DISMISS_KEY);
         } catch {
           /* ignore */
         }
-      });
+      };
+
+      if (collapsed) setCollapsed(true);
+
+      toggle?.addEventListener("click", () => setCollapsed(true));
+      expand?.addEventListener("click", () => setCollapsed(false));
     }
   });
 </script>

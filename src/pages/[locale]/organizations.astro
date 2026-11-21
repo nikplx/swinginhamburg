@@ -49,7 +49,7 @@ const { docs: organizations } = await payload.find({
 
   {
     organizations.length > 0 ? (
-      <ResponsiveList>
+      <ResponsiveList anchor>
         {organizations.map((organization) => (
           <ResponsiveListItem
             title={organization.name}

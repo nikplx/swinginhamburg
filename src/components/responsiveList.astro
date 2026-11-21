@@ -3,13 +3,16 @@
 interface Props {
   maxColumns?: number;
   exclusiveOpen?: boolean; // Added configuration prop
+  /** Marks the list as the anchor for the sidebar wave alignment. */
+  anchor?: boolean;
 }
 
-const { maxColumns = 1, exclusiveOpen = true } = Astro.props;
+const { maxColumns = 1, exclusiveOpen = true, anchor = false } = Astro.props;
 ---
 <div
   class="responsive-list"
-  data-exclusive-open={exclusiveOpen.toString()}>
+  data-exclusive-open={exclusiveOpen.toString()}
+  data-sidebar-anchor={anchor ? "" : undefined}>
   <slot />
 </div>
 

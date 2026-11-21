@@ -55,6 +55,17 @@ const endLabel = formatLocalTime(occurrence.end);
 
 <div class:list={["workshop-item", { "is-cancelled": occurrence.cancelled }]}>
   {
+    occurrence.cancelled && occurrence.note && (
+      <p class="occurrence-note occurrence-note--cancelled">
+        <span class="occurrence-note__icon" aria-hidden="true">
+          ⚠
+        </span>
+        {occurrence.note}
+      </p>
+    )
+  }
+
+  {
     hideDate ? (
       <div class="workshop-time">{timeLabel}–{endLabel}</div>
     ) : (
@@ -112,7 +123,9 @@ const endLabel = formatLocalTime(occurrence.end);
   }
 
   {
-    occurrence.note && <p class="occurrence-note">{occurrence.note}</p>
+    occurrence.note && !occurrence.cancelled && (
+      <p class="occurrence-note">{occurrence.note}</p>
+    )
   }
 
   <div class="workshop-desc-container collapsed">
@@ -216,8 +229,32 @@ const endLabel = formatLocalTime(occurrence.end);
     margin: 0;
   }
 
-  .workshop-item.is-cancelled {
+  .workshop-item.is-cancelled > * {
     opacity: 0.7;
+  }
+
+  /* The notice stays fully visible so the cancellation reason is readable. */
+  .workshop-item.is-cancelled > .occurrence-note {
+    opacity: 1;
+  }
+
+  .workshop-item.is-cancelled
+    :is(
+      .workshop-date,
+      .workshop-time,
+      .workshop-title,
+      .workshop-organizers,
+      .workshop-location,
+      .workshop-desc,
+      .listing-tag,
+      .workshop-level
+    ) {
+    text-decoration: line-through;
+  }
+
+  .workshop-item.is-cancelled .cancelled-badge {
+    display: inline-block;
+    text-decoration: none;
   }
 
   .workshop-date {
@@ -302,6 +339,14 @@ const endLabel = formatLocalTime(occurrence.end);
     margin: 0;
     font-size: var(--fs-body);
     color: var(--accent);
+  }
+
+  .occurrence-note--cancelled {
+    font-weight: 600;
+  }
+
+  .occurrence-note__icon {
+    margin-right: 0.25rem;
   }
 
   .workshop-desc {

@@ -10,10 +10,18 @@ interface Props {
   title?: string;
   /** Full-width content column (used by the map page) */
   wide?: boolean;
+  /** Render the decorative sidebar wave even when the page has no sidebar copy. */
+  sidebarWave?: boolean;
 }
 
-const { locale, title = "Swing in Hamburg", wide = false } = Astro.props;
+const {
+  locale,
+  title = "Swing in Hamburg",
+  wide = false,
+  sidebarWave = false,
+} = Astro.props;
 const hasSidebar = Astro.slots.has("sidebar");
+const showSidebar = hasSidebar || sidebarWave;
 
 // "Letztes Update" footer from the design frames.
 const meta = await payload.findGlobal({
@@ -60,7 +68,10 @@ const formattedUpdate =
       crossorigin
     />
   </head>
-  <body class:list={[{ "wide-page": wide }]}>
+  <body
+    class:list={[
+      { "wide-page": wide, "has-sidebar-page": showSidebar },
+    ]}>
     <div class="page-container">
       <header class="site-header">
         <div class="header-main">
@@ -77,10 +88,12 @@ const formattedUpdate =
         </div>
       </header>
 
-      <div class:list={["shell", "page-body", { "has-sidebar": hasSidebar }]}>
+      <div class:list={["shell", "page-body", { "has-sidebar": showSidebar }]}>
         {
-          hasSidebar && (
-            <aside class="sidebar">
+          showSidebar && (
+            <aside
+              class:list={["sidebar", { "sidebar--empty": !hasSidebar }]}>
+              <Wave class="sidebar-wave-top" />
               <slot name="sidebar" />
               <Wave />
             </aside>
@@ -93,20 +106,52 @@ const formattedUpdate =
     </div>
 
     <script>
+      const header = document.querySelector<HTMLElement>(".site-header");
+      const sidebar = document.querySelector<HTMLElement>(".sidebar");
+      const anchor = document.querySelector<HTMLElement>(
+        "[data-sidebar-anchor]",
+      );
+      const pageBody = document.querySelector<HTMLElement>(".page-body");
+      const desktop = window.matchMedia("(min-width: 1024px)");
+
       // Expose the sticky header height so the desktop sidebar can stick
       // directly below it.
-      const header = document.querySelector<HTMLElement>(".site-header");
-      if (header) {
-        const syncHeaderHeight = () => {
-          document.documentElement.style.setProperty(
-            "--site-header-height",
-            `${header.getBoundingClientRect().height}px`,
-          );
-        };
+      const syncHeaderHeight = () => {
+        if (!header) return;
+        document.documentElement.style.setProperty(
+          "--site-header-height",
+          `${header.getBoundingClientRect().height}px`,
+        );
+      };
+
+      // Align the sidebar wave with the first content separator (list top,
+      // or the content block below a section title) on desktop.
+      const syncSidebarAnchor = () => {
+        if (!sidebar) return;
+        if (!desktop.matches || !anchor || !pageBody) {
+          sidebar.style.removeProperty("--sidebar-anchor-offset");
+          return;
+        }
+        const padTop = parseFloat(getComputedStyle(pageBody).paddingTop) || 0;
+        const pageTop = pageBody.getBoundingClientRect().top + padTop;
+        const wave = sidebar.querySelector<HTMLElement>(".sidebar-wave-top");
+        const waveHeight = wave?.getBoundingClientRect().height || 13;
+        const offset = Math.max(
+          0,
+          anchor.getBoundingClientRect().top - pageTop - waveHeight / 2,
+        );
+        sidebar.style.setProperty("--sidebar-anchor-offset", `${offset}px`);
+      };
+
+      const syncLayout = () => {
         syncHeaderHeight();
-        new ResizeObserver(syncHeaderHeight).observe(header);
-        window.addEventListener("resize", syncHeaderHeight);
-      }
+        syncSidebarAnchor();
+      };
+
+      syncLayout();
+      document.fonts?.ready.then(syncLayout);
+      window.addEventListener("resize", syncLayout);
+      if (header) new ResizeObserver(syncLayout).observe(header);
     </script>
   </body>
 </html>

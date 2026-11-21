@@ -14,16 +14,40 @@ interface Params {
 const { locale } = Astro.props as Params;
 
 const from = todayInBerlin();
-const occurrences = await fetchOccurrences({ from, to: addDays(from, 30), locale });
+const occurrences = await fetchOccurrences({ from, to: addDays(from, 90), locale });
 
 const danceFilterMap = new Map<string, string>();
-const seen = new Set<string>();
-const events = [];
+
+interface MapEvent {
+  eventId: string;
+  title: string;
+  type: string;
+  organizers: string;
+  weekday: string;
+  rawWeekday: string;
+  dances: string;
+  danceTags: string[];
+}
+
+interface MapLocation {
+  name: string | null;
+  coordinates: [number, number];
+  address: ReturnType<typeof decodeAddress>;
+  events: MapEvent[];
+}
+
+// One marker per venue, listing every event happening there.
+const locationEntries = new Map<
+  string,
+  {
+    name: string | null;
+    coordinates: [number, number];
+    address: ReturnType<typeof decodeAddress>;
+    events: Map<string, MapEvent>;
+  }
+>();
 
 for (const occurrence of occurrences) {
-  // The map is the class map: organizers and other event types are not shown.
-  if (occurrence.event.type !== "class") continue;
-
   const location = occurrence.event.location;
   if (location?.lat == null || location?.lng == null) continue;
 
@@ -37,19 +61,36 @@ for (const occurrence of occurrences) {
     weekday: "long",
   }).format(new Date(occurrence.start));
 
-  const markerKey = `${occurrence.eventId}|${weekdayRaw}|${location.lat}|${location.lng}`;
-  if (seen.has(markerKey)) continue;
-  seen.add(markerKey);
+  const locationKey = `${location.lat}|${location.lng}`;
+  let entry = locationEntries.get(locationKey);
+  if (!entry) {
+    entry = {
+      name: location.name ?? null,
+      coordinates: [location.lat, location.lng],
+      address: decodeAddress(location.address),
+      events: new Map(),
+    };
+    locationEntries.set(locationKey, entry);
+  }
 
-  events.push({
+  // Each event appears once per weekday at a venue.
+  const eventKey = `${occurrence.eventId}|${weekdayRaw}`;
+  if (entry.events.has(eventKey)) continue;
+
+  entry.events.set(eventKey, {
+    eventId: String(occurrence.eventId),
     title: occurrence.event.title,
-    address: decodeAddress(location.address),
-    coordinates: [location.lat, location.lng],
+    type: occurrence.event.type,
+    organizers: occurrence.event.organizers
+      .map((organizer) => organizer.name)
+      .filter(Boolean)
+      .join(", "),
     // English weekday name keeps the existing data-day filter buttons working.
     rawWeekday: weekdayRaw,
     weekday: formatLocalDate(occurrence.start, locale, { weekday: "long" }),
     dances: occurrence.event.danceStyles
       .map((style) => style.name ?? style.shortName)
+      .filter(Boolean)
       .join(", "),
     danceTags: occurrence.event.danceStyles
       .map((style) => (style.slug ?? style.shortName ?? "").toLowerCase())
@@ -57,12 +98,19 @@ for (const occurrence of occurrences) {
   });
 }
 
+const locations: MapLocation[] = [...locationEntries.values()].map(
+  (entry) => ({
+    ...entry,
+    events: [...entry.events.values()],
+  }),
+);
+
 const danceFilters = [...danceFilterMap.entries()].map(([slug, name]) => ({ slug, name }));
 ---
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-<div class="map-wrapper">
+<div class="map-wrapper" data-locale={locale}>
   <div id="map"></div>
 
   <button class="mobile-filter-toggle" aria-expanded="false">
@@ -120,7 +168,7 @@ const danceFilters = [...danceFilterMap.entries()].map(([slug, name]) => ({ slug
   </div>
 </div>
 
-<script set:html={JSON.stringify(events)} is:inline id="event-data" type="application/json" />
+<script set:html={JSON.stringify(locations)} is:inline id="event-data" type="application/json" />
 <script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script is:inline lang="ts">
@@ -137,7 +185,7 @@ const danceFilters = [...danceFilterMap.entries()].map(([slug, name]) => ({ slug
     }).addTo(map);
 
     const eventDataElement = document.getElementById("event-data");
-    const events = JSON.parse(eventDataElement.textContent);
+    const locations = JSON.parse(eventDataElement.textContent);
     const markerLayer = L.layerGroup().addTo(map);
 
     // Accent dot markers instead of the default blue pin
@@ -148,44 +196,92 @@ const danceFilters = [...danceFilterMap.entries()].map(([slug, name]) => ({ slug
       popupAnchor: [0, -9],
     });
 
+    const mapWrapper = document.querySelector(".map-wrapper");
+    const locale = mapWrapper?.getAttribute("data-locale") || "en";
+    const isGerman = locale === "de";
+
     // Filter States
     let currentDayFilter = "all";
     let activeDanceFilters = new Set();
 
+    function matchingEvents(location) {
+      return location.events.filter((event) => {
+        const dayMatch =
+          currentDayFilter === "all" || event.rawWeekday === currentDayFilter;
+        const danceMatch =
+          activeDanceFilters.size === 0 ||
+          event.danceTags.some((tag) => activeDanceFilters.has(tag));
+        return dayMatch && danceMatch;
+      });
+    }
+
     function renderMarkers() {
       markerLayer.clearLayers();
 
-      events.forEach((event) => {
-        // 1. Check Day Condition
-        const dayMatch = currentDayFilter === "all" || event.rawWeekday === currentDayFilter;
+      locations.forEach((location) => {
+        const events = matchingEvents(location);
+        if (events.length === 0) return;
 
-        // 2. Check Dance Condition
-        let danceMatch = true;
-        if (activeDanceFilters.size > 0) {
-          danceMatch = event.danceTags.some(tag => activeDanceFilters.has(tag));
-        }
+        const place =
+          location.name ||
+          location.address.quarter ||
+          location.address.city ||
+          "Venue";
+        const street = [location.address.street, location.address.num]
+          .filter(Boolean)
+          .join(" ");
+        const addressLine = [street, location.address.quarter]
+          .filter(Boolean)
+          .join(", ");
 
-        // 3. Render if both match
-        if (dayMatch && danceMatch) {
-          const marker = L.marker(event.coordinates, { icon: dotIcon }).bindPopup(
-            `
+        const groupOrder = ["class", "social", "event"];
+        const groupLabels = {
+          class: isGerman ? "Kurse" : "Classes",
+          social: "Socials",
+          event: "Events",
+        };
+        const groups = groupOrder
+          .map((type) => {
+            const typeEvents = events.filter((event) => event.type === type);
+            if (typeEvents.length === 0) return "";
+            const rows = typeEvents
+              .map(
+                (event) => `
+                  <li>
+                    <a href="/${locale}/?event=${encodeURIComponent(event.eventId)}">${event.title}</a>
+                    ${
+                      event.organizers
+                        ? `<span class="popup-organizer">${isGerman ? "von" : "by"} ${event.organizers}</span>`
+                        : ""
+                    }
+                  </li>`,
+              )
+              .join("");
+            return `
+              <div class="popup-event-group">
+                <div class="popup-group-label">${groupLabels[type]}</div>
+                <ul>${rows}</ul>
+              </div>`;
+          })
+          .join("");
+
+        const marker = L.marker(location.coordinates, {
+          icon: dotIcon,
+        }).bindPopup(
+          `
             <div class="custom-popup-content">
-              <strong>${event.title}</strong><br/>
-              <span>${event.address.street} ${event.address.num}, ${event.address.quarter}</span><br/>
-              <div class="popup-date-time">
-                ${event.weekday}
-              </div>
-              <div class="popup-title">${event.dances}</div>
+              <strong>${place}</strong>
+              ${addressLine ? `<span class="popup-address">${addressLine}</span>` : ""}
+              <div class="popup-event-groups">${groups}</div>
             </div>
           `,
-            {
-              className: "custom-popup",
-              closeButton: false,
-              offset: [0, -10],
-            }
-          );
-          markerLayer.addLayer(marker);
-        }
+          {
+            className: "custom-popup",
+            closeButton: false,
+            offset: [0, -10],
+          },
+        );
+        markerLayer.addLayer(marker);
       });
     }
 
@@ -530,30 +626,35 @@ const danceFilters = [...danceFilterMap.entries()].map(([slug, name]) => ({ slug
 </style>
 
 <style is:global>
-  /* Phones: the map was fullscreen on the old site, so let it fill the
-     viewport below the sticky header again and keep the page from scrolling. */
-  @media (max-width: 768px) {
-    body.wide-page,
-    body.wide-page .page-container {
-      overflow: hidden;
-    }
+  /* The map fills the whole viewport below the sticky header. It is pulled
+     up under the wavy header edge so the wave cuts into the map. */
+  body.wide-page,
+  body.wide-page .page-container {
+    overflow: hidden;
+  }
 
-    body.wide-page .page-container {
-      height: 100dvh;
-      min-height: 0;
-    }
+  body.wide-page .page-container {
+    height: 100dvh;
+    min-height: 0;
+  }
 
-    body.wide-page .page-body {
-      flex: 1;
-      display: block;
-      min-height: 0;
-      padding: 0;
-    }
+  body.wide-page .page-body {
+    flex: 1;
+    display: block;
+    min-height: 0;
+    max-width: none;
+    padding: 0;
+    margin-top: -0.8125rem;
+  }
 
-    body.wide-page .main-content,
-    body.wide-page .map-wrapper {
-      height: 100%;
-    }
+  body.wide-page .main-content,
+  body.wide-page .map-wrapper {
+    height: 100%;
+  }
+
+  /* Keep the zoom controls clear of the wavy header edge. */
+  body.wide-page .leaflet-top {
+    top: 0.8125rem;
   }
 
   /* Accent dot markers (created at runtime, so they live in global CSS) */
@@ -585,7 +686,7 @@ const danceFilters = [...danceFilterMap.entries()].map(([slug, name]) => ({ slug
     border-radius: 0.75rem;
     box-shadow: 0 4px 16px rgba(40, 70, 110, 0.15);
     padding: 2px;
-    width: 200px;
+    width: 240px;
   }
 
   .custom-popup .leaflet-popup-tip {
@@ -623,5 +724,50 @@ const danceFilters = [...danceFilterMap.entries()].map(([slug, name]) => ({ slug
     font-size: var(--fs-body);
     font-weight: 500;
     margin-top: 2px;
+  }
+
+  .popup-address {
+    display: block;
+    margin-top: 0.15rem;
+  }
+
+  .popup-event-groups {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--rule-color);
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    max-height: 14rem;
+    overflow-y: auto;
+  }
+
+  .popup-group-label {
+    font-weight: 700;
+    margin-bottom: 0.15rem;
+  }
+
+  .popup-event-group ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .popup-event-group li a {
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .popup-event-group li a:hover {
+    text-decoration: underline;
+  }
+
+  .popup-organizer {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
   }
 </style>

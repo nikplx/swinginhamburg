@@ -24,13 +24,32 @@ const cnt = await payload.findGlobal({
 });
 ---
 
-<Layout locale={locale}>
-  <div class="page-content">
+<Layout locale={locale} sidebarWave>
+  <h1 class="section-title">
+    {locale === "en" ? "About" : "Über uns"}
+  </h1>
+  <div class="page-content" data-sidebar-anchor>
     <RichText content={cnt.content} />
   </div>
 </Layout>
 
 <style>
+  .section-title {
+    font-family: var(--font-body);
+    font-size: var(--fs-h1);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    margin: 0 0 3.5rem 0;
+  }
+
+  @media (max-width: 1023px) {
+    .section-title {
+      font-size: var(--fs-h2);
+      margin-bottom: 2rem;
+    }
+  }
+
   /* Use :global() to target elements rendered inside the RichText component */
 
   /* Container or table target */
