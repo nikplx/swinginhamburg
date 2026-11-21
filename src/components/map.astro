@@ -5,13 +5,15 @@ import {
   decodeAddress,
   fetchOccurrences,
   formatLocalDate,
+  toJsonScript,
   todayInBerlin,
 } from "../utils";
+import type { Locale } from "../i18n";
 
-interface Params {
-  locale: "en" | "de";
+interface Props {
+  locale: Locale;
 }
-const { locale } = Astro.props as Params;
+const { locale } = Astro.props;
 
 const from = todayInBerlin();
 const occurrences = await fetchOccurrences({ from, to: addDays(from, 90), locale });
@@ -168,7 +170,7 @@ const danceFilters = [...danceFilterMap.entries()].map(([slug, name]) => ({ slug
   </div>
 </div>
 
-<script set:html={JSON.stringify(locations)} is:inline id="event-data" type="application/json" />
+<script set:html={toJsonScript(locations)} is:inline id="event-data" type="application/json" />
 <script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script is:inline lang="ts">
@@ -215,6 +217,71 @@ const danceFilters = [...danceFilterMap.entries()].map(([slug, name]) => ({ slug
       });
     }
 
+    // Popup content comes from the CMS (titles, organizer and venue names), so
+    // it is built as DOM nodes with textContent, never as an HTML string.
+    function el(tag, className, text) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text) node.textContent = text;
+      return node;
+    }
+
+    const groupOrder = ["class", "social", "event"];
+    const groupLabels = {
+      class: isGerman ? "Kurse" : "Classes",
+      social: "Socials",
+      event: "Events",
+    };
+
+    function buildPopup(location, events) {
+      const place =
+        location.name ||
+        location.address.quarter ||
+        location.address.city ||
+        (isGerman ? "Ort" : "Venue");
+      const street = [location.address.street, location.address.num]
+        .filter(Boolean)
+        .join(" ");
+      const addressLine = [street, location.address.quarter]
+        .filter(Boolean)
+        .join(", ");
+
+      const content = el("div", "custom-popup-content");
+      content.append(el("strong", "", place));
+      if (addressLine) content.append(el("span", "popup-address", addressLine));
+
+      const groups = el("div", "popup-event-groups");
+      for (const type of groupOrder) {
+        const typeEvents = events.filter((event) => event.type === type);
+        if (typeEvents.length === 0) continue;
+
+        const group = el("div", "popup-event-group");
+        group.append(el("div", "popup-group-label", groupLabels[type]));
+        const list = el("ul");
+        for (const event of typeEvents) {
+          const item = el("li");
+          const link = el("a", "", event.title);
+          link.href = `/${locale}/?event=${encodeURIComponent(event.eventId)}`;
+          item.append(link);
+          if (event.organizers) {
+            item.append(
+              " ",
+              el(
+                "span",
+                "popup-organizer",
+                `${isGerman ? "von" : "by"} ${event.organizers}`,
+              ),
+            );
+          }
+          list.append(item);
+        }
+        group.append(list);
+        groups.append(group);
+      }
+      content.append(groups);
+      return content;
+    }
+
     function renderMarkers() {
       markerLayer.clearLayers();
 
@@ -222,65 +289,13 @@ const danceFilters = [...danceFilterMap.entries()].map(([slug, name]) => ({ slug
         const events = matchingEvents(location);
         if (events.length === 0) return;
 
-        const place =
-          location.name ||
-          location.address.quarter ||
-          location.address.city ||
-          "Venue";
-        const street = [location.address.street, location.address.num]
-          .filter(Boolean)
-          .join(" ");
-        const addressLine = [street, location.address.quarter]
-          .filter(Boolean)
-          .join(", ");
-
-        const groupOrder = ["class", "social", "event"];
-        const groupLabels = {
-          class: isGerman ? "Kurse" : "Classes",
-          social: "Socials",
-          event: "Events",
-        };
-        const groups = groupOrder
-          .map((type) => {
-            const typeEvents = events.filter((event) => event.type === type);
-            if (typeEvents.length === 0) return "";
-            const rows = typeEvents
-              .map(
-                (event) => `
-                  <li>
-                    <a href="/${locale}/?event=${encodeURIComponent(event.eventId)}">${event.title}</a>
-                    ${
-                      event.organizers
-                        ? `<span class="popup-organizer">${isGerman ? "von" : "by"} ${event.organizers}</span>`
-                        : ""
-                    }
-                  </li>`,
-              )
-              .join("");
-            return `
-              <div class="popup-event-group">
-                <div class="popup-group-label">${groupLabels[type]}</div>
-                <ul>${rows}</ul>
-              </div>`;
-          })
-          .join("");
-
         const marker = L.marker(location.coordinates, {
           icon: dotIcon,
-        }).bindPopup(
-          `
-            <div class="custom-popup-content">
-              <strong>${place}</strong>
-              ${addressLine ? `<span class="popup-address">${addressLine}</span>` : ""}
-              <div class="popup-event-groups">${groups}</div>
-            </div>
-          `,
-          {
-            className: "custom-popup",
-            closeButton: false,
-            offset: [0, -10],
-          },
-        );
+        }).bindPopup(buildPopup(location, events), {
+          className: "custom-popup",
+          closeButton: false,
+          offset: [0, -10],
+        });
         markerLayer.addLayer(marker);
       });
     }

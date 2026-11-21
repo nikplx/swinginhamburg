@@ -1,12 +1,6 @@
 ---
-export async function getStaticPaths() {
-  const locales = ["en", "de"];
-  return locales.map((locale) => ({
-    params: { locale },
-  }));
-}
-
 import "../../styles/global.css";
+import type { Locale } from "../../i18n";
 import Calendar from "../../components/calendar.astro";
 import EventC from "../../components/event.astro";
 import RichText from "../../components/richtText.astro";
@@ -24,10 +18,7 @@ import {
   type OccurrenceView,
 } from "../../utils";
 
-interface Params {
-  locale: "en" | "de";
-}
-const { locale } = Astro.params as Params;
+const locale = Astro.params.locale as Locale; // validated in src/middleware.ts
 const t = (de: string, en: string) => (locale === "en" ? en : de);
 
 const index = await payload.findGlobal({

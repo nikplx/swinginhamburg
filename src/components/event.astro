@@ -1,6 +1,7 @@
 ---
 import RichText from "./richtText.astro";
 import type { OccurrenceView } from "../utils";
+import type { Locale } from "../i18n";
 import {
   decodeAddress,
   formatLocalDate,
@@ -13,7 +14,7 @@ interface Props {
   hideDate?: boolean;
 }
 const { occurrence, hideDate = false } = Astro.props;
-const locale = (Astro.params.locale ?? "de") as string;
+const locale = Astro.params.locale as Locale; // validated in src/middleware.ts
 
 const event = occurrence.event;
 const venue = event.location ?? null;

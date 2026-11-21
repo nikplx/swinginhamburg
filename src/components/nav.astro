@@ -1,8 +1,9 @@
 ---
 import Wave from "./wave.astro";
+import type { Locale } from "../i18n";
 
 interface Props {
-  locale: "de" | "en";
+  locale: Locale;
 }
 
 const { locale } = Astro.props;
@@ -20,7 +21,7 @@ const isActive = (href: string) =>
 const otherLocale = locale === "en" ? "de" : "en";
 const otherLocaleLink = currentPath.replace(`/${locale}`, `/${otherLocale}`);
 
-const labelsByLocale = {
+const labelsByLocale: Record<Locale, Record<string, string>> = {
   de: {
     index: "Socials / Events / Kurse",
     map: "Karte",
@@ -37,9 +38,7 @@ const labelsByLocale = {
   },
 };
 
-// Fall back to German so a stray locale segment (e.g. /undefined/...) renders
-// instead of throwing on the missing labels object.
-const labels = labelsByLocale[locale] ?? labelsByLocale.de;
+const labels = labelsByLocale[locale];
 
 const navItems = [
   { href: `/${locale}`, label: labels.index },

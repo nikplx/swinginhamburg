@@ -1,4 +1,6 @@
 ---
+import { toJsonScript } from "../utils";
+
 export interface CalendarEntry {
   date: string;
   time: string;
@@ -32,10 +34,7 @@ interface Props {
 const { locale, min, max, entries, events } = Astro.props;
 const isGerman = locale === "de";
 
-const data = JSON.stringify({ min, max, entries, events }).replace(
-  /</g,
-  "\\u003c",
-);
+const data = toJsonScript({ min, max, entries, events });
 ---
 
 <section
@@ -335,6 +334,9 @@ const data = JSON.stringify({ min, max, entries, events }).replace(
         }
       }
       if (modalDesc) {
+        // Safe: produced server-side by Payload's Lexical HTML converter, which
+        // escapes all text and replaces unsafe link schemes (javascript:, data:)
+        // with "#". Never put unconverted CMS strings here.
         modalDesc.innerHTML = detail?.descriptionHtml ?? "";
         modalDesc.hidden = !detail?.descriptionHtml;
       }

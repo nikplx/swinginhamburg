@@ -4,9 +4,10 @@ import "../styles/global.css";
 import Nav from "../components/nav.astro";
 import Wave from "../components/wave.astro";
 import { payload } from "../utils";
+import type { Locale } from "../i18n";
 
 interface Props {
-  locale: "en" | "de";
+  locale: Locale;
   title?: string;
   /** Full-width content column (used by the map page) */
   wide?: boolean;

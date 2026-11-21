@@ -3,16 +3,16 @@
 Swing in Hamburg: bilingual (EN/DE) Astro site listing Lindy Hop classes, backed by Payload CMS.
 
 - **Frontend** (`/`): Astro 6 SSR (`output: 'server'`) with the Node adapter. Pages live under `src/pages/[locale]/`; `/` redirects to `/en`. Uses **npm**.
-- **CMS** (`/cms`): Payload 3.x (git submodule `nikplx/swinginhamburg-cms`), Postgres, Next.js admin UI. Uses **pnpm**. See `cms/AGENTS.md` for Payload conventions and the full command list.
+- **CMS** (`/cms`): Payload 3.x (git submodule `nikplx/swinginhamburg-cms`), Postgres, Next.js admin UI. Uses **npm**. See `cms/AGENTS.md` for Payload conventions and the full command list.
 
 ## Data flow
 
-`src/utils.ts` exports a `PayloadSDK` instance pointed at `PAYLOAD_URL` (default `http://localhost:3000`), typed against `cms/src/payload-types.ts`. Main collections: `classes`, `schools`. Global: `index` (homepage content, richtext rendered via the `RichText` component).
+`src/utils.ts` exports a `PayloadSDK` instance pointed at `PAYLOAD_URL` (default `http://localhost:3000`), typed against `cms/src/payload-types.ts`. Main collections: `events`, `organizations`, `dances`. Event dates are read through the custom `GET /api/occurrences` endpoint (`fetchOccurrences` in `src/utils.ts`; implemented in `cms/src/endpoints/occurrences.ts`). Global: `index` (homepage content, richtext rendered via the `RichText` component).
 
 ## Commands
 
 - Frontend: `npm run dev` (port 4321), `npm run build`, `npm run preview`.
-- CMS: `pnpm run setup` (docker DB + fixture + dev), `pnpm run dev`. After schema changes run `pnpm run generate:types`; after admin component changes run `pnpm run generate:importmap`.
+- CMS: `npm run setup` (docker DB + fixture + migrations + dev), `npm run dev`. After schema changes run `npm run payload migrate:create <name>` and `npm run generate:types` (dev uses `push: false`, so migrations are the only way the schema changes); after admin component changes run `npm run generate:importmap`.
 
 ## Deployment
 

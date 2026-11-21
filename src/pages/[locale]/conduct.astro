@@ -1,19 +1,9 @@
 ---
-export async function getStaticPaths() {
-  const locales = ["en", "de"];
-
-  return locales.map((locale) => ({
-    params: { locale },
-  }));
-}
-
 import Layout from "../../components/layout.astro";
+import type { Locale } from "../../i18n";
 import "../../styles/global.css";
 
-interface Params {
-  locale: "en" | "de";
-}
-const { locale } = Astro.params as Params;
+const locale = Astro.params.locale as Locale; // validated in src/middleware.ts
 ---
 
 <Layout locale={locale}>

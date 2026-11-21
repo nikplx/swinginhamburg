@@ -62,6 +62,18 @@ export async function fetchOccurrences(
   return data.occurrences ?? [];
 }
 
+/**
+ * Serialize data for a `<script type="application/json">` block rendered with
+ * `set:html`. Escaping `<` keeps CMS text such as `</script>` from closing the
+ * block; U+2028/2029 are escaped for older JS parsers.
+ */
+export function toJsonScript(value: unknown): string {
+  return JSON.stringify(value)
+    .replace(/</g, '\\u003c')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+}
+
 export function todayInBerlin(): string {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Europe/Berlin',
